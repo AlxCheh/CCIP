@@ -3,7 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 @Injectable()
 export class PeriodService {

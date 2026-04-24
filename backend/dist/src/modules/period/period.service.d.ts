@@ -1,4 +1,4 @@
-import { PrismaService } from '../../common/prisma/prisma.service.js';
+import { PrismaService } from '../../common/prisma/prisma.service';
 export declare class PeriodService {
     private readonly prisma;
     constructor(prisma: PrismaService);

@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PeriodService = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_js_1 = require("../../common/prisma/prisma.service.js");
+const prisma_service_1 = require("../../common/prisma/prisma.service");
 let PeriodService = class PeriodService {
     prisma;
     constructor(prisma) {
@@ -89,6 +89,6 @@ let PeriodService = class PeriodService {
 exports.PeriodService = PeriodService;
 exports.PeriodService = PeriodService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_js_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], PeriodService);
 //# sourceMappingURL=period.service.js.map

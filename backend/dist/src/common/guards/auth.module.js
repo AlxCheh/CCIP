@@ -6,23 +6,30 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AppModule = void 0;
+exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
+const passport_1 = require("@nestjs/passport");
+const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
-const prisma_module_1 = require("./common/prisma/prisma.module");
-const auth_module_1 = require("./common/guards/auth.module");
-const period_module_1 = require("./modules/period/period.module");
-let AppModule = class AppModule {
+const jwt_strategy_1 = require("./jwt.strategy");
+let AuthModule = class AuthModule {
 };
-exports.AppModule = AppModule;
-exports.AppModule = AppModule = __decorate([
+exports.AuthModule = AuthModule;
+exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            config_1.ConfigModule.forRoot({ isGlobal: true }),
-            prisma_module_1.PrismaModule,
-            auth_module_1.AuthModule,
-            period_module_1.PeriodModule,
+            passport_1.PassportModule,
+            jwt_1.JwtModule.registerAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: (config) => ({
+                    secret: config.getOrThrow('JWT_SECRET'),
+                    signOptions: { expiresIn: '8h' },
+                }),
+                inject: [config_1.ConfigService],
+            }),
         ],
+        providers: [jwt_strategy_1.JwtStrategy],
+        exports: [jwt_1.JwtModule],
     })
-], AppModule);
-//# sourceMappingURL=app.module.js.map
+], AuthModule);
+//# sourceMappingURL=auth.module.js.map
