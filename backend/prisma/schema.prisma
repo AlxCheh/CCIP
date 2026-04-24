@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Пользователи ───────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  role      String   // director | sc | gp | admin
+  name      String
+  createdAt DateTime @default(now())
+
+  periods     Period[]
+  zeroReports ZeroReport[]
+  auditLogs   AuditLog[]
+
+  @@map("users")
+}
+
+// ─── Объекты строительства ───────────────────────────────────────────────────
+
+model Object {
+  id        String  @id @default(uuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+
+  periods     Period[]
+  zeroReports ZeroReport[]
+
+  @@map("objects")
+}
+
+// ─── Нулевой отчёт ──────────────────────────────────────────────────────────
+
+model ZeroReport {
+  id         String    @id @default(uuid())
+  objectId   String
+  object     Object    @relation(fields: [objectId], references: [id])
+  status     String    @default("pending") // pending | approved | rejected
+  createdBy  String
+  creator    User      @relation(fields: [createdBy], references: [id])
+  approvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("zero_reports")
+}
+
+// ─── Периоды ────────────────────────────────────────────────────────────────
+
+model Period {
+  id           String    @id @default(uuid())
+  objectId     String
+  object       Object    @relation(fields: [objectId], references: [id])
+  periodNumber Int
+  status       String    @default("open") // open | closed
+  openedBy     String
+  opener       User      @relation(fields: [openedBy], references: [id])
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+
+  facts     PeriodFact[]
+  slaEvents SlaEvent[]
+  auditLogs AuditLog[]
+
+  @@unique([objectId, periodNumber])
+  @@map("periods")
+}
+
+// ─── Факты периода (объёмы работ) ───────────────────────────────────────────
+
+model PeriodFact {
+  id            String   @id @default(uuid())
+  periodId      String
+  period        Period   @relation(fields: [periodId], references: [id])
+  workLineageId String   // стабильный UUID позиции BoQ
+  scVolume      Float?
+  gpVolume      Float?
+  updatedAt     DateTime @updatedAt
+  updatedBy     String?
+
+  @@unique([periodId, workLineageId])
+  @@map("period_facts")
+}
+
+// ─── Очередь синхронизации (офлайн) ─────────────────────────────────────────
+
+model SyncQueue {
+  id              String   @id @default(uuid())
+  periodId        String
+  workLineageId   String
+  clientTimestamp DateTime
+  value           Float
+  status          String   @default("pending") // pending | applied | conflict
+  conflictData    Json?    // { server: {...}, device: {...} }
+  resolvedNote    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("sync_queue")
+}
+
+// ─── SLA-события ────────────────────────────────────────────────────────────
+
+model SlaEvent {
+  id          String    @id @default(uuid())
+  periodId    String
+  period      Period    @relation(fields: [periodId], references: [id])
+  eventType   String    // deadlock_a_day3 | deadlock_a_day5 | deadlock_b_day7 | deadlock_b_day14
+  scenario    String
+  scheduledAt DateTime
+  executedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("sla_events")
+}
+
+// ─── Аудит ──────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id       String   @id @default(uuid())
+  periodId String?
+  period   Period?  @relation(fields: [periodId], references: [id])
+  actorId  String
+  actor    User     @relation(fields: [actorId], references: [id])
+  action   String   // period_opened | period_closed | conflict_resolved | sla_executed
+  payload  Json?
+  createdAt DateTime @default(now())
+
+  @@map("audit_log")
+}
