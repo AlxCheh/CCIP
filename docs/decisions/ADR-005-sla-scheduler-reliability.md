@@ -8,9 +8,11 @@
 
 SLA-таймеры (deadlock A: день 3/5, deadlock B: день 7/14) — критичные бизнес-события. Scheduler нельзя запустить в >1 реплики без distributed lock. При краше единственного пода — события могут опоздать или выполниться дважды при restart.
 
+Дополнительный риск: при потере Redis (flush, миграция окружения, первый деплой) BullMQ теряет все отложенные jobs. Записи в `sla_events` остаются в PostgreSQL, но без соответствующих jobs в очереди они никогда не выполнятся — **orphaned SLA events**.
+
 ## Решение
 
-**BullMQ `jobId` (deduplication) + идемпотентная проверка `executedAt` в БД + K8s `Recreate` strategy.**
+**BullMQ `jobId` (deduplication) + идемпотентная проверка `executedAt` в БД + recovery scan при старте + K8s `Recreate` strategy.**
 
 ## Контракт планирования события
 
@@ -32,9 +34,10 @@ await this.slaQueue.add(
 ## Контракт воркера
 
 ```typescript
-async handle(job: Job): Promise<void> {
+// sla.worker.ts
+const worker = new Worker('sla', async (job: Job) => {
   const event = await prisma.slaEvents.findUnique({ where: { id: job.data.slaEventId } });
-  if (event.executedAt) return; // идемпотентная защита от повторного выполнения
+  if (!event || event.executedAt) return; // идемпотентная защита от повторного выполнения
 
   await prisma.$transaction(async (tx) => {
     await executeEvent(tx, event);   // бизнес-логика (notify / force_close)
@@ -43,18 +46,84 @@ async handle(job: Job): Promise<void> {
       data: { executedAt: new Date() },
     });
   });
+}, {
+  connection: redis,
+  // lockDuration должен превышать terminationGracePeriodSeconds K8s (default 30s).
+  // Если pod убит в момент обработки — новый worker не возьмёт job раньше истечения lock,
+  // после чего BullMQ помечает его stalled и повторно ставит в очередь.
+  // executedAt защищает от двойного исполнения при повторе.
+  lockDuration: 60_000,       // 60s
+  stalledInterval: 30_000,    // проверка stalled jobs каждые 30s
+});
+```
+
+## Recovery scan при старте (критично)
+
+При потере Redis все delayed jobs теряются, но `sla_events` в PostgreSQL сохраняются. Без recovery scan — orphaned events никогда не выполнятся.
+
+```typescript
+// sla-scheduler.service.ts
+async onModuleInit(): Promise<void> {
+  const orphaned = await this.prisma.slaEvents.findMany({
+    where: {
+      executedAt: null,
+      scheduledAt: { gt: new Date() },
+    },
+  });
+
+  for (const event of orphaned) {
+    const delay = Math.max(0, event.scheduledAt.getTime() - Date.now());
+    await this.slaQueue.add(
+      event.eventType,
+      { slaEventId: event.id, scenario: event.scenario },
+      {
+        delay,
+        jobId: `sla-${event.id}`,   // повторное добавление существующего job — no-op в BullMQ
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 10_000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      }
+    );
+  }
+
+  this.logger.log(`SLA recovery scan: ${orphaned.length} events re-scheduled`);
 }
 ```
+
+Повторное добавление job с существующим `jobId` в BullMQ безопасно — дубль не создаётся.
 
 ## K8s Deployment
 
 ```yaml
 replicas: 1
 strategy:
-  type: Recreate   # НЕ RollingUpdate: при rolling update два пода живут одновременно
+  type: Recreate   # НЕ RollingUpdate: при rolling update два пода живут одновременно,
+                   # jobId deduplication защищает от двойного выполнения,
+                   # но два воркера конкурируют за одни jobs — избыточная нагрузка
+spec:
+  template:
+    spec:
+      terminationGracePeriodSeconds: 30   # должен быть < lockDuration (60s)
+      containers:
+        - name: sla-scheduler
+          livenessProbe:
+            exec:
+              command: ["node", "-e", "require('./dist/health').checkRedis()"]
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
 ```
 
-Liveness probe: проверка Redis-соединения каждые 30s.
+## Инфраструктурное требование: Redis AOF
+
+```
+# redis.conf — обязательно для production
+appendonly yes
+appendfsync everysec
+```
+
+Без AOF потеря Redis = потеря всех отложенных jobs. Recovery scan при старте компенсирует это, но только для событий с `scheduledAt > NOW()`. Уже прошедшие неисполненные события будут выполнены немедленно при restart (delay = 0).
 
 ## Гарантии
 
@@ -62,9 +131,13 @@ Liveness probe: проверка Redis-соединения каждые 30s.
 |----------|--------|
 | Два пода запустились одновременно | `jobId` deduplication в BullMQ |
 | Pod упал, поднялся заново | `attempts: 3` + `executedAt` — повтор безопасен |
-| Redis упал | Job persists в Redis (AOF/RDB); при восстановлении обрабатывается |
+| Redis потерян полностью | `onModuleInit` recovery scan восстанавливает все `executedAt IS NULL` события |
+| Первый деплой / новое окружение | Recovery scan отрабатывает при каждом старте |
 | Событие выполнилось дважды | `if (event.executedAt) return` — второй вызов no-op |
+| Pod убит в момент обработки | `lockDuration: 60s > terminationGracePeriodSeconds: 30s` — stalled job повторяется безопасно |
 
 ## Мониторинг
 
 Failed jobs (`removeOnFail: false`) видны в Bull Dashboard. Настроить алерт при `failed count > 0` в очереди `sla`.
+
+Выполненные jobs (`removeOnComplete: true`) удаляются из Redis — история только в `sla_events.executed_at`. Bull Dashboard не является источником истины для completed events.

@@ -40,4 +40,32 @@ backend/
       scheduler/     # BullMQ queues
 ```
 
-ORM: Prisma (миграции через `prisma migrate dev`; schema генерируется из существующего `schema.sql`).
+ORM: Prisma (миграции через `prisma migrate deploy` в production; `prisma migrate dev` только в dev).
+
+## Ограничения инфраструктуры (обязательно к исполнению)
+
+### Connection Pooler
+
+`pg_advisory_xact_lock` (используемый в ADR-002) привязан к конкретному backend-процессу PostgreSQL. При смене соединения внутри транзакции блокировка молча снимается.
+
+**Требование:** connection pooler ДОЛЖЕН работать в режиме **session pooling**, НЕ transaction pooling.
+
+| Pooler | Допустимая конфигурация |
+|--------|------------------------|
+| PgBouncer | `pool_mode = session` |
+| Supavisor (Supabase) | session mode |
+| AWS RDS Proxy | **Запрещён** — не поддерживает session-level advisory locks |
+| Без pooler (прямое соединение) | Допустимо |
+
+Нарушение этого требования полностью нейтрализует защиту ADR-002.
+
+### Redis Persistence
+
+Redis должен быть настроен с AOF-персистентностью — требование ADR-005.
+
+```
+appendonly yes
+appendfsync everysec
+```
+
+Без AOF потеря Redis = потеря всех незапланированных SLA-событий.
