@@ -1,6 +1,6 @@
 # ADR-004 — Дрейф Materialized View
 
-**Статус:** Принято  
+**Статус:** Принято (rev 2 — 2026-04-25)  
 **Дата:** 2026-04-24  
 **Риск:** R-04
 
@@ -10,14 +10,12 @@
 
 ## Решение
 
-Три слоя: **retry через BullMQ** + **отдельная таблица `mv_refresh_log`** + **немедленный staleness-флаг при исчерпании попыток**.
+Три слоя: **retry через BullMQ** + **таблица `mv_refresh_log`** + **немедленный staleness-флаг при исчерпании попыток** + **self-healing cron** для автовосстановления без участия Admin.
 
 ## Патч схемы БД
 
 ```sql
--- Хранит метаданные последнего успешного (и неудачного) refresh MV.
--- refreshed_at НЕ размещается в самом MV: REFRESH заменяет все строки snapshot'ом,
--- нет механизма вставить NOW() как метаданные — только через отдельную таблицу.
+-- P-20 (уже применён)
 CREATE TABLE mv_refresh_log (
     view_name     VARCHAR(100) PRIMARY KEY,
     refreshed_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -39,7 +37,6 @@ async refreshDashboard(periodId: string): Promise<void> {
       REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status
     `;
 
-    // Фиксируем успешный refresh и снимаем staleness флаг
     await this.prisma.$executeRaw`
       INSERT INTO mv_refresh_log (view_name, refreshed_at, period_id, is_stale)
       VALUES ('mv_object_current_status', NOW(), ${periodId}, FALSE)
@@ -72,17 +69,77 @@ BullMQ: 3 попытки, exponential backoff 5s → 10s → 20s. Суммарн
 ```typescript
 // analytics.service.ts — вызывается BullMQ при failed job (attempts exhausted)
 async onRefreshFailed(job: Job): Promise<void> {
-  // Немедленно выставляем staleness флаг — не ждём threshold
   await this.prisma.$executeRaw`
     UPDATE mv_refresh_log
     SET is_stale = TRUE
     WHERE view_name = 'mv_object_current_status'
   `;
 
-  // Уведомление администратору
   await this.notificationsService.notifyAdmin({
     type: 'mv_refresh_failed',
     message: `Дашборд директора устарел: обновление провалилось после 3 попыток (period_id: ${job.data.periodId})`,
+  });
+}
+```
+
+## Self-healing Cron
+
+При исчерпании retry без вмешательства Admin MV остаётся stale indefinitely — до следующего `closePeriod`. Self-healing cron устраняет это:
+
+```typescript
+// analytics.service.ts — BullMQ repeatable job, регистрируется при старте
+async registerSelfHealingCron(): Promise<void> {
+  await this.refreshQueue.add(
+    'refresh-mv-health',
+    { source: 'cron' },
+    {
+      jobId: 'refresh-mv-self-healing',   // фиксированный jobId — no-op при повторной регистрации
+      repeat: { every: 5 * 60 * 1000 },  // каждые 5 минут
+      removeOnComplete: true,
+      removeOnFail: false,
+    }
+  );
+}
+
+// Обработчик self-healing cron
+async handleSelfHealingRefresh(): Promise<void> {
+  const log = await this.prisma.$queryRaw<MvRefreshLog[]>`
+    SELECT is_stale FROM mv_refresh_log WHERE view_name = 'mv_object_current_status'
+  `;
+
+  if (!log[0]?.isStale) return;  // всё в порядке — ничего не делаем
+
+  this.logger.warn('Self-healing: MV is stale, attempting refresh');
+
+  try {
+    await this.prisma.$executeRaw`
+      REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status
+    `;
+    await this.prisma.$executeRaw`
+      UPDATE mv_refresh_log SET is_stale = FALSE, refreshed_at = NOW()
+      WHERE view_name = 'mv_object_current_status'
+    `;
+    this.logger.log('Self-healing: MV refresh successful, staleness cleared');
+  } catch (err) {
+    this.logger.error('Self-healing: MV refresh still failing', err);
+    // Уведомление Admin повторяем только если прошло > 30 мин с последнего уведомления
+    await this.notificationsService.notifyAdminThrottled('mv_refresh_failed', 30 * 60 * 1000);
+  }
+}
+```
+
+## Ручной refresh (Admin)
+
+```typescript
+// admin.controller.ts — POST /admin/refresh-dashboard
+async manualRefresh(): Promise<void> {
+  // Фиксированный jobId — повторный клик Admin это no-op (deduplication)
+  await this.refreshQueue.add('refresh-mv', { source: 'manual' }, {
+    jobId: 'refresh-mv-manual',   // без Date.now() — deduplication корректна
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: false,
   });
 }
 ```
@@ -98,40 +155,26 @@ async getDashboardMeta(): Promise<DashboardMeta> {
   `;
 
   const meta = log[0];
-  // Threshold 30 минут — один период ≈ неделя, 30 мин уже явная аномалия.
-  // is_stale = TRUE выставляется немедленно при exhausted retries, не ждёт threshold.
   const isStale =
     meta.isStale ||
     differenceInMinutes(new Date(), meta.refreshedAt) > 30;
 
-  return { refreshedAt: meta.refreshedAt, isStale };
+  return {
+    refreshedAt: meta.refreshedAt,
+    isStale,
+    // minutesAgo — для баннера «Данные обновлены X минут назад»
+    minutesAgo: differenceInMinutes(new Date(), meta.refreshedAt),
+  };
 }
 ```
 
-Если `isStale = true` — показывать баннер на дашборде директора:  
-`«Данные обновлены X минут назад — обратитесь к администратору»`
-
-## Manual refresh
-
-```typescript
-// admin.controller.ts — POST /admin/refresh-dashboard
-async manualRefresh(@Query('periodId') periodId?: string): Promise<void> {
-  // Уникальный jobId даже без periodId — deduplication не сломана
-  const jobId = `refresh-mv-${periodId ?? 'manual-' + Date.now()}`;
-  await this.refreshQueue.add('refresh-mv', { periodId }, {
-    jobId,
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000 },
-    removeOnComplete: true,
-    removeOnFail: false,
-  });
-}
-```
+Если `isStale = true` — баннер на дашборде директора: *«Данные обновлены X минут назад — обратитесь к администратору»*
 
 ## Инварианты
 
-- `is_stale` выставляется немедленно при exhausted retries — директор видит баннер в течение ~35 секунд, не через 2 часа
-- Retry не запускается повторно если job с тем же `jobId` уже в очереди (BullMQ deduplication)
-- После успешного refresh `is_stale = FALSE` — баннер исчезает автоматически
-- Ручной trigger refresh доступен Admin через `POST /admin/refresh-dashboard`
-- `refreshed_at` хранится в `mv_refresh_log`, НЕ в колонке самого MV (технически невозможно разместить корректно при CONCURRENT refresh)
+- `is_stale` выставляется немедленно при exhausted retries (~35 сек), не через 2 часа.
+- Self-healing cron каждые 5 мин проверяет `is_stale` и пробует refresh — Auto-recovery без Admin.
+- Retry не запускается повторно, если job с тем же `jobId` уже в очереди (BullMQ deduplication).
+- Manual refresh использует фиксированный jobId `refresh-mv-manual` — повторный клик Admin это no-op.
+- После успешного refresh `is_stale = FALSE` — баннер исчезает автоматически.
+- `refreshed_at` хранится в `mv_refresh_log`, НЕ в самом MV (технически невозможно при CONCURRENT refresh).

@@ -1,10 +1,15 @@
 -- ============================================================
 -- CCIP — Intelligent Construction Management Platform
 -- PostgreSQL 16 Schema  |  Concept v1.5  |  Algorithm v1.3
--- Fixes applied: P-01…P-20
+-- Fixes applied: P-01…P-25
 --   P-01..P-18 — критические + важные + архитектурные
---   P-19       — version counter для офлайн-конфликтов  (ADR-003)
---   P-20       — mv_refresh_log + is_stale флаг           (ADR-004)
+--   P-19       — version counter для офлайн-конфликтов          (ADR-003)
+--   P-20       — mv_refresh_log + is_stale флаг                 (ADR-004)
+--   P-21       — refresh_tokens: хранение для revocation        (ADR-009)
+--   P-22       — boq_item_lineage_links: split/merge поддержка  (ADR-006)
+--   P-23       — расширение триггера версии на все офлайн-поля  (ADR-003)
+--   P-24       — защита sla_events от DELETE                    (ADR-005)
+--   P-25       — REVOKE UPDATE/DELETE на period_facts/audit_log (ADR-007)
 -- ============================================================
 
 
@@ -737,3 +742,162 @@ CREATE TABLE mv_refresh_log (
 -- При первом успешном REFRESH сервис обновит refreshed_at и снимет is_stale.
 INSERT INTO mv_refresh_log (view_name, refreshed_at, is_stale)
 VALUES ('mv_object_current_status', NOW(), FALSE);
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-21: REFRESH TOKENS — хранение для revocation и logout  (ADR-009)
+-- JWT Refresh Tokens хранятся хэшированными (SHA-256).
+-- Logout = UPDATE revoked_at. Race condition fix: grace period 5s.
+-- ─────────────────────────────────────────────────────────
+
+CREATE TABLE refresh_tokens (
+    id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     INTEGER      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash  VARCHAR(64)  NOT NULL UNIQUE,   -- SHA-256 hex от токена
+    issued_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    expires_at  TIMESTAMPTZ  NOT NULL,
+    revoked_at  TIMESTAMPTZ,                    -- NULL = активен
+    user_agent  TEXT,                           -- для отображения активных сессий
+    ip_address  INET
+);
+
+-- Быстрый lookup активных токенов по пользователю (для logout all devices)
+CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id)
+    WHERE revoked_at IS NULL;
+
+-- Автоочистка истёкших токенов: pg_cron или приложение удаляет WHERE expires_at < NOW()
+-- Не партиционируется: объём невелик (1 токен per сессия per пользователь).
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-22: BOQ ITEM LINEAGE LINKS — split/merge поддержка     (ADR-006)
+-- Расширяет scalar work_lineage_id для случаев split и merge позиций BoQ.
+-- При простом rename: boq_item_lineage_links пуста (backward compatible).
+-- При split: второстепенные наследники регистрируются с весом.
+-- При merge: объединённая позиция регистрирует дополнительные lineage_id.
+-- ─────────────────────────────────────────────────────────
+
+CREATE TABLE boq_item_lineage_links (
+    source_item_id  UUID          NOT NULL REFERENCES boq_items(id) ON DELETE CASCADE,
+    lineage_id      UUID          NOT NULL,
+    weight          DECIMAL(6,5)  NOT NULL DEFAULT 1.0
+                        CHECK (weight > 0 AND weight <= 1),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (source_item_id, lineage_id)
+);
+
+-- Быстрый lookup: все позиции, участвующие в lineage_id (для getCumulativeFact)
+CREATE INDEX idx_lineage_links_lineage ON boq_item_lineage_links (lineage_id);
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-23: РАСШИРЕНИЕ ТРИГГЕРА ВЕРСИИ НА ВСЕ ОФЛАЙН-ПОЛЯ     (ADR-003 rev 2)
+-- P-19 инкрементировал version только при UPDATE sc_volume.
+-- SC может редактировать офлайн также discrepancy_type и note —
+-- конфликты по этим полям не детектировались. Исправлено.
+-- ─────────────────────────────────────────────────────────
+
+-- Пересоздаём функцию с расширенным условием
+CREATE OR REPLACE FUNCTION fn_period_facts_bump_version()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    IF (NEW.sc_volume        IS DISTINCT FROM OLD.sc_volume)        OR
+       (NEW.discrepancy_type  IS DISTINCT FROM OLD.discrepancy_type) OR
+       (NEW.note              IS DISTINCT FROM OLD.note)
+    THEN
+        NEW.version := OLD.version + 1;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+-- Пересоздаём триггер: снимаем ограничение OF sc_volume → реагирует на любой UPDATE
+DROP TRIGGER IF EXISTS trg_period_facts_bump_version ON period_facts;
+
+CREATE TRIGGER trg_period_facts_bump_version
+    BEFORE UPDATE ON period_facts
+    FOR EACH ROW EXECUTE FUNCTION fn_period_facts_bump_version();
+
+-- Добавляем поле boq_version_number в sync_queue для BoQ version gating (ADR-008)
+ALTER TABLE sync_queue
+    ADD COLUMN IF NOT EXISTS boq_version_number VARCHAR(20);
+
+-- Добавляем поле is_syncing для reconciliation при рестарте приложения (ADR-008)
+ALTER TABLE sync_queue
+    ADD COLUMN IF NOT EXISTS is_syncing BOOLEAN NOT NULL DEFAULT FALSE;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-24: ЗАЩИТА SLA_EVENTS ОТ DELETE                        (ADR-005)
+-- sla_events — источник истины для recovery scan.
+-- Случайный DELETE = потеря SLA-истории и orphaned events.
+-- Для "отмены" события используется UPDATE executed_at = NOW().
+-- ─────────────────────────────────────────────────────────
+
+CREATE OR REPLACE FUNCTION fn_sla_events_no_delete()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION
+        'sla_events: DELETE запрещён. Для отмены события используйте UPDATE executed_at = NOW().';
+END;
+$$;
+
+CREATE TRIGGER trg_sla_events_no_delete
+    BEFORE DELETE ON sla_events
+    FOR EACH ROW EXECUTE FUNCTION fn_sla_events_no_delete();
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-25: REVOKE UPDATE/DELETE — DB-уровень защиты           (ADR-007)
+-- App-level assertPeriodEditable() защищает period_facts от изменений.
+-- Прямой psql / новый сервис может обойти app-проверку.
+-- Второй слой: REVOKE прав у роли приложения ccip_app.
+-- Изменение period_facts — только через SECURITY DEFINER fn_admin_correct_fact().
+-- Изменение audit_log   — запрещено полностью (append-only).
+-- ─────────────────────────────────────────────────────────
+
+-- Создаём роль приложения если не существует
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ccip_app') THEN
+        CREATE ROLE ccip_app LOGIN;
+    END IF;
+END;
+$$;
+
+-- Стандартные права для ccip_app
+GRANT SELECT, INSERT        ON period_facts  TO ccip_app;
+GRANT SELECT, INSERT        ON audit_log     TO ccip_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO ccip_app;
+-- Отзываем UPDATE/DELETE именно с period_facts и audit_log
+REVOKE UPDATE, DELETE ON period_facts FROM ccip_app;
+REVOKE UPDATE, DELETE ON audit_log    FROM ccip_app;
+
+-- SECURITY DEFINER функция для admin-correction (единственный легальный путь UPDATE period_facts)
+-- Вызывается из adminCorrectFact транзакции (ADR-007). Выполняется с правами владельца схемы.
+CREATE OR REPLACE FUNCTION fn_admin_correct_fact(
+    p_fact_id      UUID,
+    p_sc_volume    NUMERIC,
+    p_accepted     NUMERIC,
+    p_admin_id     INTEGER,
+    p_reason       TEXT
+) RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE period_facts
+    SET sc_volume = p_sc_volume, accepted_volume = p_accepted
+    WHERE id = p_fact_id;
+
+    INSERT INTO audit_log (table_name, record_id, action, old_data, new_data, reason, performed_by)
+    SELECT
+        'period_facts',
+        p_fact_id,
+        'admin_correction',
+        jsonb_build_object('sc_volume', sc_volume, 'accepted_volume', accepted_volume),
+        jsonb_build_object('sc_volume', p_sc_volume, 'accepted_volume', p_accepted),
+        p_reason,
+        p_admin_id
+    FROM period_facts WHERE id = p_fact_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION fn_admin_correct_fact TO ccip_app;
