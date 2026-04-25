@@ -75,10 +75,11 @@ CCIP — SaaS-платформа для оцифровки, верификаци
 | Компонент | Технология | Статус выбора |
 |-----------|-----------|---------------|
 | СУБД | PostgreSQL 16 | Finalized |
-| Backend framework | NestJS (Node.js) **или** FastAPI (Python) | **Не принято** |
-| Очереди / SLA | Redis + BullMQ **или** APScheduler | Зависит от backend |
+| Backend framework | **NestJS (TypeScript) + Prisma** | Finalized — см. ADR-001 |
+| Очереди / SLA | **Redis + BullMQ** (AOF-persistence обязательна) | Finalized — см. ADR-001, ADR-005 |
+| Connection pooler | PgBouncer `pool_mode=session` (или прямое соединение) | Finalized — см. ADR-001 |
 | Файловое хранилище | S3-совместимое (MinIO / AWS S3) | Finalized |
-| Auth | JWT + Refresh tokens + RBAC middleware | Finalized |
+| Auth | JWT (Access 15min + Refresh 30d) + RBAC Guards | Finalized — см. ADR-009 |
 
 ### 3.2 Сервисные слои (проектный уровень)
 
@@ -114,19 +115,26 @@ CCIP — SaaS-платформа для оцифровки, верификаци
 **Инварианты (должны поддерживаться сервисом):**
 - `SUM(boq_items.weight_coef) == 1.0` — поддерживается триггером `trg_boq_items_weight_coef`
 - `pct_ready = MIN(fact/plan×100, 100)` — не превышает 100% на уровне вида работ
-- Закрытый период физически не изменяется — только маркировка через `audit_log`
-- Конфликт офлайн-данных — `last-write-wins` запрещён, решение SC через UI
+- Закрытый период физически не изменяется — только Admin через `audit_log` (см. ADR-007)
+- Конфликт офлайн-данных — `last-write-wins` запрещён; детекция по `version`, не по timestamp (см. ADR-003)
+- Конкурентное открытие периода — `pg_advisory_xact_lock` (md5-hash) внутри транзакции (см. ADR-002)
 
 ### 3.4 SLA Scheduler — архитектура событий
+
+Полный контракт надёжности (jobId deduplication, recovery scan, K8s Recreate, lockDuration) — см. **ADR-005**.
 
 ```
 Тип 2 выставлен (day 0)
   → INSERT sla_events (scenario='A', event_type='notify_director_day3', scheduled_at=+3d)
   → INSERT sla_events (scenario='A', event_type='force_close_day5',     scheduled_at=+5d)
+  → BullMQ.add(jobId='sla-{event.id}', delay=Δt, attempts=3)
 
-Scheduler (poll по idx_sla_events_scheduled):
-  → day 3: NOTIFY director, executed_at=NOW()
-  → day 5: SET work.status='forced_sc_figure', period.status='force_closed', executed_at=NOW()
+BullMQ Worker (idempotent):
+  → day 3: NOTIFY director; UPDATE sla_events SET executed_at = NOW()
+  → day 5: SET work.status='forced_sc_figure', period.status='force_closed'
+
+При потере Redis: onModuleInit() recovery scan находит sla_events WHERE executed_at IS NULL
+                  AND scheduled_at > NOW() и пересоздаёт jobs (jobId-deduplication = no-op для существующих).
 
 Сценарий B (ГП ответил, SC не принял):
   → INSERT sla_events (scenario='B', event_type='director_deadline_day7',  scheduled_at=+7d)
@@ -135,10 +143,12 @@ Scheduler (poll по idx_sla_events_scheduled):
 
 ### 3.5 Внешний доступ ГП (stateless token)
 
-ГП не имеет учётной записи в системе. Доступ к форме подачи шаблона:
-- `periods.gp_submission_token` (UUID) генерируется при отправке шаблона
-- `periods.gp_token_expires_at` — истекает после SLA-дедлайна
+ГП не имеет учётной записи в системе. Полный контракт (Guard, одноразовость, истечение) — см. **ADR-009**.
+
+- `periods.gp_submission_token` (UUID) генерируется при открытии периода
+- `periods.gp_token_expires_at` — истекает после SLA-дедлайна (day 5 сценария A)
 - Одноразовый: после `gp_submitted_at IS NOT NULL` повторная подача блокируется
+- `GpTokenGuard` валидирует токен; эндпоинт не требует JWT
 
 ---
 
@@ -315,6 +325,8 @@ SC.closePeriod → [periods.status='closed']
 
 Решение: `boq_items.work_lineage_id` (UUID) — стабильный идентификатор, наследуется от `predecessor_item_id`. Индекс `idx_boq_items_lineage` обеспечивает O(log n) поиск по всем версиям без рекурсивного CTE.
 
+Полный контракт (создание новой версии, сервисная гарантия копирования lineage_id, аналитический запрос, инварианты) — см. **ADR-006**.
+
 ```sql
 -- Пример: суммарный факт по виду работ через все версии BoQ
 SELECT SUM(pf.accepted_volume)
@@ -366,30 +378,37 @@ WHERE bi.work_lineage_id = :target_lineage_id;
 
 ### 7.2 Партиционирование audit_log
 
+Полный контракт (pg_partman, premake=3, архивный tablespace, мониторинг default-партиции) — см. **ADR-010**.
+
 ```sql
 -- Производительность: ежемесячные партиции
 CREATE TABLE audit_log PARTITION BY RANGE (performed_at);
 CREATE TABLE audit_log_2026_04 FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
 CREATE TABLE audit_log_default PARTITION OF audit_log DEFAULT;
--- Создание партиций: DBA или pg_partman
+-- Создание партиций: pg_partman.create_parent(p_premake := 3)
 ```
 
 ### 7.3 Materialized View — стратегия обновления
 
-`mv_object_current_status` обновляется после каждого закрытия периода:
+`mv_object_current_status` обновляется после каждого закрытия периода. Полный контракт (retry через BullMQ, `mv_refresh_log` метаданные, немедленный staleness-флаг при exhausted retries) — см. **ADR-004**.
+
 ```sql
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status;
 -- CONCURRENTLY: без блокировки чтения дашборда директора
+-- Метаданные refresh: таблица mv_refresh_log (refreshed_at, is_stale)
 ```
 
 ### 7.4 Sync Queue — жизненный цикл записей
 
+Граница offline/online (какие операции допустимы офлайн, какие требуют сети) — см. **ADR-008**.  
+Детекция конфликтов через `last_known_version` (не по timestamp) и резолюция SC — см. **ADR-003**.
+
 ```
 sync_queue.status:
   pending → applied (успешно применено)
-  pending → conflict (конфликт с сервером)
+  pending → conflict (period_facts.version != last_known_version)
   pending → rejected (период уже закрыт, admin отклонил)
-  conflict → applied/rejected (SC разрешил вручную)
+  conflict → applied/rejected (SC разрешил вручную через POST /sync/resolve)
 
 Архивация: записи со status IN ('applied', 'rejected') старше 30 дней
            удаляются scheduled job (не partition — записи short-lived)
@@ -401,11 +420,13 @@ sync_queue.status:
 
 ### 8.1 Аутентификация
 
-| Механизм | Применение |
-|---------|-----------|
-| JWT Access Token | Короткоживущий, передаётся в Authorization header |
-| JWT Refresh Token | Долгоживущий, HTTP-only cookie, ротируется при обновлении |
-| GP Submission Token | UUID в URL, одноразовый, истекает по SLA, не требует auth |
+Полный контракт реализации (Guards, декораторы, GpTokenGuard, отложенный rate limiting) — см. **ADR-009**.
+
+| Механизм | TTL | Применение |
+|---------|-----|-----------|
+| JWT Access Token | 15 минут | Authorization header (Bearer) |
+| JWT Refresh Token | 30 дней | HTTP-only cookie, ротируется при обновлении |
+| GP Submission Token | до SLA-дедлайна | UUID в URL, одноразовый, не требует auth |
 
 ### 8.2 Авторизация — RBAC-матрица
 
@@ -428,8 +449,8 @@ sync_queue.status:
 
 | Аспект | Решение |
 |--------|---------|
-| **Неизменность истории** | `periods.status='closed'` → UPDATE запрещён на уровне приложения; только Admin с `audit_log` записью |
-| **Append-only audit log** | `audit_log` — только INSERT; DELETE запрещён |
+| **Неизменность истории** | `periods.status='closed'` → UPDATE запрещён на уровне приложения; только Admin через `adminCorrectFact()` с обязательной транзакционной записью в `audit_log` (см. ADR-007) |
+| **Append-only audit log** | `audit_log` — только INSERT через `AuditLogService`; UPDATE/DELETE отсутствуют как методы |
 | **Изоляция ГП** | ГП не имеет доступа к журналу расхождений, системным флагам, WMA-данным |
 | **Разграничение директора** | `director` — только read-only; write только через approval flows |
 | **Фото-метаданные** | Геотег и timestamp прикладываются автоматически; проверяются по дате верификации ±1 день |
@@ -557,13 +578,21 @@ SC Device (offline)     Network          System           Admin
 
 ### 10.1 Критические риски
 
-| # | Риск | Вероятность | Влияние | Mitigation |
-|---|------|:-----------:|:-------:|-----------|
-| **R-01** | **Backend framework не выбран** (NestJS vs FastAPI) | Высокая (сейчас) | Высокое | Требует решения до старта разработки; влияет на SLA-scheduler, ORM, тестирование |
-| **R-02** | **Конкурентное открытие периодов** | Средняя | Высокое | `pg_advisory_lock(object_id)` при назначении `period_number`; UNIQUE (object_id, period_number) как fallback |
-| **R-03** | **Офлайн-конфликты данных** на одной позиции двух SC | Средняя | Высокое | Запрет `last-write-wins`; UI конфликт-резолюции с обязательным примечанием SC |
-| **R-04** | **Дрейф materialized view** (MV устарело при сбое refresh) | Средняя | Среднее | Retry refresh после закрытия периода; добавить `calculated_at` в `readiness_snapshots` для отображения staleness |
-| **R-05** | **SLA Scheduler — single point of failure** | Средняя | Высокое | K8s: один реплика (нельзя >1 без distributed lock); Redis lock или job deduplication в BullMQ |
+Все принятые риски закрыты соответствующими ADR. Mitigation в таблице — краткая суть; полный контракт в ADR.
+
+| # | Риск | Статус | Mitigation (см. ADR) |
+|---|------|:------:|---------------------|
+| **R-01** | Backend framework не выбран | Закрыт | NestJS+Prisma+BullMQ; PgBouncer session-mode; Redis AOF — **ADR-001** |
+| **R-02** | Конкурентное открытие периодов | Закрыт | `pg_advisory_xact_lock` (md5-hash) + UNIQUE fallback — **ADR-002** |
+| **R-03** | Офлайн-конфликты данных | Закрыт | Version counter (не timestamp) + ручная резолюция SC — **ADR-003** |
+| **R-04** | Дрейф materialized view | Закрыт | BullMQ retry + `mv_refresh_log.is_stale` немедленно — **ADR-004** |
+| **R-05** | SLA Scheduler — single point of failure | Закрыт | jobId dedup + onModuleInit recovery + K8s Recreate — **ADR-005** |
+| **R-06** | Кросс-версионная агрегация факта | Закрыт | `work_lineage_id` UUID + индекс — **ADR-006** |
+| **R-07** | Нарушение неизменности закрытых периодов | Закрыт | App-level guard + Admin correction flow с audit_log — **ADR-007** |
+| **R-08** | Граница offline/online не определена | Закрыт | WatermelonDB + явный список online-only операций — **ADR-008** |
+| **R-09** | Аутентификация ГП без аккаунта | Закрыт | Stateless UUID-токен + GpTokenGuard — **ADR-009** |
+| **R-10** | Неконтролируемый рост audit_log | Закрыт | pg_partman ежемесячные партиции + premake=3 — **ADR-010** |
+| **R-11** | Дорогой live-расчёт аналитики | Закрыт | Pre-computed snapshots в транзакции close — **ADR-011** |
 
 ### 10.2 Узкие места масштабирования
 
@@ -592,8 +621,45 @@ SC Device (offline)     Network          System           Admin
 | Push-уведомления для Mobile | `notifications` таблица есть; нужен push-провайдер (FCM/APNs) |
 | ML-модули | `ml_features` таблица зарезервирована; pipeline обучения не описан |
 | Multi-tenancy | Отдельные БД на клиента vs. одна БД с `tenant_id` — не определено |
-| Rate limiting для GP token endpoint | Защита от перебора UUID токенов |
+| Rate limiting для GP token endpoint | `@Throttle` через `@nestjs/throttler` перед prod-деплоем; отложено в ADR-009 |
 | `system_config` per-object overrides | Сейчас конфиг глобальный; при нескольких ОКС на аккаунте нужен `object_config` |
+
+---
+
+## 11. Реестр архитектурных решений (ADR)
+
+Все ADR находятся в `docs/decisions/`. Каждый ADR — однострочное решение с обоснованием, отклонёнными альтернативами и контрактом реализации.
+
+| # | Тема | Статус | Закрытый риск | Файл |
+|---|------|:------:|:-------------:|------|
+| 001 | Backend Framework (NestJS+Prisma+BullMQ); требования к pooler и Redis AOF | Принято | R-01 | `decisions/ADR-001-backend-framework.md` |
+| 002 | Конкурентное открытие периодов (advisory lock + md5-hash + UNIQUE fallback) | Принято | R-02 | `decisions/ADR-002-period-concurrency.md` |
+| 003 | Офлайн-конфликты (version counter + резолюция SC) | Принято | R-03 | `decisions/ADR-003-offline-conflict-resolution.md` |
+| 004 | Materialized View staleness (`mv_refresh_log` + is_stale) | Принято | R-04 | `decisions/ADR-004-materialized-view-staleness.md` |
+| 005 | SLA Scheduler (jobId dedup + recovery scan + K8s Recreate) | Принято | R-05 | `decisions/ADR-005-sla-scheduler-reliability.md` |
+| 006 | BoQ Versioning (`work_lineage_id`) | Принято | R-06 | `decisions/ADR-006-boq-versioning.md` |
+| 007 | Period Immutability + Audit Log integrity | Принято | R-07 | `decisions/ADR-007-period-immutability.md` |
+| 008 | WatermelonDB + граница offline/online | Принято | R-08 | `decisions/ADR-008-watermelondb-offline.md` |
+| 009 | RBAC + GP Stateless Token | Принято | R-09 | `decisions/ADR-009-rbac-gp-token.md` |
+| 010 | Audit Log партиционирование (pg_partman) | Принято | R-10 | `decisions/ADR-010-audit-log-partitioning.md` |
+| 011 | Pre-computed аналитика (snapshots в транзакции close) | Принято | R-11 | `decisions/ADR-011-analytics-precomputation.md` |
+
+### Правила работы с ADR
+
+- Перед изменением кода в области, покрытой ADR, — прочитать соответствующий ADR.
+- При обнаружении противоречия "код vs ADR" — приоритет у ADR; код приводится в соответствие.
+- Новое архитектурное решение → новый ADR (не изменение существующего).
+- Изменение принятого ADR — отдельным ADR со ссылкой "Заменяет ADR-NNN".
+
+### Соответствие схеме БД
+
+| ADR | Патч schema.sql |
+|-----|-----------------|
+| ADR-002 | (использует существующий `gen_random_uuid` через md5; новых полей не требует) |
+| ADR-003 | **P-19** — `period_facts.version` + триггер + `sync_queue.last_known_version` |
+| ADR-004 | **P-20** — таблица `mv_refresh_log` |
+| ADR-006 | P-15 (уже применён) — `boq_items.work_lineage_id` + индекс |
+| ADR-010 | P-16 (уже применён) — `audit_log PARTITION BY RANGE` |
 
 ---
 

@@ -1,7 +1,10 @@
 -- ============================================================
 -- CCIP — Intelligent Construction Management Platform
--- PostgreSQL 16 Schema  |  Concept v1.4  |  Algorithm v1.3
--- Fixes applied: P-01…P-18 (all critical + important + architectural)
+-- PostgreSQL 16 Schema  |  Concept v1.5  |  Algorithm v1.3
+-- Fixes applied: P-01…P-20
+--   P-01..P-18 — критические + важные + архитектурные
+--   P-19       — version counter для офлайн-конфликтов  (ADR-003)
+--   P-20       — mv_refresh_log + is_stale флаг           (ADR-004)
 -- ============================================================
 
 
@@ -620,7 +623,8 @@ CREATE INDEX idx_period_facts_item_id    ON period_facts (boq_item_id);
 CREATE INDEX idx_period_facts_disputed   ON period_facts (boq_item_id, discrepancy_type)
     WHERE discrepancy_type = 2;
 
--- SLA scheduler poll (APScheduler scans pending events)
+-- SLA scheduler — recovery scan на onModuleInit + BullMQ delayed jobs (ADR-005).
+-- Индекс используется при recovery scan: WHERE executed_at IS NULL AND scheduled_at > NOW().
 CREATE INDEX idx_sla_events_scheduled   ON sla_events (scheduled_at)
     WHERE executed_at IS NULL AND is_cancelled = FALSE;
 
@@ -680,3 +684,56 @@ CREATE UNIQUE INDEX ON mv_object_current_status (object_id);
 
 -- Refresh command (call from application after period close):
 -- REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-19: VERSION COUNTER ДЛЯ ОФЛАЙН-КОНФЛИКТОВ              (ADR-003)
+-- Заменяет client_timestamp как основание детекции конфликтов.
+-- Часы мобильного устройства ненадёжны (clock skew) — версия инкрементируется
+-- триггером на сервере при каждом UPDATE sc_volume.
+-- ─────────────────────────────────────────────────────────
+
+ALTER TABLE period_facts
+    ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+
+-- Триггер инкрементирует version при каждом UPDATE sc_volume.
+-- INSERT не затрагивается — новая запись всегда стартует с version = 1.
+CREATE OR REPLACE FUNCTION fn_period_facts_bump_version()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.sc_volume IS DISTINCT FROM OLD.sc_volume THEN
+        NEW.version := OLD.version + 1;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_period_facts_bump_version
+    BEFORE UPDATE OF sc_volume ON period_facts
+    FOR EACH ROW EXECUTE FUNCTION fn_period_facts_bump_version();
+
+-- last_known_version — версия period_facts.version, известная устройству на момент
+-- offline-операции. При sync сервер сравнивает её с текущей: несовпадение → конфликт.
+-- client_timestamp сохраняется для аудита и UI, но НЕ для детекции конфликтов.
+ALTER TABLE sync_queue
+    ADD COLUMN last_known_version INTEGER;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-20: MV REFRESH LOG + STALENESS FLAG                    (ADR-004)
+-- refreshed_at невозможно разместить в самом MV: REFRESH заменяет все строки.
+-- Отдельная таблица хранит метаданные последнего refresh + is_stale флаг,
+-- выставляемый немедленно при exhausted retries (не ждёт threshold).
+-- ─────────────────────────────────────────────────────────
+
+CREATE TABLE mv_refresh_log (
+    view_name     VARCHAR(100) PRIMARY KEY,
+    refreshed_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    period_id     INTEGER      REFERENCES periods(id),
+    is_stale      BOOLEAN      NOT NULL DEFAULT FALSE
+);
+
+-- Начальная запись для дашборда директора.
+-- При первом успешном REFRESH сервис обновит refreshed_at и снимет is_stale.
+INSERT INTO mv_refresh_log (view_name, refreshed_at, is_stale)
+VALUES ('mv_object_current_status', NOW(), FALSE);

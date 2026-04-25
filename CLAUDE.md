@@ -14,9 +14,12 @@
 - Делать предположения без подтверждения в документации.
 - Игнорировать структуру проекта.
 - Отвечать абстрактно — только конкретно и по существу.
-- Изменять закрытые периоды (history immutability).
-- Удалять записи из `audit_log`.
-- Применять `last-write-wins` при конфликтах офлайн-синхронизации.
+- Изменять закрытые периоды иначе, чем через `adminCorrectFact()` с записью в `audit_log` (ADR-007).
+- Удалять или обновлять записи в `audit_log` — только INSERT через `AuditLogService` (ADR-007, ADR-010).
+- Применять `last-write-wins` при конфликтах офлайн-синхронизации; детекция только по `version`, не по timestamp (ADR-003).
+- Использовать `boq_items.id` для кросс-версионных аналитических запросов — только `work_lineage_id` (ADR-006).
+- Запускать SLA Scheduler в >1 реплике; деплой только `strategy: Recreate` (ADR-005).
+- Использовать transaction-mode pooler (PgBouncer `pool_mode=transaction`, AWS RDS Proxy) — нейтрализует advisory lock (ADR-001, ADR-002).
 
 **Если запрос противоречит архитектуре или документации** — сообщи об этом до выполнения.
 **Если данных недостаточно** — перечисли, что именно нужно уточнить.
@@ -61,9 +64,12 @@
 |------|------|
 | `docs/concept_oks_v1_5.md` | Полная концепция: глоссарий, бизнес-правила, UX-принципы |
 | `docs/algorithm_v1_3.md` | Формализованный алгоритм: псевдокод блоков A–I, таблица тестов, мини-кейс |
-| `backend/database/schema.sql` | PostgreSQL 16 схема (все патчи P-01..P-18 применены) |
+| `docs/architecture_v1_0.md` | Архитектурный документ: модули, слои, риски, реестр ADR (§11) |
+| `docs/decisions/ADR-001..011.md` | Архитектурные решения: контракт, обоснование, отклонённые альтернативы |
+| `backend/database/schema.sql` | PostgreSQL 16 схема (все патчи P-01..P-20 применены) |
 
-**Перед любым изменением схемы БД** — сверься с `schema.sql`. Схема уже содержит 18 архитектурных патчей.
+**Перед любым изменением схемы БД** — сверься с `schema.sql`. Схема содержит 20 архитектурных патчей.
+**Перед изменением кода в области, покрытой ADR** — прочитай соответствующий ADR. При противоречии "код vs ADR" приоритет у ADR.
 
 ---
 
@@ -107,18 +113,31 @@
 
 ## КЛЮЧЕВЫЕ АРХИТЕКТУРНЫЕ РЕШЕНИЯ
 
-### Неизменность истории
-Закрытые периоды (`periods.status = 'closed'`) **не обновляются** физически.
-Исправление возможно только через `audit_log` + маркировку `'пересчитано [дата], основание'`.
-Исключение: техническая ошибка инициализации — только по решению директора.
+> Все решения зафиксированы в `docs/decisions/ADR-NNN.md`. Раздел ниже — краткая сводка для быстрого доступа; полный контракт всегда в ADR.
+
+### Неизменность истории (ADR-007)
+Закрытые периоды (`periods.status = 'closed' | 'force_closed'`) **не обновляются** физически.
+SC и Director не могут изменять закрытые периоды — `ForbiddenException('PERIOD_ALREADY_CLOSED')` на app-level.
+Admin корректирует через `adminCorrectFact()`: транзакция = `period_facts.update` + `audit_log.create({ action: 'admin_correction', oldData, newData, reason })`.
+После корректировки `analyticsService.recalcSnapshot(periodId)` обновляет снимок.
 
 ### Весовые коэффициенты
 `ASSERT SUM(weight_coef) == 1.0` — обеспечивается триггером `trg_boq_items_weight_coef`.
 Веса привязаны к `contract_value`, **не пересчитываются при перевыполнении**.
 Источник: РДЦ (при отсутствии — ССР временно).
 
-### SLA-таймеры deadlock
-Реализованы через `sla_events`. Планировщик (APScheduler) сканирует по индексу `idx_sla_events_scheduled`.
+### Конкурентное открытие периодов (ADR-002)
+`pg_advisory_xact_lock(('x' || left(md5(object_id), 16))::bit(64)::bigint)` внутри транзакции.
+**НЕ** `hashtext()` — нестабилен между мажорными версиями PG.
+`SET LOCAL lock_timeout = '5s'` для предотвращения зависания.
+Fallback: `UNIQUE(object_id, period_number)` — отлавливает обход lock на уровне БД.
+
+### SLA-таймеры deadlock (ADR-005)
+Реализованы через `sla_events` + **BullMQ delayed jobs** (не APScheduler, не polling).
+`jobId='sla-{event.id}'` → BullMQ deduplication защищает от двойного выполнения.
+`onModuleInit()` recovery scan при старте — пересоздаёт jobs из `sla_events WHERE executed_at IS NULL` (защита от потери Redis).
+Worker: `lockDuration: 60s > terminationGracePeriodSeconds: 30s`; идемпотентная защита `if (event.executedAt) return`.
+K8s: `replicas: 1`, `strategy: Recreate` (НЕ RollingUpdate).
 
 | Сценарий | День 0 | День 3 | День 5 / 14 |
 |----------|--------|--------|-------------|
@@ -149,26 +168,43 @@ pace_weighted = Σ(volume[i] × decay_factor^i) / Σ(decay_factor^i)
 
 Флаг разрыва: `gap_flag = TRUE` когда разрыв ≥ `forecast_gap_alert` периодов.
 
-### Дашборд директора
+### Дашборд директора (ADR-004, ADR-011)
 Читается из материализованного представления `mv_object_current_status`.
 Обновляется `REFRESH MATERIALIZED VIEW CONCURRENTLY` после закрытия каждого периода.
+Метаданные refresh — отдельная таблица `mv_refresh_log (refreshed_at, is_stale)`. `is_stale = TRUE` выставляется немедленно при exhausted retries (3 попытки BullMQ ≈ 35 сек), не ждёт threshold 30 минут.
+Аналитика **pre-computed** в транзакции `closePeriod`: `work_pace`, `readiness_snapshots`. Live-расчёт на дашборде запрещён.
 
-### Офлайн-синхронизация
-- Все действия SC на устройстве пишутся в `sync_queue` с `client_timestamp`.
-- Закрытие периода — **только онлайн**.
-- При конфликте — `sync_queue.status = 'conflict'`, решение за SC (`resolved_by`).
-- `last-write-wins` не применяется.
+### Офлайн-синхронизация (ADR-003, ADR-008)
+- Все действия SC на устройстве пишутся в локальную WatermelonDB → `sync_queue`.
+- **Только онлайн** (блокируются в UI без сети): `close_period`, `submit_gp_template`, `approve_zero_report`.
+- **Доступно офлайн** (queued): `submit_fact`, `upload_photo`, `add_discrepancy_note`, `open_period`.
+- Детекция конфликта: `period_facts.version != sync_queue.last_known_version` (НЕ `client_timestamp` — clock skew).
+- Триггер `trg_period_facts_bump_version` инкрементирует `version` при UPDATE `sc_volume`.
+- При конфликте — `sync_queue.status = 'conflict'`, резолюция через `POST /sync/resolve` с `note` (обязательно).
+- `resolveConflict()` перечитывает актуальное серверное значение из БД (не из `conflict_data.server`).
+- `last-write-wins` не применяется никогда.
 
-### Версионирование BoQ
+### Версионирование BoQ (ADR-006)
 - Любое изменение L2 → новая запись в `boq_versions`.
 - Версии нумеруются инкрементально (`version_number`: `1.0`, `1.1` ...).
 - `boq_items.work_lineage_id` (UUID) — стабильный идентификатор позиции через смены версий.
+- При создании item в новой версии: `new.workLineageId = predecessor.workLineageId` (если есть predecessor) или `randomUUID()` (новая позиция).
+- Любой кросс-версионный запрос (cumulative_fact, pct_ready, история периодов) использует `work_lineage_id`, **не** `boq_item_id`.
 - Только одна активная версия: `uq_boq_versions_active` (partial unique index).
 
-### Аудит-лог
-- Таблица `audit_log` — append-only, секционирована по месяцам (`PARTITION BY RANGE`).
-- Дефолтная партиция `audit_log_default` перехватывает строки вне явных партиций.
-- Ежемесячные партиции создаёт DBA или `pg_partman`.
+### Аудит-лог (ADR-007, ADR-010)
+- Таблица `audit_log` — append-only через `AuditLogService.record()`; UPDATE/DELETE отсутствуют как методы сервиса.
+- Партиционирование по месяцам (`PARTITION BY RANGE(performed_at)`).
+- `pg_partman` с `premake=3` создаёт партиции на 3 месяца вперёд — новые строки никогда не должны попадать в `audit_log_default`.
+- Алерт на `COUNT(*) FROM audit_log_default > 0` — операционное требование.
+- Холодные партиции (>12 мес) — переносятся в архивный tablespace.
+
+### RBAC и GP Token (ADR-009)
+- NestJS Guards (`JwtAuthGuard`, `RolesGuard`) глобально; декораторы `@Roles('admin')`, `@Public()`.
+- JWT Access — 15 мин (header); JWT Refresh — 30 дней (HTTP-only cookie, ротируется).
+- GP — без аккаунта: одноразовый UUID-токен `periods.gp_submission_token` в URL.
+- `GpTokenGuard` валидирует токен; блокировка после `gp_submitted_at IS NOT NULL` или `gp_token_expires_at < NOW()`.
+- Rate limiting для `/gp/submit/:token` отложен — `@Throttle(10, 60)` перед prod-деплоем.
 
 ---
 
@@ -226,8 +262,9 @@ pace_weighted = Σ(volume[i] × decay_factor^i) / Σ(decay_factor^i)
 |-----------|--------|
 | Концепция v1.5 | Готова |
 | Алгоритм v1.3 (псевдокод + тесты) | Готов |
-| Схема PostgreSQL (schema.sql, P-01..P-18) | Готова |
-| Архитектура продукта (слои, стек) | Определена |
+| Схема PostgreSQL (schema.sql, P-01..P-20) | Готова |
+| Архитектура продукта (architecture_v1_0.md) | Готова |
+| Архитектурные решения (ADR-001..011) | Приняты |
 | Backend (API, сервисы) | Не начат |
 | Web App (React) | Не начат |
 | Mobile App (React Native, offline-first) | Не начат |
@@ -239,16 +276,17 @@ pace_weighted = Σ(volume[i] × decay_factor^i) / Σ(decay_factor^i)
 
 ## ПРИНЯТЫЙ ТЕХНОЛОГИЧЕСКИЙ СТЕК
 
-| Уровень | Технология |
-|---------|-----------|
-| СУБД | PostgreSQL 16 |
-| Backend | NestJS (Node.js) или FastAPI (Python) — решение не принято |
-| Очереди / SLA-таймеры | Redis + BullMQ (или APScheduler для Python) |
-| Файлы | S3-совместимое хранилище (MinIO / AWS S3) |
-| Web Frontend | React + TanStack Query |
-| Mobile | React Native + WatermelonDB (offline-first) |
-| Auth | JWT + Refresh tokens + RBAC middleware |
-| Инфраструктура | Docker Compose → Kubernetes |
+| Уровень | Технология | ADR |
+|---------|-----------|-----|
+| СУБД | PostgreSQL 16 | — |
+| Backend | **NestJS (TypeScript) + Prisma** | ADR-001 |
+| Очереди / SLA-таймеры | **Redis + BullMQ** (AOF persistence обязательна) | ADR-001, ADR-005 |
+| Connection pooler | PgBouncer `pool_mode=session` или прямое соединение (НЕ transaction-mode, НЕ AWS RDS Proxy) | ADR-001, ADR-002 |
+| Файлы | S3-совместимое хранилище (MinIO / AWS S3) | — |
+| Web Frontend | React + TanStack Query | — |
+| Mobile | React Native + **WatermelonDB** (offline-first, SQLite + reactive queries) | ADR-008 |
+| Auth | JWT (Access 15min + Refresh 30d) + RBAC Guards + GpTokenGuard | ADR-009 |
+| Инфраструктура | Docker Compose → Kubernetes (SLA worker: `replicas: 1`, `strategy: Recreate`) | ADR-005 |
 
 ---
 
