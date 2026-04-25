@@ -1,8 +1,8 @@
 # CCIP — Архитектурный документ
 
 **Construction Control & Intelligence Platform**
-*На основе: Концепция v1.5 · Алгоритм v1.3 · Schema PostgreSQL 16 (P-01..P-25)*
-*Дата составления: 2026-04-23 · Обновлён: 2026-04-25 (rev 2 — ADR audit)*
+*На основе: Концепция v1.5 · Алгоритм v1.3 · Schema PostgreSQL 16 (P-01..P-32)*
+*Дата составления: 2026-04-23 · Обновлён: 2026-04-25 (rev 3 — ADR-012..014, §10.4 закрыт)*
 
 ---
 
@@ -638,16 +638,16 @@ SC Device (offline)     Network          System           Admin
 | **GP Token expiry race** | Закрыто в ADR-009 rev 2: `gpTokenExpiresAt = sla_force_close_at - 1h`. Буфер 1 час исключает гонку ГП с force_close. |
 | **Конфликт смены ГП mid-dispute** | Блокировка при наличии `'Оспорено'` покрывает это; уведомление нового ГП о pre-existing спорах требует явной процедуры (не описана). |
 
-### 10.4 Архитектурные пробелы (требуют решений)
+### 10.4 Архитектурные пробелы
 
-| Пробел | Рекомендация |
-|--------|-------------|
-| PDF-генерация отчётов | Определить движок (Puppeteer/WeasyPrint) и шаблоны; хранить в S3 |
-| Push-уведомления для Mobile | `notifications` таблица есть; нужен push-провайдер (FCM/APNs) |
-| ML-модули | `ml_features` таблица зарезервирована; pipeline обучения не описан |
-| Multi-tenancy | RLS vs `organization_id` в WHERE — зафиксировать в **ADR-012** до начала backend-разработки; Prisma-слой уже фильтрует по `objectId` |
-| `system_config` per-object overrides | Сейчас конфиг глобальный; при нескольких ОКС на аккаунте нужен `object_config` |
-| Performance contract БД | Лимиты пула (`DB_POOL_SIZE` per pod), batch query rule, SLA транзакций — зафиксированы в ADR-001 rev 2 |
+| Пробел | Статус | Решение |
+|--------|:------:|---------|
+| Multi-tenancy | **Закрыт** | `organization_id` в WHERE + Prisma TenantExtension + per-org `system_config` — **ADR-012** |
+| `system_config` per-object overrides | **Закрыт (defer)** | Per-org config достаточен для MVP/pilot; per-object overrides отложены — зафиксировано в **ADR-012** |
+| PDF-генерация отчётов | **Закрыт** | Puppeteer + Handlebars + BullMQ async + S3 — **ADR-013** |
+| Push-уведомления для Mobile | **Закрыт** | Firebase Cloud Messaging (FCM) + `device_tokens` + `NotificationService` расширен — **ADR-014** |
+| ML-модули | **Закрыт (defer)** | `ml_features` / `forecast_scenarios` — только сбор данных; обучение pipeline вне скоупа MVP и пилота; решение пересмотреть после 6 месяцев данных |
+| Performance contract БД | **Закрыт** | `DB_POOL_SIZE` per pod, batch query rule, SLA транзакций — **ADR-001 rev 2** |
 
 ---
 
@@ -668,6 +668,9 @@ SC Device (offline)     Network          System           Admin
 | 009 | RBAC + GP Stateless Token + refresh_tokens в БД + rate limiting включён | Принято rev 2 | R-09 | `decisions/ADR-009-rbac-gp-token.md` |
 | 010 | Audit Log партиционирование (composite PK + health-check endpoint) | Принято rev 2 | R-10 | `decisions/ADR-010-audit-log-partitioning.md` |
 | 011 | Pre-computed аналитика (batch queries + recalcSnapshot в транзакции + каскад) | Принято rev 2 | R-11 | `decisions/ADR-011-analytics-precomputation.md` |
+| 012 | Multi-tenancy: `organization_id` в WHERE + Prisma TenantExtension + per-org system_config + per-object config defer | Принято | §10.4 | `decisions/ADR-012-multitenancy.md` |
+| 013 | PDF-отчёты: Puppeteer + Handlebars + BullMQ async + S3; ресурсные лимиты K8s | Принято | §10.4 | `decisions/ADR-013-pdf-reports.md` |
+| 014 | Push-уведомления: FCM + `device_tokens` + NotificationService расширен; best-effort send | Принято | §10.4 | `decisions/ADR-014-push-notifications.md` |
 
 ### Правила работы с ADR
 
@@ -688,6 +691,9 @@ SC Device (offline)     Network          System           Admin
 | ADR-007 | **P-25** — `REVOKE UPDATE,DELETE` + `fn_admin_correct_fact` (SECURITY DEFINER) |
 | ADR-009 | **P-21** — `refresh_tokens` |
 | ADR-010 | P-16 (уже применён) — `audit_log PARTITION BY RANGE` |
+| ADR-012 | **P-26** — `organizations`; **P-27** — `users.organization_id`, `objects.organization_id`; **P-28** — `system_config.organization_id` + новый UNIQUE `(organization_id, key)`; **P-29** — `audit_log.organization_id` |
+| ADR-013 | **P-30** — `periods.report_url`, `report_generated_at`, `report_generation_failed`; **P-31** — `objects.summary_report_url`, `summary_report_generated_at` |
+| ADR-014 | **P-32** — `device_tokens(id, user_id, fcm_token, platform, device_id, registered_at, is_active)` |
 
 ---
 
@@ -695,8 +701,9 @@ SC Device (offline)     Network          System           Admin
 
 | Компонент | Тип | Статус | Таблицы БД |
 |-----------|-----|--------|-----------|
-| Конфигурация L0 | Config store | Схема готова | `system_config` |
-| Паспорт объекта | Master data | Схема готова | `objects`, `object_participants` |
+| Тенанты | Multi-tenancy anchor | Схема готова (P-26..P-29) | `organizations` |
+| Конфигурация L0 | Config store (per-org) | Схема готова (P-28) | `system_config` |
+| Паспорт объекта | Master data | Схема готова (P-27) | `objects`, `object_participants` |
 | BoQ Versioning | Document versioning | Схема готова | `boq_versions`, `boq_items` |
 | 0-Report Engine | One-time workflow | Схема готова | `zero_reports`, `zero_report_items` |
 | Period Engine | Recurring workflow | Схема готова | `periods`, `period_facts`, `photos` |
@@ -708,12 +715,13 @@ SC Device (offline)     Network          System           Admin
 | Auth Tokens | Refresh token storage | Схема готова | `refresh_tokens` |
 | BoQ Lineage | Split/merge support | Схема готова | `boq_item_lineage_links` |
 | Notifications | Delivery tracking | Схема готова | `notifications` |
-| ML / Forecast | Reserved | Схема готова | `ml_features`, `forecast_scenarios` |
+| Push Notifications | FCM delivery | Схема готова (P-32) | `device_tokens` |
+| ML / Forecast | Reserved (data collection only) | Схема готова | `ml_features`, `forecast_scenarios` |
 | Backend API | Service layer | **Не начат** | — |
 | Web App | React SPA | **Не начат** | — |
 | Mobile App | React Native offline-first | **Не начат** | — |
 | SLA Scheduler | Background worker (ROLE=worker) | **Не начат** | `sla_events` |
-| PDF Reports | Report generation | **Не начат** | — |
+| PDF Reports | Async Puppeteer + S3 | **Не начат** (схема P-30..P-31) | — |
 
 ---
 
