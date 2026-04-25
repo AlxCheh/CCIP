@@ -1,5 +1,12 @@
 # CCIP — Technical Delivery Plan v1.0
 
+> ⚠️ **Этот файл разбит на фазовые документы.** Используйте `docs/delivery/` вместо этого файла:
+> - [critical-path.md](delivery/critical-path.md) — критический путь, MVP-чеклист, DAG
+> - [phase-0-architecture-gaps.md](delivery/phase-0-architecture-gaps.md) — ADR-012, пробелы
+> - [phase-1-3-foundation-backend.md](delivery/phase-1-3-foundation-backend.md) — репо, Auth, Init A
+> - [phase-4-7-backend-modules.md](delivery/phase-4-7-backend-modules.md) — ZeroReport, PeriodEngine, DisputeSLA, Analytics, Sync
+> - [phase-8-13-infra-pilot.md](delivery/phase-8-13-infra-pilot.md) — Web, Mobile, Security, Testing, Infra, Pilot
+
 **Дата:** 2026-04-25  
 **Основание:** architecture_v1_0.md · ADR-001..011 · schema.sql (P-01..P-25)  
 **Статус входных артефактов:** схема БД готова, все ADR приняты, код не начат
