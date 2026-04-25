@@ -1,112 +1,41 @@
 # ADR-013 — PDF-генерация отчётов: Puppeteer + S3 + async BullMQ
 
-**Статус:** Принято  
-**Дата:** 2026-04-25  
-**Закрытый пробел §10.4:** PDF-генерация отчётов
+**Статус:** Принято
+**Закрытый риск/пробел:** §10.4
 
----
-
-## Решение (одна строка)
-
-PDF генерируется через Puppeteer (headless Chromium); HTML-шаблоны рендерит NestJS + Handlebars; готовый файл сохраняется в S3; генерация асинхронна через BullMQ job — `closePeriod` не блокируется.
-
----
+## Решение
+PDF генерируется через Puppeteer (headless Chromium) + Handlebars-шаблоны; файл в S3; генерация async через BullMQ — `closePeriod` не блокируется.
 
 ## Контекст
-
-Два типа документов нужны в пилоте:
-1. **Акт периода** — итоговые объёмы по позициям BoQ, расхождения, accepted_volume, подписанты; передаётся Заказчику как доказательный документ.
-2. **Сводный отчёт объекта** — % готовности по снимкам, WMA-темп, прогнозы, флаги; читает Director на совещании.
-
-Генерация не входит в критический путь MVP (§10.4 arch: «зарезервировано»), но нужна до production rollout.
-
----
+Два типа документов: Акт периода (объёмы, расхождения, подписанты) и Сводный отчёт объекта (% готовности, прогнозы). Синхронная генерация в HTTP-запросе блокирует `closePeriod` на 5–15 сек — недопустимо.
 
 ## Практический кейс
-
-SC закрывает период 7 складского центра класса А. `closePeriod()` записывает `readiness_snapshots`, делает REFRESH MV, затем ставит в BullMQ очередь `pdf-reports` job `{ type: 'period_report', periodId }`. Через ~10 секунд Puppeteer рендерит HTML-шаблон акта, загружает PDF в S3 (`reports/objects/{objectId}/periods/{periodId}/act.pdf`), обновляет `periods.report_url`. Director открывает страницу периода — видит кнопку «Скачать акт» с presigned S3 URL.
-
-Если Puppeteer упал (OOM kill), BullMQ retry × 2 с экспоненциальным backoff (30s, 90s). После 3 неудач — `periods.report_generation_failed = TRUE`, уведомление admin.
-
----
+SC закрывает период 7. `closePeriod` фиксирует snapshot, REFRESH MV, затем `BullMQ.add('pdf-reports', {type:'period_report', periodId})`. PdfWorker (~10 сек) рендерит Handlebars-шаблон, загружает PDF в S3, обновляет `periods.report_url`. Director открывает страницу — кнопка «Скачать акт» (presigned URL, TTL 15 мин). При OOM kill Puppeteer: retry ×2 (backoff 30 с, 90 с). После 3 неудач: `report_generation_failed=TRUE`, уведомление Admin.
 
 ## Контракт реализации
 
-### Архитектура потока
+**Шаблоны:** `src/pdf/templates/period-act.hbs` (`period`, `period_facts[]`, `discrepancies[]`, `boq_items[]`, `object_participants[]`); `src/pdf/templates/object-summary.hbs` (`object`, `readiness_snapshots[]`, `mv_object_current_status`).
 
-```
-closePeriod() транзакция
-    └─► [после commit] BullMQ.add('pdf-reports', { type, id }, { attempts: 3, backoff: exponential })
+**PdfWorker flow:** `PdfService.renderHtml(template, data)` → `Puppeteer.launch()` → `page.setContent(html)` → `page.pdf({format:'A4'})` → `S3Service.upload(buffer, key)` → `prisma.periods.update({report_url, report_generated_at})`.
 
-PdfWorker (ROLE=worker, тот же pod что и SLA-scheduler):
-    ├─► PdfService.renderHtml(templateName, data)   — Handlebars + данные из БД
-    ├─► Puppeteer.launch() → page.setContent(html) → page.pdf({ format: 'A4', ... })
-    ├─► S3Service.upload(buffer, key)
-    └─► prisma.periods.update({ report_url, report_generated_at })
-         OR prisma.objects.update({ summary_report_url })
-```
+**Puppeteer:** `--no-sandbox --disable-dev-shm-usage` в K8s. Один инстанс browser на lifecycle воркера, `browser.newPage()` на каждый job. `page.setDefaultTimeout(30_000)`.
 
-### Шаблоны
+**K8s resources:** requests `memory:256Mi cpu:250m`; limits `memory:512Mi cpu:1000m`.
 
-| Шаблон | Путь | Данные |
-|--------|------|--------|
-| Акт периода | `src/pdf/templates/period-act.hbs` | `period`, `period_facts[]`, `discrepancies[]`, `boq_items[]`, `object_participants[]` |
-| Сводный отчёт | `src/pdf/templates/object-summary.hbs` | `object`, `readiness_snapshots[]`, последний `mv_object_current_status` |
+**S3 path:** `reports/objects/{objectId}/periods/{periodId}/act_{periodNumber}_{generatedAt}.pdf`; `reports/objects/{objectId}/summary_{generatedAt}.pdf`. Retention: 3 года (S3 lifecycle). Versioning включено.
 
-### Ресурсные ограничения (K8s)
+**API:** `GET /objects/:id/periods/:periodId/report` → 302 presigned URL (TTL 15 мин) | 404+`{generating:true}` | 500 если `report_generation_failed=TRUE`.
 
-```yaml
-resources:
-  requests:
-    memory: "256Mi"
-    cpu: "250m"
-  limits:
-    memory: "512Mi"   # Puppeteer/Chromium — 200–400 MB в пике
-    cpu: "1000m"
-```
-
-Puppeteer запускается с `--no-sandbox --disable-dev-shm-usage` в K8s-контейнере (нет user namespace). Один инстанс Puppeteer переиспользуется между job-ами (`browser.newPage()` на каждый job, `browser` живёт весь lifecycle worker-а). Timeout: 30 секунд на страницу (`page.setDefaultTimeout(30_000)`).
-
-### API endpoints
-
-```
-GET /objects/:id/periods/:periodId/report
-    → 302 presigned S3 URL (TTL 15 min)
-    → 404 если report_url IS NULL + { generating: true } если job в очереди
-    → 500 если report_generation_failed = TRUE
-
-GET /objects/:id/summary-report
-    → аналогично для объектного отчёта
-```
-
-### Хранение в S3
-
-```
-reports/
-  objects/{objectId}/
-    periods/{periodId}/
-      act_{periodNumber}_{generatedAt}.pdf
-    summary_{generatedAt}.pdf
-```
-
-Retention: 3 года (S3 lifecycle policy). Versioning: включено — перегенерация создаёт новую версию, старая не удаляется.
-
----
+**BullMQ job:** `attempts:3`, `backoff:{type:'exponential', delay:30_000}`, `removeOnComplete:true`, `removeOnFail:false`.
 
 ## Патчи схемы БД
-
-| Патч | Содержание |
-|------|-----------|
-| **P-30** | `periods.report_url TEXT`, `periods.report_generated_at TIMESTAMPTZ`, `periods.report_generation_failed BOOLEAN DEFAULT FALSE` |
-| **P-31** | `objects.summary_report_url TEXT`, `objects.summary_report_generated_at TIMESTAMPTZ` |
-
----
+**P-30** — `periods.report_url TEXT`, `periods.report_generated_at TIMESTAMPTZ`, `periods.report_generation_failed BOOLEAN DEFAULT FALSE`
+**P-31** — `objects.summary_report_url TEXT`, `objects.summary_report_generated_at TIMESTAMPTZ`
 
 ## Отклонённые альтернативы
-
-| Альтернатива | Причина отклонения |
-|-------------|-------------------|
-| WeasyPrint (Python) | Дополнительный Python-контейнер; IPC через HTTP; команда не работает с Python; CSS-поддержка хуже Chromium |
-| @react-pdf/renderer | Нет HTML/CSS — ручная вёрстка таблиц; сложные условные стили; ограниченный набор компонентов |
-| Synchronous (в HTTP-запросе) | Блокирует closePeriod на 5–15 сек; недопустимо для UX; риск timeout |
-| Отдельный PDF-микросервис | Избыточно для монолита; можно добавить позже при необходимости горизонтального масштабирования |
+| Альтернатива | Причина |
+|---|---|
+| WeasyPrint (Python) | Дополнительный Python-контейнер; команда без Python-опыта |
+| @react-pdf/renderer | Нет HTML/CSS; ручная вёрстка таблиц; ограниченные стили |
+| Synchronous в HTTP | Блокирует closePeriod на 5–15 сек; риск timeout |
+| Отдельный PDF-микросервис | Избыточно для монолита на данном этапе |

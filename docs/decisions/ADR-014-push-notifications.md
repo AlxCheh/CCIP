@@ -1,148 +1,43 @@
 # ADR-014 — Push-уведомления: Firebase Cloud Messaging (FCM)
 
-**Статус:** Принято  
-**Дата:** 2026-04-25  
-**Закрытый пробел §10.4:** Push-уведомления для Mobile
+**Статус:** Принято
+**Закрытый риск/пробел:** §10.4
 
----
-
-## Решение (одна строка)
-
-Push-уведомления мобильным SC-инженерам доставляются через Firebase Cloud Messaging (FCM); FCM-токены устройств хранятся в `device_tokens`; отправка встроена в существующий `NotificationService` — insert в `notifications` и push идут в одной транзакции логики.
-
----
+## Решение
+Push через FCM; FCM-токены устройств в `device_tokens`; отправка встроена в `NotificationService` — INSERT `notifications` и push логически атомарны; FCM fire-and-forget (ошибка не откатывает уведомление).
 
 ## Контекст
-
-`notifications` таблица существует (хранит `user_id`, `type`, `reference_table`, `reference_id`, `message`, `read_at`). Web-клиент читает уведомления поллингом. Мобильный SC-инженер работает на объекте — не смотрит браузер. Критичные события, требующие push:
-
-- SLA day-3: уведомление директору о споре (→ директор может быть в мобайле)
-- SLA day-5 force_close: SC разблокирован — может закрывать период
-- Конфликт offline sync: `sync_queue.status = 'conflict'` — SC должен разрешить вручную
-- 0-отчёт ожидает утверждения `zero_report_alert_days` дней
-- UpdateBaseline approved/rejected
-
----
+`notifications` таблица уже существует для web-поллинга. SC работает на объекте вне браузера. Критичные события требуют push: SLA force_close, offline sync conflict, zero_report alert, UpdateBaseline approved/rejected.
 
 ## Практический кейс
-
-SC-инженер Иванов в туннеле стройплощадки — 8 часов без сети. На сервере BullMQ worker отработал day-5 force_close по объекту «Складской центр этап 2»: `periods.status = 'force_closed'`, SLA разблокирован. `NotificationService` создаёт запись в `notifications` и вызывает `FcmService.send(userId=Иванов)`. FCM удерживает push до 28 дней (default TTL). Иванов выходит из туннеля — телефон получает: «Период 7 разблокирован после force_close. Можете закрыть период.»
-
-При возврате онлайн: WatermelonDB sync + push tap → открывается нужный период напрямую (deep link `/objects/:id/periods/:id`).
-
----
+BullMQ worker выполняет day-5 force_close объекта «Склад этап 2». `NotificationService.notify(userId=Иванов, type='force_close_unlocked')` пишет в `notifications` и вызывает `FcmService.sendMulticast`. SC в туннеле — FCM удерживает push до 28 дней (default TTL). При выходе из туннеля телефон получает push, tap → deep link `/objects/:id/periods/:id`.
 
 ## Контракт реализации
 
-### Таблица device_tokens
+**P-32:** `device_tokens(id UUID PK, user_id UUID FK CASCADE, fcm_token TEXT, platform TEXT CHECK(IN('android','ios')), device_id TEXT, registered_at TIMESTAMPTZ, is_active BOOLEAN DEFAULT TRUE)`. Индекс `idx_device_tokens_user_active ON (user_id) WHERE is_active=TRUE`. Unique `uq_device_tokens_device ON (device_id) WHERE device_id IS NOT NULL`.
 
-```sql
-CREATE TABLE device_tokens (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  fcm_token     TEXT NOT NULL,
-  platform      TEXT NOT NULL CHECK (platform IN ('android', 'ios')),
-  device_id     TEXT,          -- client-side идентификатор для замены старых токенов
-  registered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  is_active     BOOLEAN NOT NULL DEFAULT TRUE
-);
-CREATE INDEX idx_device_tokens_user_active ON device_tokens(user_id) WHERE is_active = TRUE;
-CREATE UNIQUE INDEX uq_device_tokens_device ON device_tokens(device_id) WHERE device_id IS NOT NULL;
-```
+**API:**
+- `POST /devices/register` — `{fcmToken, platform, deviceId?}`, `JwtAuthGuard`. Upsert по `device_id`; старый токен того же `device_id` → `is_active=FALSE`.
+- `POST /devices/unregister` — `{fcmToken}` → `is_active=FALSE`. Вызывается при logout.
 
-Один пользователь — несколько устройств: допустимо. Старый токен того же `device_id` деактивируется при регистрации нового (`is_active = FALSE`).
+**`NotificationService.notify(userId, type, refTable, refId, message, opts?)`:**
+1. `INSERT notifications` — всегда
+2. `findMany device_tokens WHERE userId AND is_active=TRUE` → `FcmService.sendMulticast(tokens, {title, body, data:{refTable,refId,type}})` — `catch(err => logger.error)` (fire-and-forget)
 
-### API
+**Обработка ошибок FCM:**
+| Ошибка | Действие |
+|---|---|
+| `REGISTRATION_TOKEN_NOT_VALID` | `device_tokens.is_active=FALSE` |
+| `QUOTA_EXCEEDED` | Log + BullMQ delayed retry через 60 сек |
+| `INTERNAL` / network | Log warn; уведомление придёт при следующем открытии app |
 
-```
-POST /devices/register
-  body: { fcmToken: string, platform: 'android'|'ios', deviceId?: string }
-  auth: JwtAuthGuard (любая роль)
-  → upsert device_tokens по device_id (или insert нового)
+**FCM init:** Firebase Admin SDK инициализируется один раз в `FcmModule.onModuleInit()`. Credentials из K8s Secret `fcm-service-account` (keys: `project_id`, `private_key`, `client_email`).
 
-POST /devices/unregister
-  body: { fcmToken: string }
-  → device_tokens.is_active = FALSE
-
-(вызывается при logout из mobile)
-```
-
-### NotificationService — расширенный контракт
-
-```typescript
-async notify(userId, type, refTable, refId, message, opts?: { push?: boolean }) {
-  // 1. Всегда: INSERT notifications
-  await prisma.notification.create({ data: { userId, type, ... } });
-
-  // 2. Если push !== false: отправить FCM (fire-and-forget, ошибка не прерывает)
-  const tokens = await prisma.deviceToken.findMany({
-    where: { userId, isActive: true }
-  });
-  if (tokens.length) {
-    await this.fcmService.sendMulticast(tokens.map(t => t.fcmToken), {
-      title: FCM_TITLES[type],
-      body:  message,
-      data:  { refTable, refId, type },  // для deep link в mobile
-    }).catch(err => this.logger.error('FCM send failed', err));
-  }
-}
-```
-
-Push — best-effort: ошибка FCM (сеть, неверный токен) не откатывает INSERT `notifications`.
-
-### Обработка ошибок FCM
-
-| FCM ошибка | Действие |
-|-----------|---------|
-| `REGISTRATION_TOKEN_NOT_VALID` | `device_tokens.is_active = FALSE` |
-| `QUOTA_EXCEEDED` | Log + retry через 60 секунд (BullMQ delayed job) |
-| `INTERNAL` / network | Log warn; пользователь увидит уведомление при следующем открытии app |
-
-### FCM конфигурация (K8s)
-
-```yaml
-# Secret: fcm-service-account
-env:
-  - name: FIREBASE_PROJECT_ID
-    valueFrom: { secretKeyRef: { name: fcm-service-account, key: project_id } }
-  - name: FIREBASE_PRIVATE_KEY
-    valueFrom: { secretKeyRef: { name: fcm-service-account, key: private_key } }
-  - name: FIREBASE_CLIENT_EMAIL
-    valueFrom: { secretKeyRef: { name: fcm-service-account, key: client_email } }
-```
-
-Firebase Admin SDK инициализируется один раз в `FcmModule.onModuleInit()`.
-
-### Mobile: React Native
-
-```typescript
-// apps/mobile: @react-native-firebase/messaging
-messaging().onMessage(async remoteMessage => {
-  // foreground push → local notification + обновить WatermelonDB badge
-});
-messaging().setBackgroundMessageHandler(async remoteMessage => {
-  // background / killed → OS shows notification; tap → deep link via remoteMessage.data
-});
-// При login:
-const fcmToken = await messaging().getToken();
-await api.post('/devices/register', { fcmToken, platform: Platform.OS, deviceId });
-```
-
----
-
-## Патчи схемы БД
-
-| Патч | Содержание |
-|------|-----------|
-| **P-32** | Таблица `device_tokens` (см. выше) |
-
----
+**Mobile (React Native, @react-native-firebase/messaging):** `onMessage` (foreground) → local notification + WatermelonDB badge; `setBackgroundMessageHandler` (background/killed) → OS notification + deep link через `remoteMessage.data`. При login: `getToken()` → `POST /devices/register`.
 
 ## Отклонённые альтернативы
-
-| Альтернатива | Причина отклонения |
-|-------------|-------------------|
-| APNs напрямую | Только iOS; нужен отдельный сертификат; FCM всё равно нужен для Android |
-| OneSignal | Vendor lock-in; платный при росте MAU; FCM SDK бесплатен; дополнительная зависимость от внешнего SaaS |
-| WebSocket polling (mobile) | Не работает при killed app; battery drain; FCM = нативный механизм |
-| Polling `GET /notifications` | Уже есть для web; недостаточно для mobile без фонового режима |
+| Альтернатива | Причина |
+|---|---|
+| APNs напрямую | Только iOS; FCM нужен для Android в любом случае |
+| OneSignal | Vendor lock-in; платный при росте MAU |
+| WebSocket polling (mobile) | Не работает при killed app; battery drain |
