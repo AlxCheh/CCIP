@@ -61,17 +61,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck (all packages)
-        run: pnpm turbo typecheck
-
-      - name: Lint
-        run: pnpm turbo lint
-
       - name: Prisma validate
         run: pnpm --filter @ccip/database exec prisma validate
 
       - name: Prisma generate
         run: pnpm --filter @ccip/database run db:generate
+
+      - name: Typecheck (all packages)
+        run: pnpm turbo typecheck
+
+      - name: Lint
+        run: pnpm turbo lint
 
       - name: Prisma migrate deploy
         run: pnpm --filter @ccip/database run migrate:deploy
