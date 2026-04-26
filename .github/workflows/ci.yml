@@ -64,9 +64,6 @@ jobs:
       - name: Prisma validate
         run: pnpm --filter @ccip/database exec prisma validate
 
-      - name: Prisma generate
-        run: pnpm --filter @ccip/database run db:generate
-
       - name: Typecheck (all packages)
         run: pnpm turbo typecheck
 

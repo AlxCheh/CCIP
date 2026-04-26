@@ -14,7 +14,7 @@
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^db:generate"],
       "outputs": []
     },
     "test": {
@@ -23,7 +23,7 @@
       "env": ["DATABASE_URL", "REDIS_URL", "JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"]
     },
     "db:generate": {
-      "outputs": ["node_modules/.prisma/**"]
+      "outputs": ["src/generated/**"]
     },
     "migrate:deploy": {
       "cache": false
