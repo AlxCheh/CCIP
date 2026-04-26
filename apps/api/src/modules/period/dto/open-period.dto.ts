@@ -1,6 +1,9 @@
-import { IsUUID } from 'class-validator';
+import { IsInt, IsPositive } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class OpenPeriodDto {
-  @IsUUID()
-  objectId: string;
+  @IsInt()
+  @IsPositive()
+  @Type(() => Number)
+  objectId!: number;
 }

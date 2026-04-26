@@ -7,7 +7,7 @@ import {
   Body,
   Request,
   UseGuards,
-  ParseUUIDPipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -23,18 +23,18 @@ export class PeriodController {
   @Post('open')
   @Roles('sc', 'admin')
   open(@Body() dto: OpenPeriodDto, @Request() req: any) {
-    return this.periodService.openPeriod(dto.objectId, req.user.id);
+    return this.periodService.openPeriod(dto.objectId, parseInt(req.user.id, 10));
   }
 
   @Patch(':id/close')
   @Roles('sc', 'admin')
-  close(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
-    return this.periodService.closePeriod(id, req.user.id);
+  close(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+    return this.periodService.closePeriod(id, parseInt(req.user.id, 10));
   }
 
   @Get('by-object/:objectId')
   @Roles('director', 'sc', 'gp', 'admin')
-  byObject(@Param('objectId', ParseUUIDPipe) objectId: string) {
+  byObject(@Param('objectId', ParseIntPipe) objectId: number) {
     return this.periodService.findByObject(objectId);
   }
 }

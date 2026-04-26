@@ -9,11 +9,15 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 export class PeriodService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async openPeriod(objectId: string, actorId: string) {
+  async openPeriod(objectId: number, actorId: number) {
     return this.prisma.$transaction(async (tx) => {
-      // Advisory lock: UUID → bigint через hashtext (ADR-002)
       await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${objectId})::bigint)`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${String(objectId)})::bigint)`;
+
+      const obj = await tx.constructionObject.findUniqueOrThrow({
+        where: { id: objectId },
+        select: { organizationId: true },
+      });
 
       const zeroReport = await tx.zeroReport.findFirst({
         where: { objectId, status: 'approved' },
@@ -34,9 +38,15 @@ export class PeriodService {
         orderBy: { periodNumber: 'desc' },
       });
 
+      const boqVersion = await tx.boqVersion.findFirstOrThrow({
+        where: { objectId, isActive: true },
+        select: { id: true },
+      });
+
       const period = await tx.period.create({
         data: {
           objectId,
+          boqVersionId: boqVersion.id,
           periodNumber: (last?.periodNumber ?? 0) + 1,
           status: 'open',
           openedBy: actorId,
@@ -46,10 +56,12 @@ export class PeriodService {
 
       await tx.auditLog.create({
         data: {
-          periodId: period.id,
-          actorId,
+          tableName: 'periods',
+          recordId: BigInt(period.id),
           action: 'period_opened',
-          payload: { objectId, periodNumber: period.periodNumber },
+          newData: { objectId, periodNumber: period.periodNumber },
+          performedBy: actorId,
+          organizationId: obj.organizationId,
         },
       });
 
@@ -57,10 +69,11 @@ export class PeriodService {
     });
   }
 
-  async closePeriod(periodId: string, actorId: string) {
+  async closePeriod(periodId: number, actorId: number) {
     return this.prisma.$transaction(async (tx) => {
       const period = await tx.period.findUniqueOrThrow({
         where: { id: periodId },
+        include: { object: { select: { organizationId: true } } },
       });
 
       if (period.status !== 'open') {
@@ -69,14 +82,16 @@ export class PeriodService {
 
       const updated = await tx.period.update({
         where: { id: periodId },
-        data: { status: 'closed', closedAt: new Date() },
+        data: { status: 'closed', closedAt: new Date(), closedBy: actorId },
       });
 
       await tx.auditLog.create({
         data: {
-          periodId,
-          actorId,
+          tableName: 'periods',
+          recordId: BigInt(periodId),
           action: 'period_closed',
+          performedBy: actorId,
+          organizationId: period.object.organizationId,
         },
       });
 
@@ -84,7 +99,7 @@ export class PeriodService {
     });
   }
 
-  async findByObject(objectId: string) {
+  async findByObject(objectId: number) {
     return this.prisma.period.findMany({
       where: { objectId },
       orderBy: { periodNumber: 'desc' },
