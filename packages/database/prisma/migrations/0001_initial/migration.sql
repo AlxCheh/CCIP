@@ -600,27 +600,9 @@ CREATE TABLE sync_queue (
 
 
 -- ─────────────────────────────────────────────────────────
--- INTEGRITY CONSTRAINTS  (P-01 … P-07 partial indexes & triggers)
--- ─────────────────────────────────────────────────────────
-
--- P-01: only one current participant per role per object
-CREATE UNIQUE INDEX uq_object_participants_current
-    ON object_participants (object_id, participant_role)
-    WHERE is_current = TRUE;
-
--- P-02: only one *approved* zero report per object
-CREATE UNIQUE INDEX uq_zero_reports_approved
-    ON zero_reports (object_id)
-    WHERE status = 'approved';
-
--- P-05: only one active BoQ version per object
-CREATE UNIQUE INDEX uq_boq_versions_active
-    ON boq_versions (object_id)
-    WHERE is_active = TRUE;
-
-
--- ─────────────────────────────────────────────────────────
 -- INDEXES (performance — critical query paths)
+-- NOTE: uq_object_participants_current, uq_zero_reports_approved,
+--       uq_boq_versions_active already created inline with their tables above.
 -- ─────────────────────────────────────────────────────────
 
 -- Period lookups by object
@@ -644,8 +626,7 @@ CREATE INDEX idx_sla_events_scheduled   ON sla_events (scheduled_at)
 CREATE INDEX idx_work_pace_item_period  ON work_pace (boq_item_id, period_id DESC)
     WHERE is_excluded = FALSE;
 
--- Cross-version fact aggregation (P-15: work_lineage_id replaces recursive CTE)
-CREATE INDEX idx_boq_items_lineage      ON boq_items (work_lineage_id);
+-- Cross-version fact aggregation (P-15) — idx_boq_items_lineage already created inline above
 
 -- Audit trail lookup by record
 CREATE INDEX idx_audit_log_record       ON audit_log (table_name, record_id, performed_at DESC);

@@ -28,8 +28,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ccip_dev_pass}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Init script runs schema.sql on first startup
-      - ../../packages/database/prisma/migrations/0001_initial/migration.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      # Schema is applied via `prisma migrate deploy`, NOT via initdb
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     networks:
