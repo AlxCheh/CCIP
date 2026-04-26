@@ -1,7 +1,7 @@
 -- ============================================================
 -- CCIP — Intelligent Construction Management Platform
 -- PostgreSQL 16 Schema  |  Concept v1.5  |  Algorithm v1.3
--- Fixes applied: P-01…P-25
+-- Fixes applied: P-01…P-32
 --   P-01..P-18 — критические + важные + архитектурные
 --   P-19       — version counter для офлайн-конфликтов          (ADR-003)
 --   P-20       — mv_refresh_log + is_stale флаг                 (ADR-004)
@@ -10,6 +10,13 @@
 --   P-23       — расширение триггера версии на все офлайн-поля  (ADR-003)
 --   P-24       — защита sla_events от DELETE                    (ADR-005)
 --   P-25       — REVOKE UPDATE/DELETE на period_facts/audit_log (ADR-007)
+--   P-26       — organizations: корневая таблица тенанта        (ADR-012)
+--   P-27       — organization_id в users и objects              (ADR-012)
+--   P-28       — system_config per-tenant PK (organization_id, key) (ADR-012)
+--   P-29       — audit_log.organization_id (денорм.)            (ADR-012)
+--   P-30       — periods: поля PDF-отчёта                       (ADR-013)
+--   P-31       — objects: поля сводного отчёта                  (ADR-013)
+--   P-32       — device_tokens для FCM push                     (ADR-014)
 -- ============================================================
 
 
@@ -778,7 +785,7 @@ CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id)
 -- ─────────────────────────────────────────────────────────
 
 CREATE TABLE boq_item_lineage_links (
-    source_item_id  UUID          NOT NULL REFERENCES boq_items(id) ON DELETE CASCADE,
+    source_item_id  INTEGER       NOT NULL REFERENCES boq_items(id) ON DELETE CASCADE,
     lineage_id      UUID          NOT NULL,
     weight          DECIMAL(6,5)  NOT NULL DEFAULT 1.0
                         CHECK (weight > 0 AND weight <= 1),
@@ -876,7 +883,7 @@ REVOKE UPDATE, DELETE ON audit_log    FROM ccip_app;
 -- SECURITY DEFINER функция для admin-correction (единственный легальный путь UPDATE period_facts)
 -- Вызывается из adminCorrectFact транзакции (ADR-007). Выполняется с правами владельца схемы.
 CREATE OR REPLACE FUNCTION fn_admin_correct_fact(
-    p_fact_id      UUID,
+    p_fact_id      INTEGER,
     p_sc_volume    NUMERIC,
     p_accepted     NUMERIC,
     p_admin_id     INTEGER,
@@ -901,3 +908,137 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION fn_admin_correct_fact TO ccip_app;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-26: ORGANIZATIONS — корневая таблица тенанта           (ADR-012)
+-- Все tenant-owned ресурсы ссылаются на organizations.id.
+-- ─────────────────────────────────────────────────────────
+
+CREATE TABLE organizations (
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    name       TEXT        NOT NULL,
+    slug       TEXT        UNIQUE NOT NULL,
+    plan       TEXT        NOT NULL DEFAULT 'starter',
+    is_active  BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Dev seed: детерминированный UUID для локальной разработки и начальных миграций
+INSERT INTO organizations (id, name, slug, plan, is_active)
+VALUES ('00000000-0000-0000-0000-000000000001', 'Default Organization', 'default', 'starter', TRUE);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON organizations TO ccip_app;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-27: organization_id В USERS И OBJECTS                  (ADR-012)
+-- ─────────────────────────────────────────────────────────
+
+ALTER TABLE users
+    ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE RESTRICT;
+
+UPDATE users
+    SET organization_id = '00000000-0000-0000-0000-000000000001'
+    WHERE organization_id IS NULL;
+
+ALTER TABLE users
+    ALTER COLUMN organization_id SET NOT NULL;
+
+ALTER TABLE objects
+    ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE RESTRICT;
+
+UPDATE objects
+    SET organization_id = '00000000-0000-0000-0000-000000000001'
+    WHERE organization_id IS NULL;
+
+ALTER TABLE objects
+    ALTER COLUMN organization_id SET NOT NULL;
+
+CREATE INDEX idx_users_org   ON users   (organization_id);
+CREATE INDEX idx_objects_org ON objects (organization_id);
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-28: SYSTEM_CONFIG — PER-TENANT КОНФИГУРАЦИЯ            (ADR-012)
+-- PK (key) → составной PK (organization_id, key).
+-- Seed-строки (INSERT выше) backfill-ятся через UPDATE.
+-- ─────────────────────────────────────────────────────────
+
+ALTER TABLE system_config
+    ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE RESTRICT;
+
+UPDATE system_config
+    SET organization_id = '00000000-0000-0000-0000-000000000001'
+    WHERE organization_id IS NULL;
+
+ALTER TABLE system_config
+    ALTER COLUMN organization_id SET NOT NULL;
+
+ALTER TABLE system_config DROP CONSTRAINT system_config_pkey;
+ALTER TABLE system_config ADD PRIMARY KEY (organization_id, key);
+
+CREATE INDEX idx_system_config_org ON system_config (organization_id);
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-29: AUDIT_LOG — ДЕНОРМАЛИЗОВАННЫЙ organization_id      (ADR-012)
+-- Для per-tenant запросов без JOIN к objects/users.
+-- Партиционированная таблица: ALTER propagates на все партиции.
+-- ─────────────────────────────────────────────────────────
+
+ALTER TABLE audit_log
+    ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE RESTRICT;
+
+UPDATE audit_log
+    SET organization_id = '00000000-0000-0000-0000-000000000001'
+    WHERE organization_id IS NULL;
+
+ALTER TABLE audit_log
+    ALTER COLUMN organization_id SET NOT NULL;
+
+CREATE INDEX idx_audit_log_org ON audit_log (organization_id, performed_at DESC);
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-30: PERIODS — ПОЛЯ PDF-ОТЧЁТА                          (ADR-013)
+-- ─────────────────────────────────────────────────────────
+
+ALTER TABLE periods
+    ADD COLUMN report_url               TEXT,
+    ADD COLUMN report_generated_at      TIMESTAMPTZ,
+    ADD COLUMN report_generation_failed BOOLEAN NOT NULL DEFAULT FALSE;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-31: OBJECTS — ПОЛЯ СВОДНОГО ОТЧЁТА                     (ADR-013)
+-- ─────────────────────────────────────────────────────────
+
+ALTER TABLE objects
+    ADD COLUMN summary_report_url          TEXT,
+    ADD COLUMN summary_report_generated_at TIMESTAMPTZ;
+
+
+-- ─────────────────────────────────────────────────────────
+-- P-32: DEVICE TOKENS ДЛЯ FCM PUSH-УВЕДОМЛЕНИЙ             (ADR-014)
+-- ADR-014 указывает user_id UUID — исправлено на INTEGER
+-- (users.id SERIAL; см. errors_log.md #BUG-003).
+-- ─────────────────────────────────────────────────────────
+
+CREATE TABLE device_tokens (
+    id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       INTEGER     NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    fcm_token     TEXT        NOT NULL,
+    platform      TEXT        NOT NULL CHECK (platform IN ('android', 'ios')),
+    device_id     TEXT,
+    registered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_active     BOOLEAN     NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX idx_device_tokens_user_active
+    ON device_tokens (user_id) WHERE is_active = TRUE;
+
+CREATE UNIQUE INDEX uq_device_tokens_device
+    ON device_tokens (device_id) WHERE device_id IS NOT NULL;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON device_tokens TO ccip_app;

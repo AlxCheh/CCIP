@@ -98,10 +98,11 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
       k8s/           # Kubernetes manifests
     docs/            # architecture, ADR, delivery plan
   ```
-  - Артефакт: репозиторий с `.gitignore`, `turbo.json` / `nx.json`, `pnpm-workspace.yaml`
+  - Артефакт: репозиторий с `.gitignore`, `turbo.json`, `pnpm-workspace.yaml`
+  - **Monorepo-инструмент: Turborepo** (подтверждено 2026-04-26)
 
 - `[H]` Создать `packages/database` — Prisma schema из `schema.sql`
-  - Перевести все P-01..P-25 в `schema.prisma`
+  - Перевести все P-01..P-32 в `schema.prisma`
   - Создать начальную миграцию `0001_initial`
   - ⚠️ ADR-001: `pool_mode=session` — настроить в `DATABASE_URL` с `pgbouncer=true` если PgBouncer
   - Артефакт: `packages/database/schema.prisma` + `migrations/0001_initial.sql`
