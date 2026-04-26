@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  ci:
+    name: Lint · Typecheck · Prisma · Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ccip_test
+          POSTGRES_USER: ccip_owner
+          POSTGRES_PASSWORD: ccip_test_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ccip_owner -d ccip_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://ccip_owner:ccip_test_pass@localhost:5432/ccip_test
+      REDIS_URL: redis://localhost:6379
+      JWT_ACCESS_SECRET: ci-access-secret-at-least-32-chars-long
+      JWT_REFRESH_SECRET: ci-refresh-secret-at-least-32-chars-long
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (all packages)
+        run: pnpm turbo typecheck
+
+      - name: Lint
+        run: pnpm turbo lint
+
+      - name: Prisma validate
+        run: pnpm --filter @ccip/database exec prisma validate
+
+      - name: Prisma generate
+        run: pnpm --filter @ccip/database run db:generate
+
+      - name: Prisma migrate deploy
+        run: pnpm --filter @ccip/database run migrate:deploy
+
+      - name: Test
+        run: pnpm turbo test
+        env:
+          CI: true

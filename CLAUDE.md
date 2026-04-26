@@ -16,12 +16,17 @@
 
 |Слой|Статус|Где смотреть|
 |---|---|---|
-|Схема PostgreSQL (P-01..P-32)|✅ Готова|`backend/database/schema.sql`|
+|Схема PostgreSQL (P-01..P-32)|✅ Готова|`backend/database/schema.sql` (эталон) → миграция `packages/database/prisma/migrations/0001_initial/migration.sql`|
 |ADR-001..014 (все риски R-01..R-11 + §10.4 закрыты)|✅ Приняты|`docs/decisions/ADR-NNN-*.md`|
-|Backend API (NestJS+Prisma)|⛔ Не начат|—|
-|Web App (React+TanStack)|⛔ Не начат|—|
-|Mobile App (RN+WatermelonDB)|⛔ Не начат|—|
-|SLA Scheduler (BullMQ worker)|⛔ Не начат|—|
+|Монорепо (Turborepo + pnpm)|✅ Этап 1|`pnpm-workspace.yaml`, `turbo.json`, `apps/`, `packages/`|
+|Prisma schema (27 моделей)|✅ Этап 1|`packages/database/prisma/schema.prisma` (validate ✅)|
+|Docker Compose (dev)|✅ Этап 1|`infra/docker/docker-compose.yml` (postgres/redis/minio/pgbouncer/mailhog)|
+|Seed-скрипт|✅ Этап 1|`packages/database/prisma/seed.ts`|
+|Shared types (@ccip/shared)|✅ Этап 1|`packages/shared/src/types.ts` (все enum-ы)|
+|Backend API (NestJS+Prisma)|🔄 Этап 2 — следующий|`apps/api/`|
+|Web App (React+TanStack)|⛔ Этап 8|`apps/web/`|
+|Mobile App (RN+WatermelonDB)|⛔ Этап 9|—|
+|SLA Scheduler (BullMQ worker)|⛔ Этап 5|—|
 
 > ⚠️ **Правило версионности:** при добавлении ADR, патча схемы (P-NN), смене статуса компонента или обновлении ревизии документа — обновить эту таблицу в том же коммите/изменении.
 
@@ -46,7 +51,9 @@
 
 - **`docs/concept_oks_v1_5.md`** — концепция (бизнес-правила, роли, верификация §6.5, журнал §10).
 - **`docs/algorithm_v1_3.md`** — алгоритмы (формулы pct_ready, WMA, два прогноза, 11 параметров L0).
-- **`backend/database/schema.sql`** — DDL (таблицы, триггеры, индексы, патчи P-01..P-32).
+- **`backend/database/schema.sql`** — DDL-эталон (таблицы, триггеры, индексы, патчи P-01..P-32).
+- **`packages/database/prisma/schema.prisma`** — Prisma-схема (27 моделей, validate ✅).
+- **`packages/database/prisma/migrations/0001_initial/migration.sql`** — первая миграция (= schema.sql).
 
 ### 🔴 Файл ошибок и инцидентов (обязательно для агента)
 

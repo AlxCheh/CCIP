@@ -1,0 +1,120 @@
+version: '3.9'
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+
+networks:
+  ccip:
+    driver: bridge
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+# ─── Services ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL 16 ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ccip_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ccip}
+      POSTGRES_USER: ${POSTGRES_USER:-ccip_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ccip_dev_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Init script runs schema.sql on first startup
+      - ../../packages/database/prisma/migrations/0001_initial/migration.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - ccip
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ccip_owner} -d ${POSTGRES_DB:-ccip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── PgBouncer (ADR-001: pool_mode=session) ────────────────────────────────────
+  pgbouncer:
+    image: edoburu/pgbouncer:1.23.1
+    container_name: ccip_pgbouncer
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-ccip_owner}:${POSTGRES_PASSWORD:-ccip_dev_pass}@postgres:5432/${POSTGRES_DB:-ccip}
+      POOL_MODE: session
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - "${PGBOUNCER_PORT:-5433}:5432"
+    networks:
+      - ccip
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis 7 (AOF persistence — ADR-005) ──────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ccip_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --requirepass ${REDIS_PASSWORD:-ccip_redis_dev}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - ccip
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-ccip_redis_dev}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── MinIO (S3-compatible storage) ────────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: ccip_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-ccip_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-ccip_minio_dev_pass}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - ccip
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  # ── MailHog (SMTP trap for dev) ───────────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ccip_mailhog
+    restart: unless-stopped
+    ports:
+      - "${SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - ccip

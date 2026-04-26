@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+
+# Prisma generated client
+node_modules/.prisma/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Coverage
+coverage/
+
+# Turbo cache
+.turbo/
+
+# Docker volumes
+infra/docker/volumes/
+
+# MinIO data
+infra/docker/data/

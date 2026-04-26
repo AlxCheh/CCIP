@@ -1,0 +1,618 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Organizations (P-26, ADR-012) ──────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  plan      String   @default("starter")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @db.Timestamptz() @map("created_at")
+
+  users         User[]
+  objects       ConstructionObject[]
+  systemConfigs SystemConfig[]
+  auditLogs     AuditLog[]
+
+  @@map("organizations")
+}
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique @db.VarChar(255)
+  name           String   @db.VarChar(255)
+  role           String   @db.VarChar(50)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @db.Timestamptz() @map("created_at")
+  organizationId String   @db.Uuid @map("organization_id")
+
+  organization           Organization             @relation(fields: [organizationId], references: [id])
+  createdObjects         ConstructionObject[]     @relation("ObjectCreatedBy")
+  changedParticipants    ObjectParticipant[]      @relation("ParticipantChangedBy")
+  uploadedDocuments      L2Document[]             @relation("DocumentUploadedBy")
+  createdBoqVersions     BoqVersion[]             @relation("BoqVersionCreatedBy")
+  approvedBoqVersions    BoqVersion[]             @relation("BoqVersionApprovedBy")
+  submittedZeroReports   ZeroReport[]             @relation("ZeroReportSubmittedBy")
+  approvedZeroReports    ZeroReport[]             @relation("ZeroReportApprovedBy")
+  openedPeriods          Period[]                 @relation("PeriodOpenedBy")
+  siteVisitPeriods       Period[]                 @relation("PeriodSiteVisitBy")
+  closedPeriods          Period[]                 @relation("PeriodClosedBy")
+  resolvedDiscrepancies  Discrepancy[]            @relation("DiscrepancyResolvedBy")
+  uploadedPhotos         Photo[]                  @relation("PhotoUploadedBy")
+  notifications          Notification[]
+  requestedBaselines     BaselineUpdateRequest[]  @relation("BaselineRequestedBy")
+  reviewedBaselines      BaselineUpdateRequest[]  @relation("BaselineReviewedBy")
+  createdScenarios       ForecastScenario[]       @relation("ScenarioCreatedBy")
+  syncQueues             SyncQueue[]              @relation("SyncQueueUser")
+  resolvedSyncs          SyncQueue[]              @relation("SyncQueueResolvedBy")
+  performedAuditLogs     AuditLog[]               @relation("AuditLogPerformedBy")
+  refreshTokens          RefreshToken[]
+  deviceTokens           DeviceToken[]
+  updatedSystemConfigs   SystemConfig[]           @relation("SystemConfigUpdatedBy")
+
+  @@map("users")
+}
+
+// ─── System Config (P-28, ADR-012) ───────────────────────────────────────────
+
+model SystemConfig {
+  key            String   @db.VarChar(100)
+  organizationId String   @db.Uuid @map("organization_id")
+  valueType      String   @default("numeric") @db.VarChar(10) @map("value_type")
+  valueNumeric   Decimal? @map("value_numeric")
+  valueText      String?  @map("value_text")
+  description    String?
+  updatedAt      DateTime? @db.Timestamptz() @map("updated_at")
+  updatedBy      Int?      @map("updated_by")
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  updatedByUser  User?        @relation("SystemConfigUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@id([organizationId, key])
+  @@index([organizationId], map: "idx_system_config_org")
+  @@map("system_config")
+}
+
+// ─── Construction Objects (L1) ───────────────────────────────────────────────
+
+model ConstructionObject {
+  id                      Int      @id @default(autoincrement())
+  name                    String   @db.VarChar(500)
+  objectClass             String?  @db.VarChar(100) @map("object_class")
+  address                 String?
+  permitNumber            String?  @db.VarChar(100) @map("permit_number")
+  permitDate              DateTime? @db.Date @map("permit_date")
+  constructionStart       DateTime? @db.Date @map("construction_start")
+  connectionDate          DateTime? @db.Date @map("connection_date")
+  status                  String   @default("active") @db.VarChar(50)
+  createdAt               DateTime @default(now()) @db.Timestamptz() @map("created_at")
+  createdBy               Int?     @map("created_by")
+  organizationId          String   @db.Uuid @map("organization_id")
+  summaryReportUrl        String?  @map("summary_report_url")
+  summaryReportGeneratedAt DateTime? @db.Timestamptz() @map("summary_report_generated_at")
+
+  organization            Organization             @relation(fields: [organizationId], references: [id])
+  createdByUser           User?                    @relation("ObjectCreatedBy", fields: [createdBy], references: [id])
+  participants            ObjectParticipant[]
+  documents               L2Document[]
+  boqVersions             BoqVersion[]
+  zeroReports             ZeroReport[]
+  periods                 Period[]
+  readinessSnapshots      ReadinessSnapshot[]      @relation("ReadinessSnapshotObject")
+  baselineUpdateRequests  BaselineUpdateRequest[]
+  forecastScenarios       ForecastScenario[]
+  mlFeatures              MlFeature[]
+
+  @@index([organizationId], map: "idx_objects_org")
+  @@map("objects")
+}
+
+// ─── Object Participants (SCD Type 2) ────────────────────────────────────────
+
+model ObjectParticipant {
+  id              Int      @id @default(autoincrement())
+  objectId        Int      @map("object_id")
+  participantRole String   @db.VarChar(50) @map("participant_role")
+  orgName         String   @db.VarChar(500) @map("org_name")
+  contactPerson   String?  @db.VarChar(255) @map("contact_person")
+  contactEmail    String?  @db.VarChar(255) @map("contact_email")
+  validFrom       DateTime @db.Date @map("valid_from")
+  validTo         DateTime? @db.Date @map("valid_to")
+  isCurrent       Boolean  @default(true) @map("is_current")
+  changedReason   String?  @map("changed_reason")
+  changedAt       DateTime? @db.Timestamptz() @map("changed_at")
+  changedBy       Int?     @map("changed_by")
+
+  object         ConstructionObject @relation(fields: [objectId], references: [id])
+  changedByUser  User?              @relation("ParticipantChangedBy", fields: [changedBy], references: [id])
+
+  @@map("object_participants")
+}
+
+// ─── L2 Documents ────────────────────────────────────────────────────────────
+
+model L2Document {
+  id          Int      @id @default(autoincrement())
+  objectId    Int      @map("object_id")
+  docType     String   @db.VarChar(50) @map("doc_type")
+  version     String   @db.VarChar(20)
+  filePath    String   @map("file_path")
+  uploadedAt  DateTime @default(now()) @db.Timestamptz() @map("uploaded_at")
+  uploadedBy  Int?     @map("uploaded_by")
+
+  object         ConstructionObject @relation(fields: [objectId], references: [id])
+  uploadedByUser User?              @relation("DocumentUploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("l2_documents")
+}
+
+// ─── BoQ Versions ────────────────────────────────────────────────────────────
+
+model BoqVersion {
+  id             Int      @id @default(autoincrement())
+  objectId       Int      @map("object_id")
+  versionNumber  String   @db.VarChar(20) @map("version_number")
+  changeType     String   @default("initial") @db.VarChar(50) @map("change_type")
+  changeReason   String?  @map("change_reason")
+  changeDocument String?  @map("change_document")
+  createdAt      DateTime @default(now()) @db.Timestamptz() @map("created_at")
+  createdBy      Int?     @map("created_by")
+  approvedAt     DateTime? @db.Timestamptz() @map("approved_at")
+  approvedBy     Int?     @map("approved_by")
+  isActive       Boolean  @default(false) @map("is_active")
+
+  object          ConstructionObject @relation(fields: [objectId], references: [id])
+  createdByUser   User?              @relation("BoqVersionCreatedBy", fields: [createdBy], references: [id])
+  approvedByUser  User?              @relation("BoqVersionApprovedBy", fields: [approvedBy], references: [id])
+  boqItems        BoqItem[]
+  zeroReports     ZeroReport[]
+  periods         Period[]
+
+  @@unique([objectId, versionNumber])
+  @@map("boq_versions")
+}
+
+// ─── BoQ Items ────────────────────────────────────────────────────────────────
+
+model BoqItem {
+  id                Int      @id @default(autoincrement())
+  boqVersionId      Int      @map("boq_version_id")
+  workLineageId     String   @default(uuid()) @db.Uuid @map("work_lineage_id")
+  workCode          String   @db.VarChar(100) @map("work_code")
+  name              String
+  unit              String?  @db.VarChar(50)
+  planVolume        Decimal  @map("plan_volume")
+  contractValue     Decimal  @map("contract_value")
+  weightCoef        Decimal? @map("weight_coef")
+  isCritical        Boolean  @default(false) @map("is_critical")
+  status            String   @default("active") @db.VarChar(50)
+  predecessorItemId Int?     @map("predecessor_item_id")
+
+  boqVersion      BoqVersion            @relation(fields: [boqVersionId], references: [id])
+  predecessorItem BoqItem?              @relation("BoqItemPredecessor", fields: [predecessorItemId], references: [id])
+  successorItems  BoqItem[]             @relation("BoqItemPredecessor")
+  lineageLinks    BoqItemLineageLink[]
+  zeroReportItems ZeroReportItem[]
+  periodFacts     PeriodFact[]
+  photos          Photo[]
+  slaEvents       SlaEvent[]
+  workPaces       WorkPace[]
+  baselineUpdates BaselineUpdateRequest[]
+
+  @@unique([boqVersionId, workCode])
+  @@index([workLineageId], map: "idx_boq_items_lineage")
+  @@map("boq_items")
+}
+
+// ─── BoQ Item Lineage Links (P-22, ADR-006) ──────────────────────────────────
+
+model BoqItemLineageLink {
+  sourceItemId Int     @map("source_item_id")
+  lineageId    String  @db.Uuid @map("lineage_id")
+  weight       Decimal @default(1.0) @db.Decimal(6, 5)
+  createdAt    DateTime @default(now()) @db.Timestamptz() @map("created_at")
+
+  sourceItem   BoqItem @relation(fields: [sourceItemId], references: [id], onDelete: Cascade)
+
+  @@id([sourceItemId, lineageId])
+  @@index([lineageId], map: "idx_lineage_links_lineage")
+  @@map("boq_item_lineage_links")
+}
+
+// ─── Zero Reports ────────────────────────────────────────────────────────────
+
+model ZeroReport {
+  id            Int      @id @default(autoincrement())
+  objectId      Int      @map("object_id")
+  boqVersionId  Int      @map("boq_version_id")
+  status        String   @default("draft") @db.VarChar(50)
+  submittedAt   DateTime? @db.Timestamptz() @map("submitted_at")
+  submittedBy   Int?     @map("submitted_by")
+  approvedAt    DateTime? @db.Timestamptz() @map("approved_at")
+  approvedBy    Int?     @map("approved_by")
+  alertSentAt   DateTime? @db.Timestamptz() @map("alert_sent_at")
+  notes         String?
+
+  object          ConstructionObject @relation(fields: [objectId], references: [id])
+  boqVersion      BoqVersion         @relation(fields: [boqVersionId], references: [id])
+  submittedByUser User?              @relation("ZeroReportSubmittedBy", fields: [submittedBy], references: [id])
+  approvedByUser  User?              @relation("ZeroReportApprovedBy", fields: [approvedBy], references: [id])
+  items           ZeroReportItem[]
+
+  @@map("zero_reports")
+}
+
+// ─── Zero Report Items ────────────────────────────────────────────────────────
+
+model ZeroReportItem {
+  id            Int      @id @default(autoincrement())
+  zeroReportId  Int      @map("zero_report_id")
+  boqItemId     Int      @map("boq_item_id")
+  factVolume    Decimal  @map("fact_volume")
+  source        String   @db.VarChar(50)
+  doc1Value     Decimal? @map("doc1_value")
+  doc2Value     Decimal? @map("doc2_value")
+  doc3Value     Decimal? @map("doc3_value")
+  crossVerified Boolean  @default(false) @map("cross_verified")
+  notes         String?
+
+  zeroReport ZeroReport @relation(fields: [zeroReportId], references: [id])
+  boqItem    BoqItem    @relation(fields: [boqItemId], references: [id])
+
+  @@unique([zeroReportId, boqItemId])
+  @@map("zero_report_items")
+}
+
+// ─── Periods ──────────────────────────────────────────────────────────────────
+
+model Period {
+  id                   Int      @id @default(autoincrement())
+  objectId             Int      @map("object_id")
+  periodNumber         Int      @map("period_number")
+  boqVersionId         Int      @map("boq_version_id")
+  status               String   @default("open") @db.VarChar(50)
+  openedAt             DateTime @default(now()) @db.Timestamptz() @map("opened_at")
+  openedBy             Int?     @map("opened_by")
+  gpTemplateSentAt     DateTime? @db.Timestamptz() @map("gp_template_sent_at")
+  gpSubmissionToken    String?  @db.Uuid @map("gp_submission_token")
+  gpTokenExpiresAt     DateTime? @db.Timestamptz() @map("gp_token_expires_at")
+  gpSubmittedAt        DateTime? @db.Timestamptz() @map("gp_submitted_at")
+  gpSubmittedByName    String?  @db.VarChar(255) @map("gp_submitted_by_name")
+  siteVisitAt          DateTime? @db.Timestamptz() @map("site_visit_at")
+  siteVisitBy          Int?     @map("site_visit_by")
+  closedAt             DateTime? @db.Timestamptz() @map("closed_at")
+  closedBy             Int?     @map("closed_by")
+  isZeroPeriod         Boolean  @default(false) @map("is_zero_period")
+  zeroPeriodReason     String?  @db.VarChar(100) @map("zero_period_reason")
+  reportUrl            String?  @map("report_url")
+  reportGeneratedAt    DateTime? @db.Timestamptz() @map("report_generated_at")
+  reportGenerationFailed Boolean @default(false) @map("report_generation_failed")
+
+  object           ConstructionObject    @relation(fields: [objectId], references: [id])
+  boqVersion       BoqVersion            @relation(fields: [boqVersionId], references: [id])
+  openedByUser     User?                 @relation("PeriodOpenedBy", fields: [openedBy], references: [id])
+  siteVisitByUser  User?                 @relation("PeriodSiteVisitBy", fields: [siteVisitBy], references: [id])
+  closedByUser     User?                 @relation("PeriodClosedBy", fields: [closedBy], references: [id])
+  periodFacts      PeriodFact[]
+  photos           Photo[]
+  slaEvents        SlaEvent[]
+  readinessSnapshot ReadinessSnapshot?
+  workPaces        WorkPace[]
+  baselineRequests BaselineUpdateRequest[] @relation("BaselineAppliesFromPeriod")
+  mlFeatures       MlFeature[]
+  mvRefreshLog     MvRefreshLog[]
+
+  @@unique([objectId, periodNumber])
+  @@index([objectId, periodNumber(sort: Desc)], map: "idx_periods_object_id")
+  @@map("periods")
+}
+
+// ─── Period Facts ──────────────────────────────────────────────────────────────
+
+model PeriodFact {
+  id                 Int      @id @default(autoincrement())
+  periodId           Int      @map("period_id")
+  boqItemId          Int      @map("boq_item_id")
+  gpVolume           Decimal? @map("gp_volume")
+  gpNote             String?  @map("gp_note")
+  scVolume           Decimal? @map("sc_volume")
+  acceptedVolume     Decimal? @map("accepted_volume")
+  discrepancyType    Int?     @map("discrepancy_type")
+  discrepancyStatus  String?  @db.VarChar(50) @map("discrepancy_status")
+  overrunPct         Decimal? @map("overrun_pct")
+  overrunNote        String?  @map("overrun_note")
+  isSpike            Boolean  @default(false) @map("is_spike")
+  spikeResponse      String?  @db.VarChar(50) @map("spike_response")
+  version            Int      @default(1)
+
+  period      Period       @relation(fields: [periodId], references: [id])
+  boqItem     BoqItem      @relation(fields: [boqItemId], references: [id])
+  discrepancies Discrepancy[]
+
+  @@unique([periodId, boqItemId])
+  @@index([periodId], map: "idx_period_facts_period_id")
+  @@index([boqItemId], map: "idx_period_facts_item_id")
+  @@map("period_facts")
+}
+
+// ─── Discrepancies ────────────────────────────────────────────────────────────
+
+model Discrepancy {
+  id               Int      @id @default(autoincrement())
+  periodFactId     Int      @map("period_fact_id")
+  type             Int
+  status           String   @default("open") @db.VarChar(50)
+  gpPosition       String?  @map("gp_position")
+  scPosition       String?  @map("sc_position")
+  directorDecision String?  @map("director_decision")
+  resolvedAt       DateTime? @db.Timestamptz() @map("resolved_at")
+  resolvedBy       Int?     @map("resolved_by")
+  createdAt        DateTime @default(now()) @db.Timestamptz() @map("created_at")
+
+  periodFact     PeriodFact @relation(fields: [periodFactId], references: [id])
+  resolvedByUser User?      @relation("DiscrepancyResolvedBy", fields: [resolvedBy], references: [id])
+
+  @@map("discrepancies")
+}
+
+// ─── Photos ───────────────────────────────────────────────────────────────────
+
+model Photo {
+  id          Int      @id @default(autoincrement())
+  periodId    Int      @map("period_id")
+  boqItemId   Int?     @map("boq_item_id")
+  filePath    String   @map("file_path")
+  takenAt     DateTime? @db.Timestamptz() @map("taken_at")
+  uploadedBy  Int?     @map("uploaded_by")
+  createdAt   DateTime @default(now()) @db.Timestamptz() @map("created_at")
+
+  period         Period  @relation(fields: [periodId], references: [id])
+  boqItem        BoqItem? @relation(fields: [boqItemId], references: [id])
+  uploadedByUser User?   @relation("PhotoUploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("photos")
+}
+
+// ─── SLA Events ───────────────────────────────────────────────────────────────
+
+model SlaEvent {
+  id          Int      @id @default(autoincrement())
+  periodId    Int      @map("period_id")
+  boqItemId   Int?     @map("boq_item_id")
+  scenario    String   @db.Char(1)
+  eventType   String   @db.VarChar(60) @map("event_type")
+  scheduledAt DateTime @db.Timestamptz() @map("scheduled_at")
+  executedAt  DateTime? @db.Timestamptz() @map("executed_at")
+  isCancelled Boolean  @default(false) @map("is_cancelled")
+
+  period  Period   @relation(fields: [periodId], references: [id])
+  boqItem BoqItem? @relation(fields: [boqItemId], references: [id])
+
+  @@index([scheduledAt], map: "idx_sla_events_scheduled")
+  @@map("sla_events")
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id             BigInt   @id @default(autoincrement())
+  userId         Int      @map("user_id")
+  type           String   @db.VarChar(80)
+  referenceTable String?  @db.VarChar(100) @map("reference_table")
+  referenceId    BigInt?  @map("reference_id")
+  message        String
+  createdAt      DateTime @default(now()) @db.Timestamptz() @map("created_at")
+  readAt         DateTime? @db.Timestamptz() @map("read_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "idx_notifications_unread")
+  @@map("notifications")
+}
+
+// ─── Readiness Snapshots ──────────────────────────────────────────────────────
+
+model ReadinessSnapshot {
+  id                        Int      @id @default(autoincrement())
+  periodId                  Int      @unique @map("period_id")
+  objectId                  Int      @map("object_id")
+  objectReadinessPct        Decimal  @map("object_readiness_pct")
+  weightedForecastDate      DateTime? @db.Date @map("weighted_forecast_date")
+  criticalPathForecastDate  DateTime? @db.Date @map("critical_path_forecast_date")
+  gapFlag                   Boolean  @default(false) @map("gap_flag")
+  calculatedAt              DateTime @default(now()) @db.Timestamptz() @map("calculated_at")
+
+  object ConstructionObject @relation("ReadinessSnapshotObject", fields: [objectId], references: [id])
+  period Period             @relation(fields: [periodId], references: [id])
+
+  @@index([objectId, periodId(sort: Desc)], map: "idx_readiness_object")
+  @@map("readiness_snapshots")
+}
+
+// ─── Work Pace ────────────────────────────────────────────────────────────────
+
+model WorkPace {
+  id            Int      @id @default(autoincrement())
+  periodId      Int      @map("period_id")
+  boqItemId     Int      @map("boq_item_id")
+  periodVolume  Decimal  @map("period_volume")
+  weightedPace  Decimal  @map("weighted_pace")
+  isExcluded    Boolean  @default(false) @map("is_excluded")
+
+  period  Period  @relation(fields: [periodId], references: [id])
+  boqItem BoqItem @relation(fields: [boqItemId], references: [id])
+
+  @@unique([periodId, boqItemId])
+  @@index([boqItemId, periodId(sort: Desc)], map: "idx_work_pace_item_period")
+  @@map("work_pace")
+}
+
+// ─── Baseline Update Requests ─────────────────────────────────────────────────
+
+model BaselineUpdateRequest {
+  id                  Int      @id @default(autoincrement())
+  objectId            Int      @map("object_id")
+  boqItemId           Int      @map("boq_item_id")
+  requestedBy         Int?     @map("requested_by")
+  requestedAt         DateTime @default(now()) @db.Timestamptz() @map("requested_at")
+  oldPlanVolume       Decimal  @map("old_plan_volume")
+  newPlanVolume       Decimal  @map("new_plan_volume")
+  reason              String
+  supportingDocument  String?  @map("supporting_document")
+  status              String   @default("pending") @db.VarChar(50)
+  reviewedBy          Int?     @map("reviewed_by")
+  reviewedAt          DateTime? @db.Timestamptz() @map("reviewed_at")
+  reviewNotes         String?  @map("review_notes")
+  appliesFromPeriodId Int?     @map("applies_from_period_id")
+
+  object             ConstructionObject @relation(fields: [objectId], references: [id])
+  boqItem            BoqItem            @relation(fields: [boqItemId], references: [id])
+  requestedByUser    User?              @relation("BaselineRequestedBy", fields: [requestedBy], references: [id])
+  reviewedByUser     User?              @relation("BaselineReviewedBy", fields: [reviewedBy], references: [id])
+  appliesFromPeriod  Period?            @relation("BaselineAppliesFromPeriod", fields: [appliesFromPeriodId], references: [id])
+
+  @@map("baseline_update_requests")
+}
+
+// ─── Forecast Scenarios ───────────────────────────────────────────────────────
+
+model ForecastScenario {
+  id             Int      @id @default(autoincrement())
+  objectId       Int      @map("object_id")
+  scenarioName   String   @db.VarChar(100) @map("scenario_name")
+  parameters     Json
+  completionDate DateTime? @db.Date @map("completion_date")
+  notes          String?
+  createdAt      DateTime @default(now()) @db.Timestamptz() @map("created_at")
+  createdBy      Int?     @map("created_by")
+
+  object        ConstructionObject @relation(fields: [objectId], references: [id])
+  createdByUser User?              @relation("ScenarioCreatedBy", fields: [createdBy], references: [id])
+
+  @@map("forecast_scenarios")
+}
+
+// ─── ML Features ──────────────────────────────────────────────────────────────
+
+model MlFeature {
+  id           BigInt   @id @default(autoincrement())
+  objectId     Int      @map("object_id")
+  periodId     Int      @map("period_id")
+  featureSet   Json     @map("feature_set")
+  label        Decimal?
+  modelVersion String?  @db.VarChar(50) @map("model_version")
+  createdAt    DateTime @default(now()) @db.Timestamptz() @map("created_at")
+
+  object ConstructionObject @relation(fields: [objectId], references: [id])
+  period Period             @relation(fields: [periodId], references: [id])
+
+  @@unique([objectId, periodId, modelVersion])
+  @@map("ml_features")
+}
+
+// ─── Audit Log (P-17 partitioned, P-29 org, ADR-007) ─────────────────────────
+
+model AuditLog {
+  id             BigInt   @default(autoincrement())
+  tableName      String   @db.VarChar(100) @map("table_name")
+  recordId       BigInt   @map("record_id")
+  action         String   @db.VarChar(50)
+  oldData        Json?    @map("old_data")
+  newData        Json?    @map("new_data")
+  performedBy    Int?     @map("performed_by")
+  performedAt    DateTime @default(now()) @db.Timestamptz() @map("performed_at")
+  reason         String?
+  organizationId String   @db.Uuid @map("organization_id")
+
+  performedByUser User?        @relation("AuditLogPerformedBy", fields: [performedBy], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  @@id([id, performedAt])
+  @@index([tableName, recordId, performedAt(sort: Desc)], map: "idx_audit_log_record")
+  @@index([organizationId, performedAt(sort: Desc)], map: "idx_audit_log_org")
+  @@map("audit_log")
+}
+
+// ─── Sync Queue (P-19, P-23, ADR-003, ADR-008) ────────────────────────────────
+
+model SyncQueue {
+  id               BigInt   @id @default(autoincrement())
+  deviceId         String   @db.VarChar(255) @map("device_id")
+  userId           Int?     @map("user_id")
+  operation        String   @db.VarChar(80)
+  payload          Json
+  clientTimestamp  DateTime @db.Timestamptz() @map("client_timestamp")
+  serverReceivedAt DateTime? @db.Timestamptz() @map("server_received_at")
+  status           String   @default("pending") @db.VarChar(50)
+  conflictData     Json?    @map("conflict_data")
+  resolvedAt       DateTime? @db.Timestamptz() @map("resolved_at")
+  resolvedBy       Int?     @map("resolved_by")
+  lastKnownVersion Int?     @map("last_known_version")
+  boqVersionNumber String?  @db.VarChar(20) @map("boq_version_number")
+  isSyncing        Boolean  @default(false) @map("is_syncing")
+
+  user           User? @relation("SyncQueueUser", fields: [userId], references: [id])
+  resolvedByUser User? @relation("SyncQueueResolvedBy", fields: [resolvedBy], references: [id])
+
+  @@index([deviceId, status], map: "idx_sync_queue_pending")
+  @@map("sync_queue")
+}
+
+// ─── MV Refresh Log (P-20, ADR-004) ───────────────────────────────────────────
+
+model MvRefreshLog {
+  viewName    String   @id @db.VarChar(100) @map("view_name")
+  refreshedAt DateTime @default(now()) @db.Timestamptz() @map("refreshed_at")
+  periodId    Int?     @map("period_id")
+  isStale     Boolean  @default(false) @map("is_stale")
+
+  period Period? @relation(fields: [periodId], references: [id])
+
+  @@map("mv_refresh_log")
+}
+
+// ─── Refresh Tokens (P-21, ADR-009) ──────────────────────────────────────────
+
+model RefreshToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     Int      @map("user_id")
+  tokenHash  String   @unique @db.VarChar(64) @map("token_hash")
+  issuedAt   DateTime @default(now()) @db.Timestamptz() @map("issued_at")
+  expiresAt  DateTime @db.Timestamptz() @map("expires_at")
+  revokedAt  DateTime? @db.Timestamptz() @map("revoked_at")
+  userAgent  String?  @map("user_agent")
+  ipAddress  String?  @map("ip_address")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "idx_refresh_tokens_user")
+  @@map("refresh_tokens")
+}
+
+// ─── Device Tokens (P-32, ADR-014) ───────────────────────────────────────────
+
+model DeviceToken {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       Int      @map("user_id")
+  fcmToken     String   @map("fcm_token")
+  platform     String
+  deviceId     String?  @map("device_id")
+  registeredAt DateTime @default(now()) @db.Timestamptz() @map("registered_at")
+  isActive     Boolean  @default(true) @map("is_active")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_device_tokens_user_active")
+  @@map("device_tokens")
+}
