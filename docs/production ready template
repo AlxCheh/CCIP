@@ -1,0 +1,309 @@
+# Module Manifest Template
+
+## 1. Module Overview
+
+### Module Name
+
+`<module-name>`
+
+### Purpose
+
+Краткое описание назначения модуля.
+
+Определяет:
+
+* какую бизнес-задачу решает модуль;
+* за какой bounded context отвечает;
+* какие данные контролирует.
+
+---
+
+### Main Principle
+
+> Основной архитектурный принцип модуля.
+
+Пример:
+
+> Модуль управляет только жизненным циклом периода и не изменяет данные других bounded contexts напрямую.
+
+---
+
+## 2. Core Responsibilities
+
+Модуль отвечает за:
+
+1. `<responsibility-1>`
+2. `<responsibility-2>`
+3. `<responsibility-3>`
+
+---
+
+### Responsibility Boundary
+
+Модуль **не отвечает** за:
+
+1. `<excluded-responsibility-1>`
+2. `<excluded-responsibility-2>`
+
+---
+
+### Rule
+
+> Любая логика вне зоны ответственности должна обрабатываться другим bounded context.
+
+---
+
+## 3. Primary Architecture File
+
+Основной архитектурный документ:
+
+`docs/architecture/<module>.md`
+
+Использовать для:
+
+* анализа логики модуля;
+* изменений workflow;
+* анализа bounded context правил.
+
+---
+
+## 4. Related ADR Files
+
+Подключать ADR только при изменении архитектурного поведения.
+
+### Primary ADRs
+
+* `ADR-XXX-primary-rule.md`
+* `ADR-XXX-secondary-rule.md`
+
+---
+
+### Rule
+
+> Если задача не меняет архитектурное решение — ADR не читать.
+
+---
+
+## 5. Related Error Sections
+
+Ошибки модуля:
+
+`docs/errors_log.md → <module section>`
+
+Использовать для:
+
+* поиска известных проблем;
+* проверки типовых ошибок;
+* анализа архитектурных нарушений.
+
+---
+
+### Rule
+
+> Читать только секцию ошибок данного модуля.
+
+---
+
+## 6. Delivery Dependencies
+
+Связанные delivery документы:
+
+* `docs/delivery/<module>-plan.md`
+* `docs/delivery/<module>-tasks.md`
+
+Использовать только при:
+
+* планировании задач;
+* декомпозиции реализации.
+
+---
+
+### Rule
+
+> Delivery документы не определяют архитектурные правила.
+
+---
+
+## 7. Upstream Dependencies
+
+Модули, от которых зависит данный bounded context:
+
+1. `<upstream-module-1>`
+2. `<upstream-module-2>`
+
+---
+
+### Dependency Rule
+
+> Разрешено читать только явно указанные upstream зависимости.
+
+---
+
+## 8. Downstream Dependencies
+
+Модули, зависящие от данного bounded context:
+
+1. `<downstream-module-1>`
+2. `<downstream-module-2>`
+
+---
+
+### Dependency Rule
+
+> Изменение контракта требует проверки downstream модулей.
+
+---
+
+## 9. Read Sequence
+
+При работе с модулем читать в следующем порядке:
+
+### Level 1 — Manifest
+
+Читать:
+`<module>.manifest.md`
+
+Для:
+
+* определения контекста;
+* определения зависимостей;
+* определения маршрута чтения.
+
+---
+
+### Level 2 — Architecture
+
+Читать:
+`docs/architecture/<module>.md`
+
+Для:
+
+* анализа логики;
+* изменения поведения модуля.
+
+---
+
+### Level 3 — ADR
+
+Читать:
+связанный ADR только при изменении архитектурных решений.
+
+---
+
+### Level 4 — Errors
+
+Читать:
+только секцию ошибок данного модуля.
+
+---
+
+### Main Rule
+
+> Читать следующий уровень только если предыдущий не дает достаточного контекста.
+
+---
+
+## 10. Context Load Limits
+
+Максимально допустимая загрузка контекста:
+
+### CL1 — Manifest Only
+
+Для:
+
+* навигации по модулю.
+
+---
+
+### CL2 — Manifest + Architecture
+
+Для:
+
+* реализации внутри bounded context.
+
+---
+
+### CL3 — Manifest + Architecture + Single ADR
+
+Для:
+
+* изменения архитектурного правила.
+
+---
+
+### CL4 — Cross-module
+
+Для:
+
+* изменения межмодульного контракта.
+
+---
+
+### Rule
+
+> Использовать минимальный context load level.
+
+---
+
+## 11. Change Escalation Rules
+
+Если изменение затрагивает:
+
+### Internal Logic
+
+Изменять только:
+
+* архитектуру модуля
+
+---
+
+### Architecture Rule
+
+Изменять:
+
+* архитектуру модуля
+* связанный ADR
+
+---
+
+### Cross-module Contract
+
+Изменять:
+
+* архитектуру модуля
+* ADR
+* downstream manifests
+
+---
+
+### Rule
+
+> Изменения должны эскалироваться только до необходимого уровня.
+
+---
+
+## 12. Agent Routing Instruction
+
+При запросе на изменение:
+
+1. открыть manifest;
+2. определить тип изменения;
+3. подключить только необходимые документы;
+4. не загружать нерелевантные модули.
+
+---
+
+### Forbidden
+
+Запрещено:
+
+* читать все ADR модуля;
+* читать все ошибки;
+* читать все зависимости;
+* читать все delivery документы.
+
+---
+
+## 13. Main Principle
+
+> Module manifest определяет минимальный маршрут чтения bounded context и запрещает загрузку лишнего контекста.
