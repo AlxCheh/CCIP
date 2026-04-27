@@ -208,6 +208,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 | `ccip-product-owner` | Бизнес-логика, acceptance criteria, трансляция Концепции в задачи |
 | `ccip-doc-writer` | Документация, ADR, user guides, обновление delivery docs |
 | `ccip-claude-md-auditor` | Еженедельный аудит CLAUDE.md — актуальность ссылок, синхронизация агентов, дедупликация |
+| `ccip-session-optimizer` | Аудит сессии — избыточные reads, широкие Glob, нарушения §10, пропущенный параллелизм |
 
 ### Общие агенты
 
