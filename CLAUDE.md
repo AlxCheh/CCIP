@@ -48,7 +48,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
     
 - алгоритмы → `docs/algorithm_v1_3.md`
     
-- схема данных → `backend/database/schema.sql`
+- схема данных → `packages/database/prisma/schema.prisma`
     
 - архитектурные решения → `docs/decisions/ADR-*.md`
     

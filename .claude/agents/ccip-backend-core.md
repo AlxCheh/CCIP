@@ -29,7 +29,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - `docs/architecture/period-engine.md` — детали PeriodEngine
 - `docs/architecture/analytics-engine.md` — детали Analytics
 - `docs/architecture/disputes-sla.md` — детали DisputeSLA
-- `backend/database/schema.sql` — схема данных
+- `packages/database/prisma/schema.prisma` — схема данных
 
 ## Правила работы
 1. Все state transitions PeriodEngine — через explicit state machine, без implicit side effects.

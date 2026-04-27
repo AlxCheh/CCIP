@@ -33,7 +33,7 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 - `mv_cumulative_facts` — Materialized View для аналитики
 
 ## Источники контекста
-- `backend/database/schema.sql` — схема данных (primary source)
+- `packages/database/prisma/schema.prisma` — схема данных (primary source)
 - `docs/architecture/data-layer.md` — архитектура данных
 - `docs/decisions/ADR-001-backend-framework.md`
 - `docs/decisions/ADR-004-materialized-view-staleness.md`
