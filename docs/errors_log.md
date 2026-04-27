@@ -1,40 +1,423 @@
-# CCIP — Errors Log
+# Errors Log
 
-> Формат записи: дата · контекст · симптом · причина · решение/статус.
-> Добавлять новую запись при обнаружении бага, противоречия «код vs ADR», или hotfix-а.
+Этот файл содержит журнал ошибок, известных проблем и архитектурных расхождений платформы CCIP.
 
----
+Цель журнала:
 
-## BUG-001 — P-22: boq_item_lineage_links.source_item_id — type mismatch UUID vs INTEGER
-
-**Дата:** 2026-04-26
-**Контекст:** `backend/database/schema.sql`, секция P-22, таблица `boq_item_lineage_links`
-**Симптом:** `CREATE TABLE boq_item_lineage_links` завершается с ошибкой PostgreSQL:
-`foreign key constraint cannot be implemented: key columns are of incompatible types: uuid and integer`
-**Причина:** `source_item_id` объявлен как `UUID`, но `boq_items.id` — `SERIAL` (INTEGER). FK требует совпадения типов.
-**Решение:** Изменён тип `source_item_id` с `UUID` на `INTEGER` (исправлено 2026-04-26).
-**Статус:** ✅ Закрыт
+* фиксировать ошибки по bounded contexts;
+* обеспечивать быстрый поиск известных проблем;
+* исключить повторное обнаружение известных ошибок;
+* минимизировать загрузку нерелевантных ошибок.
 
 ---
 
-## BUG-002 — P-25: fn_admin_correct_fact — тип параметра UUID вместо INTEGER
+## 1. Error Logging Principle
 
-**Дата:** 2026-04-26
-**Контекст:** `backend/database/schema.sql`, секция P-25, функция `fn_admin_correct_fact`
-**Симптом:** Функция создаётся без ошибок, но вызов завершается runtime-ошибкой: `operator does not exist: integer = uuid`
-**Причина:** Параметр `p_fact_id` объявлен как `UUID`, но `period_facts.id` — `SERIAL` (INTEGER). PostgreSQL не выполняет implicit cast.
-**Решение:** Тип параметра изменён с `UUID` на `INTEGER` (исправлено 2026-04-26).
-**Статус:** ✅ Закрыт
+Все ошибки фиксируются только в рамках соответствующего bounded context.
+
+Перед внесением изменений:
+
+1. определить архитектурный модуль;
+2. открыть только соответствующий раздел журнала;
+3. проверить известные ошибки;
+4. зафиксировать новое отклонение только в этом разделе.
+
+---
+
+### Основное правило:
+
+> Не читать весь журнал ошибок. Читать только секцию соответствующего bounded context.
 
 ---
 
-## BUG-003 — ADR-014: device_tokens.user_id — тип UUID вместо INTEGER
+## 2. Error Severity Levels
 
-**Дата:** 2026-04-26
-**Контекст:** `docs/decisions/ADR-014-push-notifications.md`, контракт реализации P-32
-**Симптом:** ADR-014 описывает `user_id UUID FK CASCADE`, но `users.id` — `SERIAL` (INTEGER).
-**Причина:** Опечатка в ADR при описании P-32.
-**Решение:** В schema.sql (P-32) `device_tokens.user_id` реализован как `INTEGER` (соответствует `users.id`). ADR не меняем (правило: ADR не изменяется); несоответствие зафиксировано здесь.
-**Статус:** ✅ Закрыт (обходное решение в коде)
+Каждая ошибка должна иметь уровень критичности:
+
+### `critical`
+
+Нарушает системный инвариант или блокирует работу.
 
 ---
+
+### `major`
+
+Нарушает бизнес-логику, но не блокирует систему.
+
+---
+
+### `minor`
+
+Локальное отклонение без критического влияния.
+
+---
+
+### `warning`
+
+Риск потенциального отклонения.
+
+---
+
+## 3. Error Status
+
+Каждая ошибка должна иметь статус:
+
+### `open`
+
+Ошибка обнаружена и требует решения.
+
+---
+
+### `investigating`
+
+Ошибка находится в анализе.
+
+---
+
+### `resolved`
+
+Ошибка исправлена.
+
+---
+
+### `accepted`
+
+Отклонение принято как допустимое.
+
+---
+
+## 4. Error Record Template
+
+Каждая ошибка фиксируется в формате:
+
+```md
+### ERROR-XXX
+Module: <bounded context>
+Severity: critical | major | minor | warning
+Status: open | investigating | resolved | accepted
+
+Issue:
+Краткое описание ошибки.
+
+Impact:
+Как влияет на систему.
+
+Root Cause:
+Причина возникновения.
+
+Resolution:
+Решение или план исправления.
+
+Related ADR:
+Связанный ADR при наличии.
+```
+
+---
+
+## 5. Core Platform Errors
+
+Ошибки верхнеуровневой архитектуры.
+
+Использовать для:
+
+* нарушений границ модулей;
+* нарушений системных инвариантов;
+* конфликтов межмодульных контрактов.
+
+---
+
+### ERROR-CORE-001
+
+Module: Core Platform
+Severity: warning
+Status: open
+
+Issue:
+Неопределенный межмодульный контракт.
+
+Impact:
+Риск неоднозначного взаимодействия модулей.
+
+Root Cause:
+Отсутствие явного архитектурного контракта.
+
+Resolution:
+Создать или обновить ADR по межмодульному взаимодействию.
+
+Related ADR:
+ADR по domain boundaries
+
+---
+
+## 6. Auth & Security Errors
+
+Ошибки безопасности, аутентификации и авторизации.
+
+Использовать для:
+
+* JWT проблем;
+* RBAC конфликтов;
+* проблем с токенами доступа.
+
+---
+
+### ERROR-AUTH-001
+
+Module: Auth & Security
+Severity: critical
+Status: open
+
+Issue:
+Несогласованность проверки ролей на защищенных endpoints.
+
+Impact:
+Возможен несанкционированный доступ.
+
+Root Cause:
+Отсутствие унифицированной RBAC проверки.
+
+Resolution:
+Внедрить единый authorization guard.
+
+Related ADR:
+ADR-011-rbac-policy
+
+---
+
+## 7. Period Engine Errors
+
+Ошибки жизненного цикла периода.
+
+Использовать для:
+
+* ошибок открытия периода;
+* ошибок закрытия периода;
+* нарушений workflow period state.
+
+---
+
+### ERROR-PERIOD-001
+
+Module: Period Engine
+Severity: critical
+Status: open
+
+Issue:
+Возможность закрытия периода при незавершенных disputes.
+
+Impact:
+Нарушение целостности аналитики.
+
+Root Cause:
+Отсутствует проверка disputes перед close.
+
+Resolution:
+Добавить обязательную проверку unresolved disputes.
+
+Related ADR:
+ADR-022-period-close-policy
+
+---
+
+## 8. Disputes & SLA Errors
+
+Ошибки расхождений, SLA и эскалаций.
+
+Использовать для:
+
+* ошибок эскалации;
+* ошибок force close;
+* проблем SLA automation.
+
+---
+
+### ERROR-SLA-001
+
+Module: Disputes & SLA
+Severity: major
+Status: open
+
+Issue:
+Повторный запуск escalation worker вызывает дублирование escalation.
+
+Impact:
+Некорректные уведомления и повторные изменения статуса.
+
+Root Cause:
+Отсутствие идемпотентности worker job.
+
+Resolution:
+Добавить idempotency key для escalation event.
+
+Related ADR:
+ADR-031-sla-escalation
+
+---
+
+## 9. Analytics Engine Errors
+
+Ошибки аналитики и snapshot calculations.
+
+Использовать для:
+
+* ошибок readiness;
+* ошибок forecasting;
+* ошибок snapshots.
+
+---
+
+### ERROR-ANALYTICS-001
+
+Module: Analytics Engine
+Severity: critical
+Status: open
+
+Issue:
+Snapshot может формироваться до завершения транзакции периода.
+
+Impact:
+Риск неконсистентной аналитики.
+
+Root Cause:
+Отсутствие transactional coupling.
+
+Resolution:
+Создавать snapshot внутри транзакции закрытия периода.
+
+Related ADR:
+ADR-040-snapshot-consistency
+
+---
+
+## 10. Sync Engine Errors
+
+Ошибки offline sync и conflict resolution.
+
+Использовать для:
+
+* конфликтов sync;
+* потери очереди;
+* ошибок retry logic.
+
+---
+
+### ERROR-SYNC-001
+
+Module: Sync Engine
+Severity: critical
+Status: open
+
+Issue:
+Повторная sync операция может примениться дважды.
+
+Impact:
+Дублирование данных.
+
+Root Cause:
+Нет проверки idempotency key.
+
+Resolution:
+Добавить обязательную идемпотентность операций.
+
+Related ADR:
+ADR-052-idempotent-sync
+
+---
+
+## 11. Data Layer Errors
+
+Ошибки транзакций, audit и versioning.
+
+Использовать для:
+
+* ошибок optimistic locking;
+* ошибок audit trail;
+* ошибок tenant isolation.
+
+---
+
+### ERROR-DATA-001
+
+Module: Data Layer
+Severity: critical
+Status: open
+
+Issue:
+Audit log создается вне транзакции изменения данных.
+
+Impact:
+Возможна потеря audit записи.
+
+Root Cause:
+Нарушение transaction boundary.
+
+Resolution:
+Включить audit запись в общую транзакцию.
+
+Related ADR:
+ADR-060-transaction-boundaries
+
+---
+
+## 12. Error Routing Rules
+
+При работе с ошибкой:
+
+1. определить bounded context;
+2. открыть только соответствующую секцию;
+3. проверить существующие ошибки;
+4. создать новую запись только в этой секции.
+
+---
+
+### Запрещено:
+
+* читать все ошибки подряд;
+* искать ошибки во всех модулях;
+* писать ошибку в общий список без bounded context.
+
+---
+
+## 13. Error Loading Levels
+
+---
+
+### E1 — Module Error Context
+
+Читать только ошибки одного bounded context.
+
+Использовать для:
+
+* локального анализа ошибки.
+
+---
+
+### E2 — Module + ADR
+
+Читать ошибки модуля + связанный ADR.
+
+Использовать для:
+
+* анализа архитектурных ошибок.
+
+---
+
+### E3 — Cross-module Investigation
+
+Читать несколько секций только при межмодульной ошибке.
+
+Использовать для:
+
+* анализа интеграционных проблем.
+
+---
+
+### Основное правило:
+
+> Использовать минимальный error context, достаточный для анализа проблемы.
+
+---
+
+## 14. Main Principle
+
+> Ошибки должны фиксироваться и анализироваться только в пределах соответствующего bounded context с минимальной загрузкой нерелевантного контекста.
