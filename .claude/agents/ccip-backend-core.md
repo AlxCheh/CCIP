@@ -37,3 +37,4 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 3. BullMQ jobs — с retry и dead letter queue.
 4. getCumulativeFactsBatch — всегда через MV, никогда через live aggregate запрос при N > 100 позиций.
 5. Тест-таблица из Алгоритма Part 4 — обязательное покрытие для каждого реализованного кейса.
+6. Read архитектурных и алгоритмических файлов: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не читать файл целиком.
