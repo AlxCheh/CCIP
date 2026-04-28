@@ -122,7 +122,7 @@ ls CCIP/docs/architecture/
 - `CCIP/docs/decisions/` — только список файлов (не читать содержимое)
 - `CCIP/docs/delivery/` — только список файлов
 - `CCIP/docs/architecture/` — только список файлов
-- `CCIP/docs/errors_log.md` — только для добавления записи в конец
+- `CCIP/docs/errors/errors_log.md` — только для добавления записи в конец
 
 ## Правила
 
