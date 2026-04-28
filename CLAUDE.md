@@ -29,7 +29,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
     
 4. При конфликте источников приоритет имеют ADR.
     
-5. Все найденные ошибки и противоречия фиксировать в `docs/errors_log.md`.
+5. Все найденные ошибки и противоречия фиксировать в `docs/errors/errors_log.md`.
     
 6. Крупные задачи делегировать субагентам.
     
@@ -42,7 +42,11 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 
 Определять источник контекста по типу задачи:
 
+- маршрутизация задач → `docs/tasks/index.md`
+
 - архитектура системы → `docs/architecture_v1_0.md`
+
+- архитектурные модули → `docs/architecture/*.md` (индекс: `docs/architecture/index.md`)
     
 - бизнес-логика → `docs/concept_oks_v1_5.md`
     
@@ -50,9 +54,9 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
     
 - схема данных → `packages/database/prisma/schema.prisma`
     
-- архитектурные решения → `docs/decisions/ADR-*.md`
+- архитектурные решения → `docs/decisions/ADR-*.md` (индекс: `docs/decisions/index.md`)
     
-- ошибки и инциденты → `docs/errors_log.md`
+- ошибки и инциденты → `docs/errors/index.md`
     
 - общий план разработки → `docs/delivery_plan_v1_0.md`
     
@@ -249,7 +253,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 
 **Триггер быстрой проверки** — изменений не было, только дедупликация и dead links.
 
-Результат каждого запуска фиксируется в `docs/errors_log.md`.
+Результат каждого запуска фиксируется в `docs/errors/errors_log.md`.
 
 Цель:
 
@@ -261,11 +265,11 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 
 В начале любой сессии с изменениями:
 
-1. открыть `docs/errors_log.md` с `limit: 30` — убедиться в отсутствии актуальных ошибок по области.
+1. открыть `docs/errors/errors_log.md` с `limit: 30` — убедиться в отсутствии актуальных ошибок по области.
 
 Перед внесением изменений:
 
-1. открыть соответствующий раздел `docs/errors_log.md`;
+1. открыть соответствующий раздел `docs/errors/errors_log.md`;
     
 2. проверить известные ошибки по области.
     
@@ -288,7 +292,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 - найденные ошибки
     
 
-обязательно фиксируются в `docs/errors_log.md`.
+обязательно фиксируются в `docs/errors/errors_log.md`.
 
 ---
 
