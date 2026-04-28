@@ -1,4 +1,4 @@
-# CCIP — Delivery: Phases 8–13 — Web · Mobile · Security · Testing · Infra · Pilot
+# CCIP — Delivery: Phases 8, 10–13 — Web · Security · Testing · Infra · Pilot
 
 **Требует:** Этапы 4–7 завершены → [phase-4-7-backend-modules.md](phase-4-7-backend-modules.md)  
 **Critical path:** [critical-path.md](critical-path.md)
@@ -53,44 +53,6 @@
   - Лёгкая страница без авторизации; 2 поля на позицию: `gp_volume` + `note`
   - Подтверждение отправки; блокировка повторной подачи
   - Артефакт: `apps/web/src/pages/GpSubmitPage.tsx`
-
----
-
-## Этап 9 — Mobile App
-
-> **Цель:** SC может работать офлайн на объекте; данные синхронизируются при появлении сети.  
-> **Критерий перехода:** `submit_fact` офлайн → потеря сети → восстановление сети → sync → данные в БД.
-
-### 9.1 Фундамент
-
-- `[H]` Инициализировать `apps/mobile` (React Native + Expo или bare workflow)
-  - WatermelonDB: локальная схема, зеркалящая ключевые сущности (periods, period_facts, boq_items, sync_queue)
-  - Артефакт: `apps/mobile/src/database/schema.ts`
-
-- `[H]` Auth: login (JWT → AsyncStorage для access; refresh через HTTP-only cookie)
-
-### 9.2 Sync Manager (⚠️ ADR-008)
-
-- `[H]` `SyncManager` — ядро offline-first логики
-  - Определение online/offline: NetInfo
-  - При online → `POST /sync/operations` + `POST /sync/photos`
-  - Идемпотентность `open_period`: дубль в очереди заменяется (upsert по operation+period_id)
-  - **Только онлайн (UI блокирует офлайн):** `close_period`, `submit_gp_template`, `approve_zero_report`
-  - `is_syncing` флаг для reconciliation при рестарте приложения
-  - Артефакт: `apps/mobile/src/sync/SyncManager.ts`
-
-### 9.3 Критические экраны Mobile
-
-- `[H]` 🔴 CRITICAL PATH — Список объектов и активный период
-- `[H]` 🔴 CRITICAL PATH — Карточка вида работ (аналог web, но mobile-first)
-  - Ввод `sc_volume`, фото из камеры с геотегом + timestamp
-  - Флаг Тип 2 с обязательным фото
-
-- `[H]` 🔴 CRITICAL PATH — Экран разрешения конфликта
-  - Отображает обе версии (device vs server) с именами инженеров и датами
-  - SC выбирает версию с обязательным `note`
-
-- `[M]` Push-уведомления (FCM/APNs): SLA-события, уведомления о расхождениях
 
 ---
 
@@ -245,7 +207,6 @@
 - `[H]` Дашборд метрик включён; алерты настроены
 - `[H]` Ежедневная проверка `audit_log_default` partition на пустоту
 - `[M]` Еженедельный review: количество конфликтов sync, количество SLA-событий, время MV refresh
-- `[M]` Фидбек SC с mobile по UX конфликт-резолюции
 
 ### 13.4 Критерии выхода из пилота (перед production rollout)
 

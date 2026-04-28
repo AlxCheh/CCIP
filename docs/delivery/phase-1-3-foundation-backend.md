@@ -19,7 +19,6 @@
     apps/
       api/           # NestJS backend
       web/           # React frontend
-      mobile/        # React Native
     packages/
       database/      # Prisma schema + migrations
       shared/        # Общие типы TS (DTOs, enums)

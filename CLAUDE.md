@@ -178,7 +178,8 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
     
 - этапы 4–7 → `docs/delivery/phase-4-7-backend-modules.md`
     
-- этапы 8–13 → `docs/delivery/phase-8-13-infra-pilot.md`
+- этапы 8, 10–13 → `docs/delivery/phase-8-13-infra-pilot.md`
+- этап mobile (отложен) → `docs/delivery/phase-mobile.md`
     
 
 ### Правило:

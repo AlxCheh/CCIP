@@ -2,7 +2,7 @@
 
 **Дата:** 2026-04-25  
 **Основание:** delivery_plan_v1_0.md  
-**Связанные файлы:** [phase-0](phase-0-architecture-gaps.md) · [phase-1-3](phase-1-3-foundation-backend.md) · [phase-4-7](phase-4-7-backend-modules.md) · [phase-8-13](phase-8-13-infra-pilot.md)
+**Связанные файлы:** [phase-0](phase-0-architecture-gaps.md) · [phase-1-3](phase-1-3-foundation-backend.md) · [phase-4-7](phase-4-7-backend-modules.md) · [phase-8-13](phase-8-13-infra-pilot.md) · [phase-mobile](phase-mobile.md)
 
 ---
 
@@ -33,7 +33,7 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
 ```
 
 Параллельно критическому пути (не блокируют MVP, но нужны к пилоту):
-- Mobile App — блок I (offline sync)
+- Mobile App — отложен после пилота → [phase-mobile.md](phase-mobile.md)
 - Уведомления (email + notifications table)
 - UpdateBaseline — блок F/G
 - Инфраструктура (K8s, S3, PgBouncer)
@@ -94,17 +94,18 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
      ▼                                              │
 [8 Web App]◄───────────────────────────────────────┘
      │
-     ├──────────────────┐
-     ▼                  ▼
-[9 Mobile App]    [10 Security]
-     │                  │
-     └──────┬───────────┘
-            ▼
-      [11 Testing]
-            │
-            ▼
-      [12 Prod Infra]
-            │
-            ▼
-      [13 Pilot]
+     ▼
+[10 Security]
+     │
+     ▼
+[11 Testing]
+     │
+     ▼
+[12 Prod Infra]
+     │
+     ▼
+[13 Pilot]
+     │
+     ▼
+[Mobile App — phase-mobile.md]  ← отложен после пилота
 ```
