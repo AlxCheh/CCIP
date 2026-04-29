@@ -39,6 +39,7 @@ ELSE
 | DoR выявил `schema-gap` | `ccip-dba` | исправить схему первым |
 | DoR выявил `adr-violation` | `ccip-architect` | создать ретроспективный ADR |
 | task затрагивает RLS или tenant isolation | `ccip-security` | проверить изоляцию |
+| module = M-02 OR изменения в auth/RBAC/JWT/multi-tenancy | `security-reviewer` | параллельный security review |
 | cross-module: модуль обращается к другому bounded context | `ccip-architect` | проверить контракт |
 
 ---

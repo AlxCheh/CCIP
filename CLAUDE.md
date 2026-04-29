@@ -219,6 +219,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 | `ccip-devops` | Docker/K8s, CI/CD, SLA Worker конфиг, Redis AOF, observability |
 | `ccip-qa` | Тесты A-01..I-03, Jest, Playwright E2E, RBAC матрица, performance |
 | `ccip-security` | RBAC аудит, multi-tenancy изоляция, immutability check, pen-test prep |
+| `security-reviewer` | Параллельный co-agent при любых изменениях M-02 (Auth/RBAC/multi-tenancy): JWT, RLS, RBAC guards, tenant isolation |
 | `ccip-product-owner` | Бизнес-логика, acceptance criteria, трансляция Концепции в задачи |
 | `ccip-doc-writer` | Документация, ADR, user guides, обновление delivery docs |
 | `ccip-claude-md-auditor` | Еженедельный аудит CLAUDE.md — актуальность ссылок, синхронизация агентов, дедупликация |
