@@ -15,6 +15,14 @@
 
 ---
 
+## Dependency Graph
+
+Граф зависимостей между bounded contexts: `docs/tasks/bounded-context-deps.md`
+
+> Читать при задачах, затрагивающих публичный контракт модуля или межмодульные интерфейсы.
+
+---
+
 ## Architecture Modules
 
 ### 1. Core Platform

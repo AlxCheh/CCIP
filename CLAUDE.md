@@ -44,6 +44,7 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 
 Определять источник контекста по типу задачи:
 
+- **состояние проекта** → `docs/project-state.md` ← читать первым (limit:25)
 - маршрутизация задач → `docs/tasks/index.md`
 
 - архитектура системы → `docs/architecture_v1_0.md`
@@ -179,34 +180,24 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 
 ## 6. Delivery Routing Rules
 
-### Delivery plan — первичный источник порядка реализации.
+**Routing engine:** `docs/tasks/index.md §1.5` — единственный авторитетный источник связи модуль → phase file → секция (offset) → агент.
 
-### Architecture docs — источник технических деталей.
+**Policy:**
+- Delivery plan (phase files) — первичный источник AC, инвариантов и критериев перехода.
+- Architecture docs — источник технических деталей реализации.
+- `delivery_plan_v1_0.md` не читать — использовать только phase files через §1.5.
 
-При запросах на реализацию:
+**Порядок при запросах на реализацию:**
 
-1. определить этап разработки;
-    
-2. читать только соответствующий phase file;
-    
-3. архитектурный контекст подключать только при необходимости.
-    
-
-### Маршрутизация:
-
-- critical path → `docs/delivery/critical-path.md`
-    
-- этапы 1–3 → `docs/delivery/phase-1-3-foundation-backend.md`
-    
-- этапы 4–7 → `docs/delivery/phase-4-7-backend-modules.md`
-    
-- этапы 8, 10–13 → `docs/delivery/phase-8-13-infra-pilot.md`
-- этап mobile (отложен) → `docs/delivery/phase-mobile.md`
-    
+1. `docs/project-state.md` (limit:25) — текущая фаза и блокеры;
+2. `docs/tasks/index.md §1.5` — найти модуль → phase file → секция (offset);
+3. читать phase file секцию: `offset:<N> limit:60`;
+4. arch context подключать только при необходимости (шаг [5] цепочки §0).
 
 ### Правило:
 
-> Не читать весь `delivery_plan_v1_0.md`, если задача относится к конкретной фазе.
+> Таблица маршрутизации живёт в `docs/tasks/index.md §1.5`.  
+> `delivery_plan_v1_0.md` читать запрещено — он заменён phase files с точными section anchors.
 
 ---
 
@@ -306,6 +297,10 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 
 обязательно фиксируются в `docs/errors/errors_log.md`.
 
+При наличии архитектурного или delivery воздействия — дополнительно:
+
+> `docs/tasks/feedback-loop.md` — классификация находки, routing к arch/delivery агенту, создание FEEDBACK-записи.
+
 ---
 
 ## 10. Forbidden Actions
@@ -327,7 +322,11 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 7. загружать полный delivery plan вместо phase file;
     
 8. создавать серию файлов (> 3 штук или > 200 строк суммарно) в основном контексте без делегирования субагенту.
-    
+
+9. открывать любой файл > 100 строк без `limit:30` в первом вызове — сначала структура, потом `offset`+`limit` по нужному разделу.
+
+10. начинать задачу без объявления уровня контекста L1/L2/L3/L4 — уровень объявляется первой строкой до любого tool call.
+
 
 ---
 
