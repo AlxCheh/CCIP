@@ -142,7 +142,21 @@ Review required: yes (ccip-architect) | no
 
 ---
 
-## 7. Read Policy
+## 7. Delegation Thresholds
+
+| Trigger | Agent |
+|---------|-------|
+| > 450 строк реализации | профильный module agent |
+| > 3 новых файла | `general-purpose` (весь блок целиком) |
+| cross-module изменение | `ccip-architect` + module agent |
+| сложное исследование | `ccip-architect` |
+| массовый refactoring | `general-purpose` |
+
+> Каждый sub-agent получает только контекст своей подзадачи.
+
+---
+
+## 8. Read Policy
 
 Читать при шаге [4] цепочки §0.  
 Читать только §1–§2 (decision tree + co-agent conditions) — достаточно для назначения.  
