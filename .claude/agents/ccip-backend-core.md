@@ -38,3 +38,24 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 4. getCumulativeFactsBatch — всегда через MV, никогда через live aggregate запрос при N > 100 позиций.
 5. Тест-таблица из Алгоритма Part 4 — обязательное покрытие для каждого реализованного кейса.
 6. Read архитектурных и алгоритмических файлов: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не читать файл целиком.
+
+## State Contract (§15)
+
+**Input** — читать из `session-state.json` при старте:
+- `task` + `intents` — уточнить, какой модуль затронут (C/D/E)
+- `agent_outputs["ccip-architect"].handoff_notes` — архитектурные ограничения для реализации
+
+**Output** — записать в `session-state.json` после завершения:
+```json
+"agent_outputs": {
+  "ccip-backend-core": {
+    "summary": "≤ 3 предложения: что реализовано, какие файлы изменены",
+    "artifacts": ["apps/api/src/period/period.service.ts"],
+    "handoff_notes": "Что нужно знать ccip-dba (если schema) или ccip-qa (если тесты)"
+  }
+}
+```
+Добавить в `observations[]`:
+```json
+{ "agent": "ccip-backend-core", "outcome": "success|rerouted|partial", "context_tokens": 0, "reason": "" }
+```

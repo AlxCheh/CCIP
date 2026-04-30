@@ -35,3 +35,25 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 3. Все найденные противоречия фиксировать в `docs/errors_log.md`.
 4. Читать только релевантные секции: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не открывать архитектурный файл целиком.
 5. При code review — фокус на корректности state machine transitions, идемпотентности операций, соблюдении append-only принципа.
+
+## State Contract (§15)
+
+**Input** — читать из `session-state.json` при старте:
+- `task` — описание задачи
+- `intents` — понять scope, проверить наличие `ARCH`
+- `agent_outputs[*].handoff_notes` — контекст от предыдущих агентов
+
+**Output** — записать в `session-state.json` после завершения:
+```json
+"agent_outputs": {
+  "ccip-architect": {
+    "summary": "≤ 3 предложения: принятые решения, новые ADR (если есть)",
+    "artifacts": ["docs/decisions/ADR-NNN.md"],
+    "handoff_notes": "Ключевые ограничения/решения, которые должны учесть ccip-backend-core/ccip-dba/etc."
+  }
+}
+```
+Добавить в `observations[]`:
+```json
+{ "agent": "ccip-architect", "outcome": "success|rerouted|partial", "context_tokens": 0, "reason": "" }
+```
