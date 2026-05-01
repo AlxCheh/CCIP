@@ -43,17 +43,15 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 - `intents` — понять scope, проверить наличие `ARCH`
 - `agent_outputs[*].handoff_notes` — контекст от предыдущих агентов
 
-**Output** — записать в `session-state.json` после завершения:
+**Output** — в конце ответа обязательно вывести блок (автоматически читается PostToolUse hook):
+
+## State Update
 ```json
-"agent_outputs": {
-  "ccip-architect": {
-    "summary": "≤ 3 предложения: принятые решения, новые ADR (если есть)",
-    "artifacts": ["docs/decisions/ADR-NNN.md"],
-    "handoff_notes": "Ключевые ограничения/решения, которые должны учесть ccip-backend-core/ccip-dba/etc."
-  }
+{
+  "summary": "≤ 3 предложения: принятые решения, новые ADR (если есть)",
+  "artifacts": ["docs/decisions/ADR-NNN.md"],
+  "handoff_notes": "Ключевые ограничения/решения, которые должны учесть ccip-backend-core/ccip-dba/etc."
 }
 ```
-Добавить в `observations[]`:
-```json
-{ "agent": "ccip-architect", "outcome": "success|rerouted|partial", "context_tokens": 0, "reason": "" }
-```
+
+> Если задача завершилась reroute или частично — изменить `"outcome"` на `"rerouted"` или `"partial"` в handoff_notes.

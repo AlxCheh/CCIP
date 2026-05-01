@@ -807,14 +807,62 @@ CCIP (Construction Control & Intelligence Platform) — интеллектуал
 State file: `CCIP/.claude/runtime/session-state.json`
 Схема и протокол: `CCIP/.claude/runtime/state-protocol.md`
 
+### Два режима исполнения
+
+| Режим | Когда | Execution |
+|---|---|---|
+| **Manual** | fast-path, 1 агент, LOW risk | Основной контекст вызывает `Agent` напрямую |
+| **Automated** | planner DAG, 2+ агентов, MEDIUM/LOW confidence | `node execute-dag.js` — LLM не в execution loop |
+
 ### Жизненный цикл
 
 | Шаг | Когда | Действие |
 |---|---|---|
-| **INIT** | При первом Agent call в сессии | Заполнить: `session_id`, `task`, `intents`, `risk`, `confidence`, `routing`, `started_at`, `status→planning` |
-| **INJECT** | Перед каждым Agent call | Прочитать state → включить в промпт агента блок Session Context |
-| **UPDATE** | После каждого Agent call | Записать `agent_outputs[name]` + добавить запись в `observations[]` |
+| **INIT** | Перед любым multi-agent execution | Заполнить: `session_id`, `task`, `intents`, `risk`, `confidence`, `routing`, `dag[]`, `started_at`, `status→planning` |
+| **EXECUTE** | После INIT (routing=planner) | `node CCIP/.claude/runtime/execute-dag.js` — запускает все шаги DAG автоматически |
+| **UPDATE** | После каждого шага (автоматически) | PostToolUse hook + executor записывают `agent_outputs[name]` + `observations[]` |
 | **FLUSH** | Stop hook (автоматически) | `flush-state.js` переносит `observations[]` → `feedback-loop.md §4` |
+
+### Automated execution — порядок действий
+
+```
+1. Классифицировать intents (§7.0)
+2. Вызвать ccip-routing-planner → получить DAG JSON
+3. Записать в session-state.json:
+   - session_id, task, intents, risk, confidence, routing="planner"
+   - dag: [...] (из planner output)
+   - started_at, status="planning"
+4. node CCIP/.claude/runtime/execute-dag.js
+   ↳ executor обходит dag[] волнами (parallel → sequential)
+   ↳ каждый шаг: claude --print subprocess с полным доступом к tools
+   ↳ state обновляется после каждого шага
+5. Проверить session-state.json → status="done"
+```
+
+```bash
+# Запустить все шаги:
+node CCIP/.claude/runtime/execute-dag.js
+
+# Dry-run — проверить план без запуска агентов:
+node CCIP/.claude/runtime/execute-dag.js --dry-run
+
+# Resume — пропустить done-шаги, сбросить failed/running → pending, продолжить:
+node CCIP/.claude/runtime/execute-dag.js --resume
+
+# Preview что будет resumed без запуска:
+node CCIP/.claude/runtime/execute-dag.js --resume --dry-run
+```
+
+### Checkpoint / Resume — поведение по статусам
+
+| Статус шага | Без флагов | `--resume` |
+|---|---|---|
+| `done` | пропускается | пропускается |
+| `pending` | выполняется | выполняется |
+| `failed` | пропускается (не ретраится) | сбрасывается → `pending`, выполняется |
+| `running` | выполняется заново | сбрасывается → `pending`, выполняется |
+
+> Если `status: "done"` у сессии и нет `--resume` → executor завершается без запуска. Для полного перезапуска — сбросить `session-state.json` к шаблону.
 
 ### Обязательный блок Session Context (инъекция в Agent prompt)
 

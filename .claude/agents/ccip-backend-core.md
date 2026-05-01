@@ -45,17 +45,15 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - `task` + `intents` — уточнить, какой модуль затронут (C/D/E)
 - `agent_outputs["ccip-architect"].handoff_notes` — архитектурные ограничения для реализации
 
-**Output** — записать в `session-state.json` после завершения:
+**Output** — в конце ответа обязательно вывести блок (автоматически читается PostToolUse hook):
+
+## State Update
 ```json
-"agent_outputs": {
-  "ccip-backend-core": {
-    "summary": "≤ 3 предложения: что реализовано, какие файлы изменены",
-    "artifacts": ["apps/api/src/period/period.service.ts"],
-    "handoff_notes": "Что нужно знать ccip-dba (если schema) или ccip-qa (если тесты)"
-  }
+{
+  "summary": "≤ 3 предложения: что реализовано, какие файлы изменены",
+  "artifacts": ["apps/api/src/period/period.service.ts"],
+  "handoff_notes": "Что нужно знать ccip-dba (если schema) или ccip-qa (если тесты)"
 }
 ```
-Добавить в `observations[]`:
-```json
-{ "agent": "ccip-backend-core", "outcome": "success|rerouted|partial", "context_tokens": 0, "reason": "" }
-```
+
+> Если задача завершилась reroute или частично — отразить в `handoff_notes`, outcome будет скорректирован вручную.
