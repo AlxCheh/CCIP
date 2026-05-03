@@ -180,7 +180,7 @@ Resolution:
 Внедрить единый authorization guard.
 
 Related ADR:
-ADR-011-rbac-policy
+ADR-009-rbac-gp-token
 
 ---
 
@@ -215,7 +215,7 @@ Resolution:
 Добавить обязательную проверку unresolved disputes.
 
 Related ADR:
-ADR-022-period-close-policy
+ADR-002-period-concurrency, ADR-007-period-immutability
 
 ---
 
@@ -250,7 +250,7 @@ Resolution:
 Добавить idempotency key для escalation event.
 
 Related ADR:
-ADR-031-sla-escalation
+ADR-005-sla-scheduler-reliability
 
 ---
 
@@ -285,7 +285,7 @@ Resolution:
 Создавать snapshot внутри транзакции закрытия периода.
 
 Related ADR:
-ADR-040-snapshot-consistency
+ADR-004-materialized-view-staleness
 
 ---
 
@@ -320,7 +320,7 @@ Resolution:
 Добавить обязательную идемпотентность операций.
 
 Related ADR:
-ADR-052-idempotent-sync
+ADR-003-offline-conflict-resolution
 
 ---
 
@@ -355,7 +355,7 @@ Resolution:
 Включить audit запись в общую транзакцию.
 
 Related ADR:
-ADR-060-transaction-boundaries
+ADR-010-audit-log-partitioning
 
 ---
 

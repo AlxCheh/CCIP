@@ -69,7 +69,11 @@
 
 **Fail (Architecture Change) → BLOCK:** нельзя реализовывать без ADR; делегировать `ccip-architect` для создания ADR.
 
-**Fail (Feature/Security) → WARNING:** продолжить, но зафиксировать отсутствие ADR в errors_log.md.
+**Fail (Security Update) → BLOCK:** Security Update без ADR нарушает §0 (ADR required); нельзя продолжить. Делегировать `ccip-architect`.
+
+**Fail (Feature — затрагивает `apps/api/src/` или `packages/database/prisma/`) → BLOCK:** изменения в критических путях без ADR → делегировать `ccip-architect`.
+
+**Fail (Feature — прочие области) → WARNING:** зафиксировать в errors_log.md; применить §8 (WARNING Bypass Protocol) — обязателен sign-off architect.
 
 ---
 
@@ -117,8 +121,8 @@
   → не загружать контекст задачи, не начинать реализацию
 
 ЛЮБОЙ чек = Fail (WARNING)
-  → продолжить с ограничением
-  → зафиксировать WARNING в docs/errors/errors_log.md
+  → применить §8 (WARNING Bypass Protocol)
+  → не продолжать до выполнения всех условий §8
 ```
 
 ---
@@ -129,3 +133,41 @@
 
 > Читать с `limit:30` для §0 (таблица применимости).  
 > Читать нужный чек (§1–§5) только если он применим по таблице §0.
+
+---
+
+## 8. WARNING Bypass Protocol
+
+WARNING разрешает продолжить задачу, но **не автоматически** — только после выполнения всех трёх шагов:
+
+**Шаг 1 — Фиксация.**  
+Записать в `docs/errors/errors_log.md`:
+```
+### WARNING-XXX
+Date: YYYY-MM-DD
+Check: <название чека из §1–§5>
+Task: <название задачи>
+Reason: <почему чек не пройден>
+Status: pending-signoff
+```
+
+**Шаг 2 — TODO в phase file.**  
+Добавить строку в phase file текущей задачи (секция задачи):
+```
+- [ ] WARNING bypass TODO — <чек> не пройден. Дедлайн: +7 дней. Ответственный: ccip-architect.
+```
+
+**Шаг 3 — Sign-off architect.**  
+`ccip-architect` читает WARNING-запись и добавляет в `errors_log.md` под ней:
+```
+Architect sign-off: <session-id> — WARNING accepted.
+Reason: <обоснование, почему можно продолжить>.
+```
+
+**DAG запускается только после завершения шагов 1–3.**
+
+### Запрещено при WARNING Bypass:
+
+- запускать DAG до sign-off;
+- закрывать TODO позже чем через 7 дней без явного продления (новая запись в errors_log.md);
+- применять WARNING Bypass к Security Update или Feature в критическом пути — для них действует BLOCK.

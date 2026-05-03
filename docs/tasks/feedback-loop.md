@@ -44,7 +44,7 @@ Feedback loop активируется при любом из условий:
 
 | Класс | Архитектурное действие | Delivery действие | Агент |
 |-------|------------------------|-------------------|-------|
-| `adr-violation` | Создать ретроспективный ADR | Обновить phase file: пометить отклонение | `ccip-architect` |
+| `adr-violation` | Создать ретроспективный ADR¹ | Обновить phase file: пометить отклонение | `ccip-architect` (не нарушитель²) |
 | `arch-gap` | Обновить `architecture/<module>.md` | — | `ccip-architect` |
 | `arch-gap` (critical) | Создать новый ADR | Добавить блокер в `critical-path.md` | `ccip-architect` |
 | `arch-update` | Обновить `architecture/<module>.md §<section>` | — | `ccip-doc-writer` |
@@ -52,6 +52,9 @@ Feedback loop активируется при любом из условий:
 | `new-blocker` | Обновить `bounded-context-deps.md §2` | Обновить `critical-path.md` + `definition-of-ready.md` | `ccip-doc-writer` |
 | `delivery-slip` | — | Обновить phase file: статус задачи | `ccip-doc-writer` |
 | `ac-gap` | — | Обновить phase file: уточнить AC задачи | `ccip-product-owner` |
+
+> ¹ Ретроспективный ADR должен явно ссылаться на нарушенный ADR (`Supersedes:`) и содержать обоснование (`Rationale:`), почему нарушение принято ретроактивно.  
+> ² Агент или сессия, зафиксировавшие нарушение (`adr-violation`), **не могут** быть автором ратифицирующего ADR без human sign-off — требуется поле `Reviewer: <human-name>` в новом ADR.
 
 ---
 
@@ -122,6 +125,16 @@ Notes: <если есть отклонения — ссылка на FEEDBACK-XX
 Правило:
 > Обновление arch doc без нового ADR допустимо только для уточнений (arch-update).  
 > Изменение архитектурного решения требует нового ADR (arch-gap critical, adr-violation).
+
+### Протокол ратификации ADR (для `adr-violation`)
+
+Когда `ccip-architect` создаёт ретроспективный ADR в ответ на `adr-violation`:
+
+1. **Запрет саморатификации:** агент или сессия, зафиксировавшие нарушение, не могут создавать ратифицирующий ADR без human reviewer. Новый ADR обязан содержать поле `Reviewer: <human-name>` — без него ADR не считается принятым.
+2. **Обязательные ссылки:** новый ADR должен содержать `Supersedes: ADR-XXX` (нарушенный) + `Rationale:` объяснение, почему нарушение ретроактивно принято. Ссылка на нарушенный ADR без `Rationale` недопустима.
+3. **Метрика:** если > 20% ADR за квартал созданы по маршруту `adr-violation` → зафиксировать FEEDBACK-запись с `Priority: immediate` для `ccip-product-owner` с флагом архитектурного долга.
+
+**Запрещено:** создавать ратификационный ADR в той же сессии, где было обнаружено нарушение, без явного human sign-off.
 
 ---
 

@@ -25,13 +25,23 @@ function run() {
   const sessionId = state.session_id || 'unknown';
   const task = state.task || '';
 
-  const lines = observations.map(obs => JSON.stringify({
-    agent: obs.agent || '',
-    session: sessionId.slice(0, 10),
-    outcome: obs.outcome || '',
-    context_tokens: obs.context_tokens || 0,
-    reason: obs.reason || ''
-  }));
+  // Validate that each observation was written by an agent actually in the DAG.
+  const dagAgents = new Set((state.dag || []).map(s => s.agent));
+  const lines = observations.map(obs => {
+    if (dagAgents.size > 0 && obs.agent && !dagAgents.has(obs.agent)) {
+      process.stderr.write(`[flush-state] ⚠ observation from unknown agent "${obs.agent}" — skipped\n`);
+      return null;
+    }
+    return JSON.stringify({
+      agent:          obs.agent          || '',
+      session:        obs.session        || sessionId.slice(0, 10),
+      written_at:     obs.written_at     || new Date().toISOString(),
+      dag_step:       obs.dag_step       ?? null,
+      outcome:        obs.outcome        || '',
+      context_tokens: obs.context_tokens || 0,
+      reason:         obs.reason         || '',
+    });
+  }).filter(Boolean);
 
   const block = [
     '',
@@ -51,9 +61,11 @@ function run() {
 
   fs.appendFileSync(FEEDBACK_FILE, block, 'utf-8');
 
-  // Clear observations from state (keep other fields intact)
+  // Clear observations from state; use atomic tmp→rename (same as execute-dag.js).
   state.observations = [];
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+  const tmp = STATE_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+  fs.renameSync(tmp, STATE_FILE);
 
   process.stdout.write(`[flush-state] ${observations.length} observation(s) → feedback-loop.md (session: ${sessionId})\n`);
 }

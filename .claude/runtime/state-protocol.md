@@ -71,13 +71,21 @@ Session Start
 ```json
 "observations": [
   {
-    "agent": "ccip-architect",
-    "outcome": "success | rerouted | partial",
+    "agent":          "ccip-architect",
+    "session":        "2026-05-03-1430",
+    "written_at":     "2026-05-03T14:32:11.000Z",
+    "dag_step":       1,
+    "outcome":        "success | rerouted | partial",
     "context_tokens": 14000,
-    "reason": "Причина reroute или пустая строка при success"
+    "reason":         "Причина reroute или пустая строка при success"
   }
 ]
 ```
+
+**Правила валидации (flush-state.js):**
+- `agent` должен присутствовать в `dag[].agent` текущей сессии; иначе запись пропускается с предупреждением.
+- `session` и `written_at` заполняются автоматически execute-dag.js — агент не должен указывать их вручную.
+- `dag_step` — номер шага DAG, который сгенерировал наблюдение; позволяет отследить потери при race.
 
 ---
 
@@ -108,6 +116,9 @@ Previous agents: <список agent_outputs с handoff_notes>
 Your step: <dag[current_step].scope>
 ```
 
+**Защита от prompt injection:**
+`handoff_notes` предыдущих агентов инъецируется с HTML-тегами `<!-- handoff-data -->` / `<!-- /handoff-data -->` и проходит через `sanitizeHandoff()`, которая удаляет строки, начинающиеся с `ignore`, `system:`, `you are now`, `new instruction` и подобных паттернов. Агенты не должны копировать handoff-данные в артефакты или свой handoff_notes без явного намерения.
+
 ---
 
 ## Flush
@@ -115,4 +126,17 @@ Your step: <dag[current_step].scope>
 `flush-state.js` запускается Stop hook автоматически:
 - Читает `observations[]`
 - Если не пусто → добавляет в `feedback-loop.md §4`
-- Сбрасывает `observations[]` в state file
+- Валидирует: `obs.agent` должен присутствовать в `dag[].agent`; иначе — пропуск с `stderr` предупреждением
+- Сбрасывает `observations[]` в state file через атомарный tmp→rename (исключает corrupt на crash)
+
+## Запуск execute-dag.js
+
+```bash
+node execute-dag.js               # отобразить DAG-план, выполнить
+node execute-dag.js --confirm     # отобразить DAG-план, спросить подтверждение
+node execute-dag.js --auto        # пропустить отображение плана, выполнить
+node execute-dag.js --dry-run     # отобразить план без запуска агентов
+node execute-dag.js --resume      # пропустить done-шаги, сбросить failed→pending
+```
+
+**По умолчанию** (без флагов): DAG-план отображается в консоли, выполнение начинается автоматически. Используй `--confirm` для интерактивного подтверждения при запуске из pipelineокружений, где автозапуск нежелателен.
