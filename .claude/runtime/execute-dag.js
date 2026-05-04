@@ -269,7 +269,7 @@ function buildWaves(dag) {
 async function main() {
   let state = readState();
 
-  if (!state.session_id)  { console.error('[execute-dag] session_id empty — INIT required (§15)'); process.exit(1); }
+  if (!state.session_id)  { console.error('[execute-dag] session_id empty — populate session-state.json before running'); process.exit(1); }
   if (!state.dag?.length) { console.error('[execute-dag] dag[] empty — run ccip-routing-planner first'); process.exit(1); }
 
   // ── pre-flight ───────────────────────────────────────────────────────────────

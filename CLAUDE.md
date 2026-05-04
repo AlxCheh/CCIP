@@ -1,99 +1,92 @@
-# CLAUDE.md v2 — Lean Orchestration Guide
+# CLAUDE.md — Orchestration
 
-## 1. Core Principle
-Load minimal context. Solve tasks via the simplest path.
-
-## 2. Context Rules
-- Read only necessary sections
-- Use limit + offset
-- Avoid full architecture loading unless needed
-- Delegate large tasks
-
-### Context Levels
-- L1: Routing
-- L2: Task
-- L3: Architecture
-- L4: Full analysis
-
-**Rule:** Do not escalate without need
-
-## 3. Task Flow
-```
-IF simple task → direct agent
-ELSE → classify intents → check risk → route
-```
-
-## 4. Fast Path
-```
-IF intents == 1 AND risk == LOW → direct agent
-```
-
-## 5. Intent Routing
-- ARCH → ccip-architect
-- SCHEMA → ccip-dba
-- BACKEND → ccip-backend-core
-- AUX → ccip-backend-aux
-- FRONTEND → ccip-frontend
-- DEVOPS → ccip-devops
-- QA → ccip-qa
-- SECURITY → security-reviewer
-- DOC → ccip-doc-writer
-
-### Multi-intent
-- Primary = main intent
-- Others = co-agents
-
-## 6. Risk
-- HIGH: auth / security / breaking
-- MEDIUM: schema / API
-- LOW: docs / UI
-
-### Rules
-- HIGH → add security-reviewer
-- ARCH → architect lead
-
-## 7. Planner
-Use ONLY if:
-- intents ≥ 3
-- OR risk HIGH
-- OR unclear task
-
-## 8. Agent Selection
-1. Policy
-2. Intent → agent
-3. Else → general-purpose
-
-## 9. Execution
-- 1 primary agent
-- max 2–3 agents
-- avoid complex DAG
-
-## 10. Feedback
-```
-Fail ≥2 → backup agent
-Success ≥3 → keep routing
-```
-
-## 11. Document Routing
-- docs/project-state.md
-- docs/tasks/index.md
-- docs/architecture/*
-- prisma/schema.prisma
-- docs/decisions/ADR
-
-## 12. Forbidden
-- full file reads
-- unnecessary L4
-- planner overuse
-- >3 agents
-
-## 13. Efficiency
-- minimize tokens
-- avoid duplication
-- prefer simple logic
-
-## 14. Verification
-Define success before task
-
-## 15. Golden Rule
 > Simple > complex
+
+## Context
+```
+L1 → this file only
+L2 → load relevant task file
+L3 → load docs/architecture_v1_0.md
+L4 → load all
+```
+Rule: do not escalate without need
+
+## Fast Path
+```
+IF intents == 1 AND risk == LOW
+→ direct agent (stop)
+```
+
+## Planner
+```
+IF intents >= 3 OR risk == HIGH
+→ planner
+ELSE → direct agent
+```
+
+## Intent → Agent → Backup
+| Intent   | Agent              | Backup            |
+|----------|--------------------|-------------------|
+| ARCH     | ccip-architect     | general-purpose   |
+| SCHEMA   | ccip-dba           | ccip-backend-core |
+| BACKEND  | ccip-backend-core  | general-purpose   |
+| AUX      | ccip-backend-aux   | ccip-backend-core |
+| FRONTEND | ccip-frontend      | general-purpose   |
+| DEVOPS   | ccip-devops        | general-purpose   |
+| QA       | ccip-qa            | general-purpose   |
+| MOBILE   | ccip-mobile        | general-purpose   |
+| SECURITY | security-reviewer  | ccip-architect    |
+| DOC      | ccip-doc-writer    | general-purpose   |
+
+## Risk Rules
+```
+HIGH   → add security-reviewer as co-agent
+MEDIUM → present output for review before applying
+LOW    → execute directly
+```
+```
+IF intent == ARCH → ccip-architect leads
+```
+
+## Agent Selection
+```
+1. intent → agent (table above)
+2. else → general-purpose
+```
+
+## Execution
+```
+- 1 primary agent always
+- max 2–3 agents total
+- co-agents support primary, not parallel
+```
+
+## Multi-intent
+```
+primary  = main intent agent
+co-agents = remaining intents (max 2)
+```
+
+## Feedback
+```
+IF agent fails >= 2 → switch to backup (see table)
+IF success >= 3     → keep current routing
+```
+
+## Document Routing
+| Need          | File                    |
+|---------------|-------------------------|
+| project state | docs/project-state.md   |
+| tasks         | docs/tasks/index.md     |
+| architecture  | docs/architecture/*     |
+| schema        | packages/database/prisma/schema.prisma |
+| decisions     | docs/decisions/ADR-*.md |
+
+## Constraints
+- no full file reads — use limit + offset
+- no unnecessary L3/L4
+- no >3 agents
+- no planner for simple tasks
+
+## Verification
+Define success criteria before starting task.

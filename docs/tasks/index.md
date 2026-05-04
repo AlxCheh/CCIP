@@ -9,7 +9,7 @@
 | Research Task | `ccip-architect` | T2 |
 | Documentation Update | `ccip-doc-writer` | T1 |
 | Performance Optimization | `module_agent` → §1.5 | T2 |
-| Security Update | `ccip-security` | T3 |
+| Security Update | `security-reviewer` | T3 |
 
 Co-agent условия → `agent-handoff.md`  
 Context по T-level → `context-policy.md`  
@@ -31,7 +31,7 @@ Routing contract → `routing-contract.md`
 | M-06 | Baseline F/G, GC Change H | 6 | `ccip-backend-core` |
 | M-07 | Sync API I | 7 | `ccip-backend-aux` |
 | M-08 | Web App — Dashboard, Period Cycle, GP Form | 8 | `ccip-frontend` |
-| M-10 | Security / Immutability / RBAC audit | 10 | `ccip-security` |
+| M-10 | Security / Immutability / RBAC audit | 10 | `security-reviewer` |
 | M-11 | Testing / SLA Recovery scan | 11 | `ccip-qa` |
 | M-12 | Prod Infra / K8s | 12 | `ccip-devops` |
 | M-13 | Pilot | 13 | все агенты |

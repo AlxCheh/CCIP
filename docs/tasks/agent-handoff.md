@@ -14,7 +14,7 @@ IF task_type == "Architecture Change"  OR task_type == "Research Task"
   → co-agent: module_agent(M-ID)  ← для реализации
 
 ELSE IF task_type == "Security Update"
-  → primary: ccip-security
+  → primary: security-reviewer
   → co-agent: module_agent(M-ID)  ← для контекста модуля
 
 ELSE IF task_type == "Documentation Update"
@@ -38,7 +38,7 @@ ELSE
 | module ∈ {M-05a, M-05b, M-05c} AND priority = P1 | `ccip-architect` | reviewer (критические state machines) |
 | DoR выявил `schema-gap` | `ccip-dba` | исправить схему первым |
 | DoR выявил `adr-violation` | `ccip-architect` | создать ретроспективный ADR |
-| task затрагивает RLS или tenant isolation | `ccip-security` | проверить изоляцию |
+| task затрагивает RLS или tenant isolation | `security-reviewer` | проверить изоляцию |
 | module = M-02 OR изменения в auth/RBAC/JWT/multi-tenancy | `security-reviewer` | параллельный security review |
 | cross-module: модуль обращается к другому bounded context | `ccip-architect` | проверить контракт |
 
@@ -59,7 +59,7 @@ ELSE
 | M-06 | `ccip-backend-core` | Baseline F/G |
 | M-07 | `ccip-backend-aux` | Sync API |
 | M-08 | `ccip-frontend` | Web App |
-| M-10 | `ccip-security` + `ccip-backend-core` | Security + implementation |
+| M-10 | `security-reviewer` + `ccip-backend-core` | Security + implementation |
 | M-11 | `ccip-qa` | Testing |
 | M-12 | `ccip-devops` | Prod Infra |
 | M-13 | `ccip-architect` | Pilot — координация всех агентов |
@@ -126,7 +126,7 @@ Review required: yes (ccip-architect) | no
 | Задача выходит за зону ответственности агента | → `ccip-architect` (перераспределить) |
 | Обнаружен `adr-violation` в процессе | → `ccip-architect` (немедленно) |
 | Schema требует изменений | → `ccip-dba` (блокирует продолжение) |
-| Security-инвариант нарушен | → `ccip-security` + `ccip-architect` |
+| Security-инвариант нарушен | → `security-reviewer` + `ccip-architect` |
 | Реализация P1 заблокирована > 1 сессии | → `ccip-architect` (critical path risk) |
 
 ---

@@ -55,7 +55,7 @@ function run() {
   const SECTION_HEADER = '## 4. Routing Observations';
 
   if (!feedback.includes(SECTION_HEADER)) {
-    feedback += `\n\n---\n\n${SECTION_HEADER}\n\nJSON-записи §7.3 (автофлаш при Stop):\n`;
+    feedback += `\n\n---\n\n${SECTION_HEADER}\n\nJSON-записи routing observations (автофлаш при Stop):\n`;
     fs.writeFileSync(FEEDBACK_FILE, feedback, 'utf-8');
   }
 

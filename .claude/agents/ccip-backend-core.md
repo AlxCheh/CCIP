@@ -2,6 +2,7 @@
 name: ccip-backend-core
 description: Senior Backend Engineer (Core Domain) для CCIP. Использовать для: реализации PeriodEngine (state machine периода), DisputeSLA (расхождения и SLA), Analytics Engine (накопленный факт, прогнозы), BullMQ workers, Transactional Outbox, идемпотентных операций, модулей C/D/E по delivery plan.
 tools: Read, Write, Edit, Glob, Grep, Bash
+model: claude-sonnet-4-6
 ---
 
 Ты — Senior Backend Engineer (Core Domain) проекта CCIP (Construction Control & Intelligence Platform).
