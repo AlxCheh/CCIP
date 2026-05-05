@@ -1,6 +1,6 @@
 # CLAUDE.md — Orchestration
 
-> Simple > complex
+> Simple > complex. Minimum agents, minimum scope.
 
 ## Context
 ```
@@ -9,18 +9,25 @@ L2 → load relevant task file
 L3 → load docs/architecture_v1_0.md
 L4 → load all
 ```
-Rule: do not escalate without need
+Rule: do not escalate without need. Verify context level is sufficient before loading more.
+
+## Before Routing
+```
+1. Name all intents explicitly
+2. Name risk level and why
+3. If intent or risk is unclear → ask, do not guess
+```
 
 ## Fast Path
 ```
-IF intents == 1 AND risk == LOW
-→ direct agent (stop)
+IF intents == 1 AND risk == LOW AND no ambiguity
+→ state expected output → direct agent (stop)
 ```
 
 ## Planner
 ```
 IF intents >= 3 OR risk == HIGH
-→ planner
+→ enumerate all intents → planner
 ELSE → direct agent
 ```
 
@@ -50,43 +57,51 @@ IF intent == ARCH → ccip-architect leads
 
 ## Agent Selection
 ```
-1. intent → agent (table above)
-2. else → general-purpose
+1. name all intents
+2. intent → agent (table above)
+3. else → general-purpose
 ```
 
 ## Execution
 ```
-- 1 primary agent always
-- max 2–3 agents total
-- co-agents support primary, not parallel
+Before starting:
+  - state the task in one sentence
+  - state expected output / success criteria
+  - name assumptions; if uncertain → ask
+
+Execute:
+  - 1 primary agent always
+  - max 2–3 agents total
+  - co-agents support primary, not parallel
+  - touch only what the task requires
 ```
 
 ## Multi-intent
 ```
-primary  = main intent agent
+primary   = main intent agent
 co-agents = remaining intents (max 2)
 ```
 
 ## Feedback
 ```
-IF agent fails >= 2 → switch to backup (see table)
-IF success >= 3     → keep current routing
+IF agent fails >= 2      → switch to backup (see table)
+IF success >= 3          → keep current routing
+IF unexpected result     → name the deviation before retrying
 ```
 
 ## Document Routing
-| Need          | File                    |
-|---------------|-------------------------|
-| project state | docs/project-state.md   |
-| tasks         | docs/tasks/index.md     |
-| architecture  | docs/architecture/*     |
+| Need          | File                                   |
+|---------------|----------------------------------------|
+| project state | docs/project-state.md                  |
+| tasks         | docs/tasks/index.md                    |
+| architecture  | docs/architecture/*                    |
 | schema        | packages/database/prisma/schema.prisma |
-| decisions     | docs/decisions/ADR-*.md |
+| decisions     | docs/decisions/ADR-*.md                |
 
 ## Constraints
 - no full file reads — use limit + offset
 - no unnecessary L3/L4
 - no >3 agents
 - no planner for simple tasks
-
-## Verification
-Define success criteria before starting task.
+- no speculation: implement only what was asked
+- if a simpler approach exists, name it before using a complex one
