@@ -1,13 +1,13 @@
-import {
-  Injectable,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { AuditLogService } from '../../common/audit/audit-log.service';
 
 @Injectable()
 export class PeriodService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async openPeriod(objectId: number, actorId: number) {
     return this.prisma.$transaction(async (tx) => {
@@ -22,16 +22,12 @@ export class PeriodService {
       const zeroReport = await tx.zeroReport.findFirst({
         where: { objectId, status: 'approved' },
       });
-      if (!zeroReport) {
-        throw new ForbiddenException('ZERO_REPORT_NOT_APPROVED');
-      }
+      if (!zeroReport) throw new ForbiddenException('ZERO_REPORT_NOT_APPROVED');
 
       const openPeriod = await tx.period.findFirst({
         where: { objectId, status: 'open' },
       });
-      if (openPeriod) {
-        throw new ConflictException('PERIOD_ALREADY_OPEN');
-      }
+      if (openPeriod) throw new ConflictException('PERIOD_ALREADY_OPEN');
 
       const last = await tx.period.findFirst({
         where: { objectId },
@@ -54,15 +50,13 @@ export class PeriodService {
         },
       });
 
-      await tx.auditLog.create({
-        data: {
-          tableName: 'periods',
-          recordId: BigInt(period.id),
-          action: 'period_opened',
-          newData: { objectId, periodNumber: period.periodNumber },
-          performedBy: actorId,
-          organizationId: obj.organizationId,
-        },
+      await this.auditLog.log({
+        tableName: 'periods',
+        recordId: BigInt(period.id),
+        action: 'period_opened',
+        newData: { objectId, periodNumber: period.periodNumber },
+        performedBy: actorId,
+        organizationId: obj.organizationId,
       });
 
       return period;
@@ -76,23 +70,19 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
-      if (period.status !== 'open') {
-        throw new ConflictException('PERIOD_NOT_OPEN');
-      }
+      if (period.status !== 'open') throw new ConflictException('PERIOD_NOT_OPEN');
 
       const updated = await tx.period.update({
         where: { id: periodId },
         data: { status: 'closed', closedAt: new Date(), closedBy: actorId },
       });
 
-      await tx.auditLog.create({
-        data: {
-          tableName: 'periods',
-          recordId: BigInt(periodId),
-          action: 'period_closed',
-          performedBy: actorId,
-          organizationId: period.object.organizationId,
-        },
+      await this.auditLog.log({
+        tableName: 'periods',
+        recordId: BigInt(periodId),
+        action: 'period_closed',
+        performedBy: actorId,
+        organizationId: period.object.organizationId,
       });
 
       return updated;
