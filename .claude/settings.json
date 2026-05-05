@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/post-agent-hook.js"
+            "command": "node CCIP/.claude/runtime/post-agent-hook.js"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/flush-state.js"
+            "command": "node CCIP/.claude/runtime/flush-state.js"
           }
         ]
       }
