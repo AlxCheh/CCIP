@@ -10,11 +10,11 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-04-29 |
-| **Current Phase** | 0 — Architectural Foundation |
+| **Last Updated** | 2026-05-05 |
+| **Current Phase** | 2 — Auth & Middleware |
 | **Phase Status** | 🔄 active |
-| **Active P1 Task** | M-00 — ADR-012 Multi-tenancy |
-| **Next Milestone** | ADR-012 принят → Phase 1 разблокирован |
+| **Active P1 Task** | M-02a — JWT+RBAC Guards+GpTokenGuard; M-02b — AuditLogService; M-02c — TenantMiddleware |
+| **Next Milestone** | M-02a + M-02b + M-02c завершены → M-03 разблокирован |
 | **Active Blockers** | см. §3 |
 | **Open Feedbacks** | 0 |
 
@@ -24,12 +24,12 @@
 
 | ID | Pri | Модуль | Этап | Статус | Блокирует |
 |----|-----|--------|------|--------|-----------|
-| M-00 | P1 | ADR-012 Multi-tenancy | 0 | 🔄 active | все |
-| M-01a | P1 | Docker + PostgreSQL + Redis AOF + PgBouncer | 1 | ○ pending | M-02..M-13 |
-| M-01b | P1 | Prisma schema P-01..P-25 | 1 | ○ pending | M-02..M-13 |
-| M-02a | P1 | Auth: JWT + RBAC Guards + GpTokenGuard | 2 | ○ pending | все API |
-| M-02b | P1 | AuditLogService (append-only) | 2 | ○ pending | Immutability |
-| M-02c | P1 | Multi-tenancy middleware | 2 | ○ pending | все сервисы |
+| M-00 | P1 | ADR-012 Multi-tenancy | 0 | ✓ done | — |
+| M-01a | P1 | Docker + PostgreSQL + Redis AOF + PgBouncer | 1 | ✓ done | — |
+| M-01b | P1 | Prisma schema P-01..P-29 | 1 | ✓ done | — |
+| M-02a | P1 | Auth: JWT + RBAC Guards + GpTokenGuard | 2 | 🔄 active | все API |
+| M-02b | P1 | AuditLogService (append-only) | 2 | 🔄 active | Immutability |
+| M-02c | P1 | Multi-tenancy middleware | 2 | 🔄 active | все сервисы |
 | M-03 | P1 | Init Module A: Objects + BoQ + weight_coef trigger | 3 | ○ pending | M-04..M-07 |
 | M-04 | P1 | ZeroReport Module B | 4 | ○ pending | M-05a |
 | M-05a | P1 | PeriodEngine Module C | 5 | ○ pending | M-05b, M-05c |
@@ -66,7 +66,9 @@
 
 | ID | Модуль | Дата | DONE-ref |
 |----|--------|------|----------|
-| — | Нет завершённых модулей | — | — |
+| M-00 | ADR-012 Multi-tenancy | 2026-05-05 | ADR-012-multitenancy.md (Статус: Принято) |
+| M-01a | Docker + PostgreSQL + Redis AOF + PgBouncer + MinIO | 2026-05-05 | infra/docker/docker-compose.yml |
+| M-01b | Prisma schema P-01..P-29 | 2026-05-05 | packages/database/prisma/schema.prisma + migrations/0001_initial |
 
 ---
 
