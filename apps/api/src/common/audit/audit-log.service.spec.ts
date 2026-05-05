@@ -1,12 +1,5 @@
 import { Test } from '@nestjs/testing';
 import { AuditLogService } from './audit-log.service';
-
-// Mock PrismaService to avoid the @ccip/database module resolution at test time
-jest.mock('../prisma/prisma.service', () => ({
-  PrismaService: jest.fn(),
-}));
-
-// Import after mock registration
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('AuditLogService', () => {

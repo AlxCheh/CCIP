@@ -3,13 +3,6 @@ import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UnauthorizedException } from '@nestjs/common';
-
-// Mock PrismaService to avoid the @ccip/database module resolution at test time
-jest.mock('../prisma/prisma.service', () => ({
-  PrismaService: jest.fn(),
-}));
-
-// Import after mock registration
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('AuthService.login', () => {

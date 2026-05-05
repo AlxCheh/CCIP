@@ -1,10 +1,4 @@
 import { ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
-
-// Mock PrismaService to avoid @ccip/database module resolution at test time
-jest.mock('../prisma/prisma.service', () => ({
-  PrismaService: jest.fn(),
-}));
-
 import { GpTokenGuard } from './gp-token.guard';
 import { PrismaService } from '../prisma/prisma.service';
 

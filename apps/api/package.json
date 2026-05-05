@@ -79,8 +79,8 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^@ccip/database(.*)$": "<rootDir>/../../packages/database/src$1",
-      "^@ccip/shared(.*)$": "<rootDir>/../../packages/shared/src$1"
+      "^@ccip/database(.*)$": "<rootDir>/../../../packages/database/src$1",
+      "^@ccip/shared(.*)$": "<rootDir>/../../../packages/shared/src$1"
     }
   }
 }
