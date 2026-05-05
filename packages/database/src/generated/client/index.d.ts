@@ -4806,6 +4806,7 @@ export namespace Prisma {
     email: string | null
     name: string | null
     role: string | null
+    passwordHash: string | null
     isActive: boolean | null
     createdAt: Date | null
     organizationId: string | null
@@ -4816,6 +4817,7 @@ export namespace Prisma {
     email: string | null
     name: string | null
     role: string | null
+    passwordHash: string | null
     isActive: boolean | null
     createdAt: Date | null
     organizationId: string | null
@@ -4826,6 +4828,7 @@ export namespace Prisma {
     email: number
     name: number
     role: number
+    passwordHash: number
     isActive: number
     createdAt: number
     organizationId: number
@@ -4846,6 +4849,7 @@ export namespace Prisma {
     email?: true
     name?: true
     role?: true
+    passwordHash?: true
     isActive?: true
     createdAt?: true
     organizationId?: true
@@ -4856,6 +4860,7 @@ export namespace Prisma {
     email?: true
     name?: true
     role?: true
+    passwordHash?: true
     isActive?: true
     createdAt?: true
     organizationId?: true
@@ -4866,6 +4871,7 @@ export namespace Prisma {
     email?: true
     name?: true
     role?: true
+    passwordHash?: true
     isActive?: true
     createdAt?: true
     organizationId?: true
@@ -4963,6 +4969,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive: boolean
     createdAt: Date
     organizationId: string
@@ -4992,6 +4999,7 @@ export namespace Prisma {
     email?: boolean
     name?: boolean
     role?: boolean
+    passwordHash?: boolean
     isActive?: boolean
     createdAt?: boolean
     organizationId?: boolean
@@ -5026,6 +5034,7 @@ export namespace Prisma {
     email?: boolean
     name?: boolean
     role?: boolean
+    passwordHash?: boolean
     isActive?: boolean
     createdAt?: boolean
     organizationId?: boolean
@@ -5037,6 +5046,7 @@ export namespace Prisma {
     email?: boolean
     name?: boolean
     role?: boolean
+    passwordHash?: boolean
     isActive?: boolean
     createdAt?: boolean
     organizationId?: boolean
@@ -5104,6 +5114,7 @@ export namespace Prisma {
       email: string
       name: string
       role: string
+      passwordHash: string
       isActive: boolean
       createdAt: Date
       organizationId: string
@@ -5527,6 +5538,7 @@ export namespace Prisma {
     readonly email: FieldRef<"User", 'String'>
     readonly name: FieldRef<"User", 'String'>
     readonly role: FieldRef<"User", 'String'>
+    readonly passwordHash: FieldRef<"User", 'String'>
     readonly isActive: FieldRef<"User", 'Boolean'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly organizationId: FieldRef<"User", 'String'>
@@ -33447,6 +33459,7 @@ export namespace Prisma {
     email: 'email',
     name: 'name',
     role: 'role',
+    passwordHash: 'passwordHash',
     isActive: 'isActive',
     createdAt: 'createdAt',
     organizationId: 'organizationId'
@@ -34078,6 +34091,7 @@ export namespace Prisma {
     email?: StringFilter<"User"> | string
     name?: StringFilter<"User"> | string
     role?: StringFilter<"User"> | string
+    passwordHash?: StringFilter<"User"> | string
     isActive?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     organizationId?: UuidFilter<"User"> | string
@@ -34111,6 +34125,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     role?: SortOrder
+    passwordHash?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     organizationId?: SortOrder
@@ -34147,6 +34162,7 @@ export namespace Prisma {
     NOT?: UserWhereInput | UserWhereInput[]
     name?: StringFilter<"User"> | string
     role?: StringFilter<"User"> | string
+    passwordHash?: StringFilter<"User"> | string
     isActive?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     organizationId?: UuidFilter<"User"> | string
@@ -34180,6 +34196,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     role?: SortOrder
+    passwordHash?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     organizationId?: SortOrder
@@ -34198,6 +34215,7 @@ export namespace Prisma {
     email?: StringWithAggregatesFilter<"User"> | string
     name?: StringWithAggregatesFilter<"User"> | string
     role?: StringWithAggregatesFilter<"User"> | string
+    passwordHash?: StringWithAggregatesFilter<"User"> | string
     isActive?: BoolWithAggregatesFilter<"User"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     organizationId?: UuidWithAggregatesFilter<"User"> | string
@@ -36486,6 +36504,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -36518,6 +36537,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -36549,6 +36569,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -36581,6 +36602,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -36613,6 +36635,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -36622,6 +36645,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36631,6 +36655,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -39188,6 +39213,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     role?: SortOrder
+    passwordHash?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     organizationId?: SortOrder
@@ -39202,6 +39228,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     role?: SortOrder
+    passwordHash?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     organizationId?: SortOrder
@@ -39212,6 +39239,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     role?: SortOrder
+    passwordHash?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
     organizationId?: SortOrder
@@ -44686,6 +44714,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     createdObjects?: ConstructionObjectCreateNestedManyWithoutCreatedByUserInput
@@ -44717,6 +44746,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     createdObjects?: ConstructionObjectUncheckedCreateNestedManyWithoutCreatedByUserInput
@@ -44900,6 +44930,7 @@ export namespace Prisma {
     email?: StringFilter<"User"> | string
     name?: StringFilter<"User"> | string
     role?: StringFilter<"User"> | string
+    passwordHash?: StringFilter<"User"> | string
     isActive?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     organizationId?: UuidFilter<"User"> | string
@@ -46562,6 +46593,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -46593,6 +46625,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -46674,6 +46707,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -46705,6 +46739,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -46764,6 +46799,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -46795,6 +46831,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -47214,6 +47251,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -47245,6 +47283,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -47500,6 +47539,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -47531,6 +47571,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -47637,6 +47678,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -47668,6 +47710,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -47752,6 +47795,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -47783,6 +47827,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -47889,6 +47934,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -47920,6 +47966,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -48004,6 +48051,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -48035,6 +48083,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -48070,6 +48119,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -48101,6 +48151,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -48366,6 +48417,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -48397,6 +48449,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -48438,6 +48491,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -48469,6 +48523,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -49410,6 +49465,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -49441,6 +49497,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -49476,6 +49533,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -49507,6 +49565,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -49688,6 +49747,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -49719,6 +49779,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -49760,6 +49821,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -49791,6 +49853,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -50095,6 +50158,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -50126,6 +50190,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -50161,6 +50226,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -50192,6 +50258,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -50227,6 +50294,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -50258,6 +50326,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -50645,6 +50714,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -50676,6 +50746,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -50717,6 +50788,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -50748,6 +50820,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -50789,6 +50862,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -50820,6 +50894,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -51329,6 +51404,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -51360,6 +51436,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -51450,6 +51527,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -51481,6 +51559,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -51625,6 +51704,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -51656,6 +51736,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -51828,6 +51909,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -51859,6 +51941,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -52129,6 +52212,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -52160,6 +52244,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -52206,6 +52291,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -52237,6 +52323,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -52861,6 +52948,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -52892,6 +52980,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -52927,6 +53016,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -52958,6 +53048,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -53184,6 +53275,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -53215,6 +53307,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -53256,6 +53349,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -53287,6 +53381,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -53443,6 +53538,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -53474,6 +53570,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -53580,6 +53677,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -53611,6 +53709,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -53893,6 +53992,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -53924,6 +54024,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -53999,6 +54100,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -54030,6 +54132,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -54095,6 +54198,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -54126,6 +54230,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -54161,6 +54266,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -54192,6 +54298,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -54238,6 +54345,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -54269,6 +54377,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -54310,6 +54419,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -54341,6 +54451,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -54509,6 +54620,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -54540,6 +54652,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -54586,6 +54699,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -54617,6 +54731,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -54647,6 +54762,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organization: OrganizationCreateNestedOneWithoutUsersInput
@@ -54678,6 +54794,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
     organizationId: string
@@ -54724,6 +54841,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organization?: OrganizationUpdateOneRequiredWithoutUsersNestedInput
@@ -54755,6 +54873,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     organizationId?: StringFieldUpdateOperationsInput | string
@@ -54786,6 +54905,7 @@ export namespace Prisma {
     email: string
     name: string
     role: string
+    passwordHash: string
     isActive?: boolean
     createdAt?: Date | string
   }
@@ -54832,6 +54952,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdObjects?: ConstructionObjectUpdateManyWithoutCreatedByUserNestedInput
@@ -54863,6 +54984,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdObjects?: ConstructionObjectUncheckedUpdateManyWithoutCreatedByUserNestedInput
@@ -54894,6 +55016,7 @@ export namespace Prisma {
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
