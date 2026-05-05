@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -58,6 +59,22 @@ async function main() {
   console.log(`SystemConfig: ${configEntries.length} entries`);
 
   // ── Users ────────────────────────────────────────────────────────────────────
+  const adminPasswordHash = await bcrypt.hash('Admin1234!', 12);
+  const defaultPasswordHash = await bcrypt.hash('Ccip1234!', 12);
+
+  const adminExample = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      email: 'admin@example.com',
+      name: 'Admin User',
+      role: 'admin',
+      passwordHash: adminPasswordHash,
+      isActive: true,
+      organizationId: ORG_ID,
+    },
+  });
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@ccip.dev' },
     update: {},
@@ -65,6 +82,7 @@ async function main() {
       email: 'admin@ccip.dev',
       name: 'Иванов Иван Иванович',
       role: 'admin',
+      passwordHash: defaultPasswordHash,
       isActive: true,
       organizationId: ORG_ID,
     },
@@ -77,6 +95,7 @@ async function main() {
       email: 'director@ccip.dev',
       name: 'Директоров Дмитрий Петрович',
       role: 'director',
+      passwordHash: defaultPasswordHash,
       isActive: true,
       organizationId: ORG_ID,
     },
@@ -89,11 +108,12 @@ async function main() {
       email: 'sc@ccip.dev',
       name: 'Строев Сергей Александрович',
       role: 'stroycontrol',
+      passwordHash: defaultPasswordHash,
       isActive: true,
       organizationId: ORG_ID,
     },
   });
-  console.log(`Users: admin(${admin.id}), director(${director.id}), sc(${sc.id})`);
+  console.log(`Users: admin@example.com(${adminExample.id}), admin(${admin.id}), director(${director.id}), sc(${sc.id})`);
 
   // ── Construction Object ───────────────────────────────────────────────────────
   const existingObject = await prisma.constructionObject.findFirst({
@@ -157,8 +177,9 @@ async function main() {
   console.log(`BoqItems: ${items.length} items (total contract = 100M RUB)`);
 
   console.log('\n✅ Seed complete');
-  console.log('   Logins (password will be set in Этап 2 Auth module):');
-  console.log('   admin@ccip.dev | director@ccip.dev | sc@ccip.dev');
+  console.log('   Logins:');
+  console.log('   admin@example.com / Admin1234!');
+  console.log('   admin@ccip.dev | director@ccip.dev | sc@ccip.dev  (password: Ccip1234!)');
 }
 
 main()
