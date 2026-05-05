@@ -68,7 +68,13 @@ export class AuthService {
       where: { tokenHash },
       include: {
         user: {
-          select: { id: true, email: true, role: true, organizationId: true, isActive: true },
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            organizationId: true,
+            isActive: true,
+          },
         },
       },
     });
@@ -100,7 +106,13 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     await this.prisma.refreshToken.create({
-      data: { userId: user.id, tokenHash: newHash, expiresAt, userAgent, ipAddress },
+      data: {
+        userId: user.id,
+        tokenHash: newHash,
+        expiresAt,
+        userAgent,
+        ipAddress,
+      },
     });
 
     return { accessToken, refreshToken: newRaw };

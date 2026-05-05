@@ -5,34 +5,44 @@ import { tenantStorage } from './tenant.storage';
 const TENANT_MODELS = new Set(['Object', 'User', 'SystemConfig', 'AuditLog']);
 
 const FILTER_OPS = new Set([
-  'findMany', 'findFirst', 'findFirstOrThrow',
-  'findUnique', 'findUniqueOrThrow',
-  'count', 'aggregate',
+  'findMany',
+  'findFirst',
+  'findFirstOrThrow',
+  'findUnique',
+  'findUniqueOrThrow',
+  'count',
+  'aggregate',
 ]);
 
 const WRITE_OPS = new Set(['update', 'delete', 'updateMany', 'deleteMany']);
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   async onModuleInit() {
     this.$use(async (params, next) => {
       const ctx = tenantStorage.getStore();
       if (!ctx?.organizationId || !TENANT_MODELS.has(params.model ?? '')) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return next(params);
       }
       const { organizationId } = ctx;
+      const args = params.args as Record<string, Record<string, unknown>>;
 
       if (FILTER_OPS.has(params.action)) {
-        params.args.where = { ...params.args.where, organizationId };
+        args.where = { ...args.where, organizationId };
       } else if (params.action === 'create') {
-        params.args.data = { ...params.args.data, organizationId };
+        args.data = { ...args.data, organizationId };
       } else if (WRITE_OPS.has(params.action)) {
-        params.args.where = { ...params.args.where, organizationId };
+        args.where = { ...args.where, organizationId };
       } else if (params.action === 'upsert') {
-        params.args.where = { ...params.args.where, organizationId };
-        params.args.create = { ...params.args.create, organizationId };
+        args.where = { ...args.where, organizationId };
+        args.create = { ...args.create, organizationId };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return next(params);
     });
 

@@ -9,7 +9,9 @@ function decodeOrgId(req: Request): string | undefined {
     const payload = JSON.parse(
       Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString('utf8'),
     ) as { organizationId?: string };
-    return typeof payload.organizationId === 'string' ? payload.organizationId : undefined;
+    return typeof payload.organizationId === 'string'
+      ? payload.organizationId
+      : undefined;
   } catch {
     return undefined;
   }

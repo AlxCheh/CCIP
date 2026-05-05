@@ -5,7 +5,9 @@ describe('JwtStrategy.validate', () => {
   let strategy: JwtStrategy;
 
   beforeEach(() => {
-    const config = { getOrThrow: () => 'test-secret' } as unknown as ConfigService;
+    const config = {
+      getOrThrow: () => 'test-secret',
+    } as unknown as ConfigService;
     strategy = new JwtStrategy(config);
   });
 

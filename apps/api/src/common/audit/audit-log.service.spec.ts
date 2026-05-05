@@ -46,7 +46,11 @@ describe('AuditLogService', () => {
   });
 
   it('does not expose update or delete methods', () => {
-    expect((service as unknown as Record<string, unknown>).update).toBeUndefined();
-    expect((service as unknown as Record<string, unknown>).delete).toBeUndefined();
+    expect(
+      (service as unknown as Record<string, unknown>).update,
+    ).toBeUndefined();
+    expect(
+      (service as unknown as Record<string, unknown>).delete,
+    ).toBeUndefined();
   });
 });

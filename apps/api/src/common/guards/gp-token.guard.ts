@@ -12,7 +12,9 @@ export class GpTokenGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<{ params: { token: string } }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<{ params: { token: string } }>();
     const token = req.params.token;
 
     const period = await this.prisma.period.findFirst({
@@ -20,7 +22,11 @@ export class GpTokenGuard implements CanActivate {
       select: { gpTokenExpiresAt: true, gpSubmittedAt: true },
     });
 
-    if (!period || !period.gpTokenExpiresAt || period.gpTokenExpiresAt < new Date()) {
+    if (
+      !period ||
+      !period.gpTokenExpiresAt ||
+      period.gpTokenExpiresAt < new Date()
+    ) {
       throw new UnauthorizedException('GP_TOKEN_INVALID');
     }
 

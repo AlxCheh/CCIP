@@ -23,7 +23,10 @@ export class PeriodController {
   @Post('open')
   @Roles('stroycontrol', 'admin')
   open(@Body() dto: OpenPeriodDto, @Request() req: AuthRequest) {
-    return this.periodService.openPeriod(dto.objectId, parseInt(req.user.id, 10));
+    return this.periodService.openPeriod(
+      dto.objectId,
+      parseInt(req.user.id, 10),
+    );
   }
 
   @Patch(':id/close')

@@ -59,11 +59,15 @@ export class AnalyticsService {
       return `$${params.length}`;
     };
 
-    const conditions: string[] = [`o.organization_id = ${p(user.organizationId)}::uuid`];
+    const conditions: string[] = [
+      `o.organization_id = ${p(user.organizationId)}::uuid`,
+    ];
 
     if (dto.status) conditions.push(`o.status = ${p(dto.status)}`);
-    if (dto.objectClass) conditions.push(`o.object_class = ${p(dto.objectClass)}`);
-    if (dto.search) conditions.push(`o.name ILIKE ${p('%' + dto.search + '%')}`);
+    if (dto.objectClass)
+      conditions.push(`o.object_class = ${p(dto.objectClass)}`);
+    if (dto.search)
+      conditions.push(`o.name ILIKE ${p('%' + dto.search + '%')}`);
     if (dto.gapOnly) conditions.push(`COALESCE(m.gap_flag, false) = true`);
 
     const where = conditions.join(' AND ');
@@ -115,7 +119,8 @@ export class AnalyticsService {
         objectClass: r.objectClass,
         status: r.status,
         hasAnalytics: r.hasAnalytics,
-        objReadinessPct: r.objReadinessPct !== null ? parseFloat(r.objReadinessPct) : null,
+        objReadinessPct:
+          r.objReadinessPct !== null ? parseFloat(r.objReadinessPct) : null,
         weightedForecastDate: toDateString(r.weightedForecastDate),
         criticalPathForecastDate: toDateString(r.criticalPathForecastDate),
         gapFlag: r.gapFlag,

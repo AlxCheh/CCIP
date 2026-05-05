@@ -1,4 +1,8 @@
-import { ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { GpTokenGuard } from './gp-token.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -25,7 +29,9 @@ describe('GpTokenGuard', () => {
 
   it('throws UnauthorizedException when token not found', async () => {
     (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
-    await expect(guard.canActivate(makeCtx('bad-token'))).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(makeCtx('bad-token'))).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('throws UnauthorizedException when token expired', async () => {
@@ -33,7 +39,9 @@ describe('GpTokenGuard', () => {
       gpTokenExpiresAt: pastDate,
       gpSubmittedAt: null,
     });
-    await expect(guard.canActivate(makeCtx('expired-token'))).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(makeCtx('expired-token'))).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('throws ForbiddenException when already submitted', async () => {
@@ -41,7 +49,9 @@ describe('GpTokenGuard', () => {
       gpTokenExpiresAt: futureDate,
       gpSubmittedAt: new Date(),
     });
-    await expect(guard.canActivate(makeCtx('used-token'))).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(makeCtx('used-token'))).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('returns true for valid unused token', async () => {

@@ -33,7 +33,9 @@ describe('AuthService.login', () => {
         { provide: PrismaService, useValue: prisma },
         {
           provide: JwtService,
-          useValue: { signAsync: jest.fn().mockResolvedValue('access.token.here') },
+          useValue: {
+            signAsync: jest.fn().mockResolvedValue('access.token.here'),
+          },
         },
       ],
     }).compile();

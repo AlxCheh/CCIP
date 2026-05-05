@@ -51,7 +51,9 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
+    const raw = (req.cookies as Record<string, string> | undefined)?.[
+      REFRESH_COOKIE
+    ];
     if (!raw) throw new UnauthorizedException('NO_REFRESH_TOKEN');
 
     const { accessToken, refreshToken } = await this.authService.refresh(
@@ -70,11 +72,10 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const raw = (req.cookies as Record<string, string> | undefined)?.[
+      REFRESH_COOKIE
+    ];
     if (raw) await this.authService.logout(raw);
     res.clearCookie(REFRESH_COOKIE);
   }

@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 
@@ -70,7 +74,8 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
-      if (period.status !== 'open') throw new ConflictException('PERIOD_NOT_OPEN');
+      if (period.status !== 'open')
+        throw new ConflictException('PERIOD_NOT_OPEN');
 
       const updated = await tx.period.update({
         where: { id: periodId },
