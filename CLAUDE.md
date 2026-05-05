@@ -9,25 +9,19 @@ L2 → load relevant task file
 L3 → load docs/architecture_v1_0.md
 L4 → load all
 ```
-Rule: do not escalate without need. Verify context level is sufficient before loading more.
-
-## Before Routing
-```
-1. Name all intents explicitly
-2. Name risk level and why
-3. If intent or risk is unclear → ask, do not guess
-```
+Rule: load minimum level needed; verify sufficiency before escalating.
 
 ## Fast Path
 ```
 IF intents == 1 AND risk == LOW AND no ambiguity
 → state expected output → direct agent (stop)
+IF ambiguity exists → resolve before routing; do not guess
 ```
 
 ## Planner
 ```
 IF intents >= 3 OR risk == HIGH
-→ enumerate all intents → planner
+→ enumerate all intents explicitly → planner
 ELSE → direct agent
 ```
 
@@ -47,9 +41,10 @@ ELSE → direct agent
 
 ## Risk Rules
 ```
-HIGH   → add security-reviewer as co-agent
-MEDIUM → present output for review before applying
-LOW    → execute directly
+HIGH          → add security-reviewer as co-agent
+MEDIUM        → present output for review before applying
+LOW           → execute directly
+risk unclear  → default MEDIUM
 ```
 ```
 IF intent == ARCH → ccip-architect leads
@@ -57,7 +52,7 @@ IF intent == ARCH → ccip-architect leads
 
 ## Agent Selection
 ```
-1. name all intents
+1. name all intents explicitly
 2. intent → agent (table above)
 3. else → general-purpose
 ```
@@ -84,9 +79,9 @@ co-agents = remaining intents (max 2)
 
 ## Feedback
 ```
-IF agent fails >= 2      → switch to backup (see table)
-IF success >= 3          → keep current routing
-IF unexpected result     → name the deviation before retrying
+IF agent fails >= 2           → switch to backup (see table)
+IF success >= 3               → keep current routing
+IF output ≠ expected criteria → name the deviation before retrying
 ```
 
 ## Document Routing
@@ -105,3 +100,4 @@ IF unexpected result     → name the deviation before retrying
 - no planner for simple tasks
 - no speculation: implement only what was asked
 - if a simpler approach exists, name it before using a complex one
+- when in doubt → ask; never fill gaps with assumptions
