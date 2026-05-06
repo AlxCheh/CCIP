@@ -10,11 +10,11 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-05-05 |
-| **Current Phase** | 3 — Objects & BoQ |
+| **Last Updated** | 2026-05-06 |
+| **Current Phase** | 4 — ZeroReport |
 | **Phase Status** | 🔄 active |
-| **Active P1 Task** | M-03 — Objects + BoQ + weight_coef trigger |
-| **Next Milestone** | M-03 завершён → M-04 разблокирован |
+| **Active P1 Task** | M-04 — ZeroReport Module B |
+| **Next Milestone** | M-04 завершён → M-05a разблокирован |
 | **Active Blockers** | см. §3 |
 | **Open Feedbacks** | 0 |
 
@@ -30,8 +30,8 @@
 | M-02a | P1 | Auth: JWT + RBAC Guards + GpTokenGuard | 2 | ✓ done | — |
 | M-02b | P1 | AuditLogService (append-only) | 2 | ✓ done | — |
 | M-02c | P1 | Multi-tenancy middleware | 2 | ✓ done | — |
-| M-03 | P1 | Init Module A: Objects + BoQ + weight_coef trigger | 3 | 🔄 active | M-04..M-07 |
-| M-04 | P1 | ZeroReport Module B | 4 | ○ pending | M-05a |
+| M-03 | P1 | Init Module A: Objects + BoQ + weight_coef trigger | 3 | ✓ done | — |
+| M-04 | P1 | ZeroReport Module B | 4 | 🔄 active | M-05a |
 | M-05a | P1 | PeriodEngine Module C | 5 | ○ pending | M-05b, M-05c |
 | M-05b | P1 | DisputeSLA Module D + BullMQ Worker | 5 | ○ pending | M-05c, M-08 |
 | M-05c | P1 | Analytics Module E + MV refresh | 5 | ○ pending | M-08 |
@@ -72,6 +72,7 @@
 | M-02a | Auth: JWT + RBAC Guards + GpTokenGuard | 2026-05-05 | apps/api/src/common/guards/ + auth/ |
 | M-02b | AuditLogService (append-only) | 2026-05-05 | apps/api/src/common/audit/ |
 | M-02c | Multi-tenancy middleware (TenantMiddleware + PrismaTenant $use) | 2026-05-05 | apps/api/src/common/prisma/tenant.* |
+| M-03 | Init Module A: ObjectsModule, BoQModule, SystemConfigModule, DocumentsModule | 2026-05-06 | apps/api/src/modules/objects/ + boq/ + system-config/ + documents/ |
 
 ---
 
