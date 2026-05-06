@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  ForbiddenException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -71,6 +70,7 @@ describe('ZeroReportService', () => {
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue(mockUser) },
       constructionObject: { findUnique: jest.fn().mockResolvedValue(mockObject) },
       boqVersion: { findUnique: jest.fn().mockResolvedValue({ id: BOQ_VERSION_ID, objectId: OBJECT_ID, isActive: true }) },
+      boqItem: { findUnique: jest.fn().mockResolvedValue({ id: BOQ_ITEM_ID, boqVersionId: BOQ_VERSION_ID }) },
       zeroReport: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue(makeZeroReport()),
@@ -80,7 +80,9 @@ describe('ZeroReportService', () => {
       zeroReportItem: {
         upsert: jest.fn().mockResolvedValue(makeItem()),
         findMany: jest.fn().mockResolvedValue([makeItem()]),
+        count: jest.fn().mockResolvedValue(1),
       },
+      $transaction: jest.fn().mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
     } as unknown as jest.Mocked<PrismaService>;
 
     const module = await Test.createTestingModule({
@@ -377,6 +379,126 @@ describe('ZeroReportService', () => {
       await expect(
         service.approve(DIRECTOR_ID, OBJECT_ID),
       ).rejects.toThrow(ConflictException);
+    });
+
+    // Critical #1 — approve uses $transaction
+    it('wraps approve logic in a prisma $transaction', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.zeroReport.findFirst as jest.Mock)
+        .mockResolvedValueOnce(makeZeroReport({ status: 'submitted' }))
+        .mockResolvedValueOnce(null);
+      (prisma.zeroReport.update as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'approved', approvedAt: new Date(), approvedBy: DIRECTOR_ID }),
+      );
+
+      await service.approve(DIRECTOR_ID, OBJECT_ID);
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+  });
+
+  // ─── Critical #1 — create uses $transaction ───────────────────────────────
+
+  describe('create (transaction)', () => {
+    it('wraps create logic in a prisma $transaction', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(null);
+
+      await service.create(USER_ID, OBJECT_ID, makeCreateDto());
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+    });
+  });
+
+  // ─── Critical #2 — boqItemId validated against boqVersionId ──────────────
+
+  describe('upsertItem (boqVersionId validation)', () => {
+    it('throws UnprocessableEntityException when boqItemId belongs to different boqVersion', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft', boqVersionId: BOQ_VERSION_ID }),
+      );
+      (prisma.boqItem.findUnique as jest.Mock).mockResolvedValue({
+        id: BOQ_ITEM_ID,
+        boqVersionId: 999, // different version
+      });
+
+      await expect(
+        service.upsertItem(USER_ID, OBJECT_ID, makeItemDto()),
+      ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('throws UnprocessableEntityException with BOQ_ITEM_VERSION_MISMATCH code', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft', boqVersionId: BOQ_VERSION_ID }),
+      );
+      (prisma.boqItem.findUnique as jest.Mock).mockResolvedValue({
+        id: BOQ_ITEM_ID,
+        boqVersionId: 999,
+      });
+
+      await expect(
+        service.upsertItem(USER_ID, OBJECT_ID, makeItemDto()),
+      ).rejects.toThrow('BOQ_ITEM_VERSION_MISMATCH');
+    });
+
+    it('throws NotFoundException with BOQ_ITEM_NOT_FOUND when boqItem does not exist', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft', boqVersionId: BOQ_VERSION_ID }),
+      );
+      (prisma.boqItem.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.upsertItem(USER_ID, OBJECT_ID, makeItemDto()),
+      ).rejects.toThrow('BOQ_ITEM_NOT_FOUND');
+    });
+  });
+
+  // ─── Important #4 — submit requires at least one item ────────────────────
+
+  describe('submit (item count validation)', () => {
+    it('throws UnprocessableEntityException when report has no items', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.zeroReportItem.count as jest.Mock).mockResolvedValue(0);
+
+      await expect(
+        service.submit(USER_ID, OBJECT_ID),
+      ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('throws UnprocessableEntityException with ZERO_REPORT_NO_ITEMS code when no items', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.zeroReportItem.count as jest.Mock).mockResolvedValue(0);
+
+      await expect(
+        service.submit(USER_ID, OBJECT_ID),
+      ).rejects.toThrow('ZERO_REPORT_NO_ITEMS');
+    });
+  });
+
+  // ─── Important #5 — alertSentAt in formatReport ───────────────────────────
+
+  describe('getByObject (alertSentAt)', () => {
+    it('returns alertSentAt field as null for a new report', async () => {
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue({
+        ...makeZeroReport({ alertSentAt: null }),
+        items: [],
+      });
+
+      const result = await service.getByObject(USER_ID, OBJECT_ID);
+
+      expect(result).toHaveProperty('alertSentAt');
+      expect(result.alertSentAt).toBeNull();
+    });
+
+    it('returns alertSentAt as ISO string when set', async () => {
+      const sentAt = new Date('2026-05-06T12:00:00Z');
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue({
+        ...makeZeroReport({ alertSentAt: sentAt }),
+        items: [],
+      });
+
+      const result = await service.getByObject(USER_ID, OBJECT_ID);
+
+      expect(result.alertSentAt).toBe('2026-05-06T12:00:00.000Z');
     });
   });
 });

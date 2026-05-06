@@ -46,28 +46,30 @@ export class ZeroReportService {
       throw new UnprocessableEntityException('BOQ_VERSION_OBJECT_MISMATCH');
     }
 
-    // Invariant: only one active (non-rejected) zero-report per object
-    const existing = await this.prisma.zeroReport.findFirst({
-      where: {
-        objectId,
-        status: { not: 'rejected' },
-      },
-      select: { id: true },
-    });
-    if (existing) {
-      throw new ConflictException('ZERO_REPORT_ALREADY_EXISTS');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      // Invariant: only one active (non-rejected) zero-report per object
+      const existing = await tx.zeroReport.findFirst({
+        where: {
+          objectId,
+          status: { not: 'rejected' },
+        },
+        select: { id: true },
+      });
+      if (existing) {
+        throw new ConflictException('ZERO_REPORT_ALREADY_EXISTS');
+      }
 
-    const report = await this.prisma.zeroReport.create({
-      data: {
-        objectId,
-        boqVersionId: dto.boqVersionId,
-        status: 'draft',
-        notes: dto.notes ?? null,
-      },
-    });
+      const report = await tx.zeroReport.create({
+        data: {
+          objectId,
+          boqVersionId: dto.boqVersionId,
+          status: 'draft',
+          notes: dto.notes ?? null,
+        },
+      });
 
-    return this.formatReport(report);
+      return this.formatReport(report);
+    });
   }
 
   async getByObject(userId: number, objectId: number) {
@@ -95,7 +97,7 @@ export class ZeroReportService {
 
     const report = await this.prisma.zeroReport.findFirst({
       where: { objectId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, boqVersionId: true },
       orderBy: { id: 'desc' },
     });
 
@@ -104,6 +106,18 @@ export class ZeroReportService {
     }
     if (!ITEM_EDIT_ALLOWED_STATUSES.includes(report.status)) {
       throw new UnprocessableEntityException('ZERO_REPORT_INVALID_STATUS');
+    }
+
+    // Critical #2: validate boqItemId belongs to the same boqVersion as this report
+    const boqItem = await this.prisma.boqItem.findUnique({
+      where: { id: dto.boqItemId },
+      select: { id: true, boqVersionId: true },
+    });
+    if (!boqItem) {
+      throw new NotFoundException('BOQ_ITEM_NOT_FOUND');
+    }
+    if (boqItem.boqVersionId !== report.boqVersionId) {
+      throw new UnprocessableEntityException('BOQ_ITEM_VERSION_MISMATCH');
     }
 
     // Determine crossVerified: all three doc values must be present
@@ -163,6 +177,14 @@ export class ZeroReportService {
       throw new UnprocessableEntityException('ZERO_REPORT_INVALID_STATUS');
     }
 
+    // Important #4: require at least one item before submit
+    const itemCount = await this.prisma.zeroReportItem.count({
+      where: { zeroReportId: report.id },
+    });
+    if (itemCount === 0) {
+      throw new UnprocessableEntityException('ZERO_REPORT_NO_ITEMS');
+    }
+
     const updated = await this.prisma.zeroReport.update({
       where: { id: report.id },
       data: {
@@ -178,38 +200,40 @@ export class ZeroReportService {
   async approve(userId: number, objectId: number) {
     await this.checkObjectAccess(userId, objectId);
 
-    const report = await this.prisma.zeroReport.findFirst({
-      where: { objectId },
-      select: { id: true, status: true },
-      orderBy: { id: 'desc' },
+    return this.prisma.$transaction(async (tx) => {
+      const report = await tx.zeroReport.findFirst({
+        where: { objectId },
+        select: { id: true, status: true },
+        orderBy: { id: 'desc' },
+      });
+
+      if (!report) {
+        throw new NotFoundException('ZERO_REPORT_NOT_FOUND');
+      }
+      if (!APPROVE_ALLOWED_STATUSES.includes(report.status)) {
+        throw new UnprocessableEntityException('ZERO_REPORT_INVALID_STATUS');
+      }
+
+      // Invariant: only one approved zero-report per object
+      const existingApproved = await tx.zeroReport.findFirst({
+        where: { objectId, status: 'approved' },
+        select: { id: true },
+      });
+      if (existingApproved) {
+        throw new ConflictException('ZERO_REPORT_ALREADY_APPROVED');
+      }
+
+      const updated = await tx.zeroReport.update({
+        where: { id: report.id },
+        data: {
+          status: 'approved',
+          approvedAt: new Date(),
+          approvedBy: userId,
+        },
+      });
+
+      return this.formatReport(updated);
     });
-
-    if (!report) {
-      throw new NotFoundException('ZERO_REPORT_NOT_FOUND');
-    }
-    if (!APPROVE_ALLOWED_STATUSES.includes(report.status)) {
-      throw new UnprocessableEntityException('ZERO_REPORT_INVALID_STATUS');
-    }
-
-    // Invariant: only one approved zero-report per object
-    const existingApproved = await this.prisma.zeroReport.findFirst({
-      where: { objectId, status: 'approved' },
-      select: { id: true },
-    });
-    if (existingApproved) {
-      throw new ConflictException('ZERO_REPORT_ALREADY_APPROVED');
-    }
-
-    const updated = await this.prisma.zeroReport.update({
-      where: { id: report.id },
-      data: {
-        status: 'approved',
-        approvedAt: new Date(),
-        approvedBy: userId,
-      },
-    });
-
-    return this.formatReport(updated);
   }
 
   private formatReport(report: {
@@ -233,6 +257,7 @@ export class ZeroReportService {
       submittedBy: report.submittedBy,
       approvedAt: report.approvedAt?.toISOString() ?? null,
       approvedBy: report.approvedBy,
+      alertSentAt: report.alertSentAt?.toISOString() ?? null,
       notes: report.notes,
     };
   }
