@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { MvStalenessService } from '../analytics/mv-staleness.service';
+import { CreateObjectDto } from './dto/create-object.dto';
+import { CreateParticipantDto } from './dto/create-participant.dto';
 
 type RawCurrentStatus = {
   objReadinessPct: string | null;
@@ -20,6 +22,126 @@ export class ObjectsService {
     private readonly prisma: PrismaService,
     private readonly staleness: MvStalenessService,
   ) {}
+
+  async create(userId: number, dto: CreateObjectDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    const obj = await this.prisma.constructionObject.create({
+      data: {
+        name: dto.name,
+        objectClass: dto.objectClass,
+        address: dto.address,
+        permitNumber: dto.permitNumber,
+        permitDate: dto.permitDate ? new Date(dto.permitDate) : undefined,
+        connectionDate: dto.connectionDate ? new Date(dto.connectionDate) : undefined,
+        organizationId: user.organizationId,
+        createdBy: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        objectClass: true,
+        address: true,
+        permitNumber: true,
+        permitDate: true,
+        connectionDate: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      ...obj,
+      permitDate: toDateString(obj.permitDate),
+      connectionDate: toDateString(obj.connectionDate),
+      createdAt: obj.createdAt.toISOString(),
+    };
+  }
+
+  async list(userId: number) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    const objects = await this.prisma.constructionObject.findMany({
+      where: { organizationId: user.organizationId },
+      select: {
+        id: true,
+        name: true,
+        objectClass: true,
+        status: true,
+        connectionDate: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return objects.map((o) => ({
+      ...o,
+      connectionDate: toDateString(o.connectionDate),
+      createdAt: o.createdAt.toISOString(),
+    }));
+  }
+
+  async addParticipant(userId: number, objectId: number, dto: CreateParticipantDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    const obj = await this.prisma.constructionObject.findUnique({
+      where: { id: objectId },
+      select: { organizationId: true },
+    });
+
+    if (!obj || obj.organizationId !== user.organizationId) {
+      throw new NotFoundException('OBJECT_NOT_FOUND');
+    }
+
+    const validFrom = new Date(dto.validFrom);
+
+    // SCD Type 2: close existing current record for same role
+    await this.prisma.objectParticipant.updateMany({
+      where: { objectId, participantRole: dto.participantRole, isCurrent: true },
+      data: {
+        isCurrent: false,
+        validTo: validFrom,
+        changedAt: new Date(),
+        changedBy: userId,
+        changedReason: dto.changedReason ?? null,
+      },
+    });
+
+    const participant = await this.prisma.objectParticipant.create({
+      data: {
+        objectId,
+        participantRole: dto.participantRole,
+        orgName: dto.orgName,
+        contactPerson: dto.contactPerson,
+        contactEmail: dto.contactEmail,
+        validFrom,
+        isCurrent: true,
+      },
+      select: {
+        id: true,
+        participantRole: true,
+        orgName: true,
+        contactPerson: true,
+        contactEmail: true,
+        validFrom: true,
+        isCurrent: true,
+      },
+    });
+
+    return {
+      ...participant,
+      validFrom: participant.validFrom.toISOString().slice(0, 10),
+    };
+  }
 
   async getDetail(userId: number, objectId: number) {
     const user = await this.prisma.user.findUniqueOrThrow({
