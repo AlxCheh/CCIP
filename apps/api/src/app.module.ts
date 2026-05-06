@@ -15,6 +15,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { BoqModule } from './modules/boq/boq.module';
 import { SystemConfigModule } from './modules/system-config/system-config.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { ZeroReportModule } from './modules/zero-report/zero-report.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     BoqModule,
     SystemConfigModule,
     DocumentsModule,
+    ZeroReportModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

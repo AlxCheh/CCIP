@@ -11,10 +11,10 @@
 | Поле | Значение |
 |------|----------|
 | **Last Updated** | 2026-05-06 |
-| **Current Phase** | 4 — ZeroReport |
+| **Current Phase** | 5 — PeriodEngine |
 | **Phase Status** | 🔄 active |
-| **Active P1 Task** | M-04 — ZeroReport Module B |
-| **Next Milestone** | M-04 завершён → M-05a разблокирован |
+| **Active P1 Task** | M-05a — PeriodEngine Module C |
+| **Next Milestone** | M-05a завершён → M-05b, M-05c разблокированы |
 | **Active Blockers** | см. §3 |
 | **Open Feedbacks** | 0 |
 
@@ -31,7 +31,7 @@
 | M-02b | P1 | AuditLogService (append-only) | 2 | ✓ done | — |
 | M-02c | P1 | Multi-tenancy middleware | 2 | ✓ done | — |
 | M-03 | P1 | Init Module A: Objects + BoQ + weight_coef trigger | 3 | ✓ done | — |
-| M-04 | P1 | ZeroReport Module B | 4 | 🔄 active | M-05a |
+| M-04 | P1 | ZeroReport Module B | 4 | ✓ done | — |
 | M-05a | P1 | PeriodEngine Module C | 5 | ○ pending | M-05b, M-05c |
 | M-05b | P1 | DisputeSLA Module D + BullMQ Worker | 5 | ○ pending | M-05c, M-08 |
 | M-05c | P1 | Analytics Module E + MV refresh | 5 | ○ pending | M-08 |
@@ -73,6 +73,7 @@
 | M-02b | AuditLogService (append-only) | 2026-05-05 | apps/api/src/common/audit/ |
 | M-02c | Multi-tenancy middleware (TenantMiddleware + PrismaTenant $use) | 2026-05-05 | apps/api/src/common/prisma/tenant.* |
 | M-03 | Init Module A: ObjectsModule, BoQModule, SystemConfigModule, DocumentsModule | 2026-05-06 | apps/api/src/modules/objects/ + boq/ + system-config/ + documents/ |
+| M-04 | ZeroReport Module B: create, upsertItem, submit, approve (37 tests) | 2026-05-06 | apps/api/src/modules/zero-report/ |
 
 ---
 
