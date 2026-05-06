@@ -12,6 +12,9 @@ import { PeriodModule } from './modules/period/period.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ObjectsModule } from './modules/objects/objects.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { BoqModule } from './modules/boq/boq.module';
+import { SystemConfigModule } from './modules/system-config/system-config.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { AdminModule } from './modules/admin/admin.module';
     AnalyticsModule,
     ObjectsModule,
     AdminModule,
+    BoqModule,
+    SystemConfigModule,
+    DocumentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
