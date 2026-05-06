@@ -6,10 +6,10 @@ import {
 import { GpTokenGuard } from './gp-token.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
-const makeCtx = (token: string) =>
+const makeCtx = (token: string | undefined) =>
   ({
     switchToHttp: () => ({
-      getRequest: () => ({ params: { token } }),
+      getRequest: () => ({ params: token !== undefined ? { token } : {} }),
     }),
   }) as unknown as ExecutionContext;
 
@@ -44,6 +44,16 @@ describe('GpTokenGuard', () => {
     );
   });
 
+  it('throws UnauthorizedException when gpTokenExpiresAt is null', async () => {
+    (prisma.period.findFirst as jest.Mock).mockResolvedValue({
+      gpTokenExpiresAt: null,
+      gpSubmittedAt: null,
+    });
+    await expect(guard.canActivate(makeCtx('any-token'))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
   it('throws ForbiddenException when already submitted', async () => {
     (prisma.period.findFirst as jest.Mock).mockResolvedValue({
       gpTokenExpiresAt: futureDate,
@@ -60,5 +70,43 @@ describe('GpTokenGuard', () => {
       gpSubmittedAt: null,
     });
     await expect(guard.canActivate(makeCtx('valid-token'))).resolves.toBe(true);
+  });
+
+  it('uses GP_TOKEN_INVALID message for all invalid/expired cases', async () => {
+    (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
+    await expect(guard.canActivate(makeCtx('bad'))).rejects.toThrow('GP_TOKEN_INVALID');
+  });
+
+  it('uses GP_ALREADY_SUBMITTED message for already-used token', async () => {
+    (prisma.period.findFirst as jest.Mock).mockResolvedValue({
+      gpTokenExpiresAt: futureDate,
+      gpSubmittedAt: new Date(),
+    });
+    await expect(guard.canActivate(makeCtx('used'))).rejects.toThrow(
+      'GP_ALREADY_SUBMITTED',
+    );
+  });
+
+  // guard uses strict < so a token expiring exactly at "now" is still valid
+  it('allows token expiring exactly at the current moment (strict < check)', async () => {
+    const fixedNow = new Date('2026-05-06T10:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(fixedNow);
+
+    (prisma.period.findFirst as jest.Mock).mockResolvedValue({
+      gpTokenExpiresAt: fixedNow,
+      gpSubmittedAt: null,
+    });
+
+    await expect(guard.canActivate(makeCtx('boundary-token'))).resolves.toBe(true);
+
+    jest.useRealTimers();
+  });
+
+  it('throws UnauthorizedException when token is absent from request params', async () => {
+    (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
+
+    await expect(guard.canActivate(makeCtx(undefined))).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 });

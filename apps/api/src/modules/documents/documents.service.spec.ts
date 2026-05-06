@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DocumentsService } from './documents.service';
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -50,7 +50,7 @@ describe('DocumentsService', () => {
     service = module.get(DocumentsService);
   });
 
-  // ─── upload ──────────────────────────────────────────────────────────────────
+  // ─── upload ─────────────────────────────────────────────────────────────────
 
   describe('upload', () => {
     const dto = { docType: 'ssr', version: '1.0' };
@@ -83,6 +83,26 @@ describe('DocumentsService', () => {
       expect(filename).toMatch(/^[\d]+-[a-zA-Z0-9._-]+$/);
     });
 
+    it('sanitizes cyrillic characters — replaces them with underscores', async () => {
+      await service.upload(USER_ID, OBJECT_ID, dto, makeFile({ originalname: 'смета.pdf' }));
+
+      const key = (storage.upload as jest.Mock).mock.calls[0][0] as string;
+      const filename = key.split('/').pop()!;
+      expect(filename).not.toMatch(/[а-яА-ЯёЁ]/);
+      expect(filename).toMatch(/^[\d]+-.+\.pdf$/);
+    });
+
+    it('sanitizes spaces and parentheses in filename', async () => {
+      await service.upload(
+        USER_ID, OBJECT_ID, dto,
+        makeFile({ originalname: 'file name (final).pdf' }),
+      );
+
+      const key = (storage.upload as jest.Mock).mock.calls[0][0] as string;
+      const filename = key.split('/').pop()!;
+      expect(filename).not.toMatch(/[ ()]/);
+    });
+
     it('saves L2Document record with correct data', async () => {
       await service.upload(USER_ID, OBJECT_ID, dto, makeFile());
 
@@ -112,6 +132,26 @@ describe('DocumentsService', () => {
       expect(result.id).toBe(1);
       expect(result.docType).toBe('ssr');
       expect(result.uploadedAt).toBe(NOW.toISOString());
+    });
+
+    it('propagates InternalServerErrorException when storage upload fails', async () => {
+      (storage.upload as jest.Mock).mockRejectedValue(
+        new InternalServerErrorException('STORAGE_UPLOAD_FAILED'),
+      );
+
+      await expect(
+        service.upload(USER_ID, OBJECT_ID, dto, makeFile()),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('does not create DB record when storage upload fails', async () => {
+      (storage.upload as jest.Mock).mockRejectedValue(
+        new InternalServerErrorException('STORAGE_UPLOAD_FAILED'),
+      );
+
+      await service.upload(USER_ID, OBJECT_ID, dto, makeFile()).catch(() => {});
+
+      expect(prisma.l2Document.create).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when object not found', async () => {

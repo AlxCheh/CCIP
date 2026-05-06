@@ -30,7 +30,7 @@ describe('SystemConfigService', () => {
     service = module.get(SystemConfigService);
   });
 
-  // ─── list ────────────────────────────────────────────────────────────────────
+  // ─── list ───────────────────────────────────────────────────────────────────
 
   describe('list', () => {
     it('returns all configs for user org', async () => {
@@ -88,9 +88,17 @@ describe('SystemConfigService', () => {
 
       expect(result).toEqual([]);
     });
+
+    it('propagates error when user is not found', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockRejectedValue(
+        new Error('No User found'),
+      );
+
+      await expect(service.list(USER_ID)).rejects.toThrow('No User found');
+    });
   });
 
-  // ─── update ──────────────────────────────────────────────────────────────────
+  // ─── update ─────────────────────────────────────────────────────────────────
 
   describe('update', () => {
     const mockConfig = {
@@ -134,12 +142,35 @@ describe('SystemConfigService', () => {
       );
     });
 
+    it('sets updatedAt to approximately current time', async () => {
+      const before = Date.now();
+      await service.update(USER_ID, 'N_flag_threshold', { value: 5 });
+      const after = Date.now();
+
+      const upsertArgs = (prisma.systemConfig.upsert as jest.Mock).mock.calls[0][0];
+      const updatedAt: Date = upsertArgs.update.updatedAt;
+
+      expect(updatedAt).toBeInstanceOf(Date);
+      expect(updatedAt.getTime()).toBeGreaterThanOrEqual(before);
+      expect(updatedAt.getTime()).toBeLessThanOrEqual(after);
+    });
+
     it('returns updated config with value as number', async () => {
       const result = await service.update(USER_ID, 'N_flag_threshold', { value: 5 });
 
       expect(result.key).toBe('N_flag_threshold');
       expect(result.value).toBe(5);
       expect(result.updatedAt).toBe(NOW.toISOString());
+    });
+
+    it('propagates error when user is not found', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockRejectedValue(
+        new Error('No User found'),
+      );
+
+      await expect(
+        service.update(USER_ID, 'N_flag_threshold', { value: 5 }),
+      ).rejects.toThrow('No User found');
     });
 
     it.each([

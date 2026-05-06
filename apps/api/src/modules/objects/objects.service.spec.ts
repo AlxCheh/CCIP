@@ -51,7 +51,7 @@ describe('ObjectsService', () => {
     service = module.get(ObjectsService);
   });
 
-  // ─── create ──────────────────────────────────────────────────────────────────
+  // ─── create ─────────────────────────────────────────────────────────────────
 
   describe('create', () => {
     const mockCreated = {
@@ -113,9 +113,20 @@ describe('ObjectsService', () => {
       expect(result.permitDate).toBeNull();
       expect(result.connectionDate).toBeNull();
     });
+
+    it('handles non-Date truthy DB value via String() fallback', async () => {
+      (prisma.constructionObject.create as jest.Mock).mockResolvedValue({
+        ...mockCreated,
+        permitDate: '2025-01-15' as unknown as Date,
+      });
+
+      const result = await service.create(USER_ID, { name: 'Склад №1' });
+
+      expect(result.permitDate).toBe('2025-01-15');
+    });
   });
 
-  // ─── list ────────────────────────────────────────────────────────────────────
+  // ─── list ───────────────────────────────────────────────────────────────────
 
   describe('list', () => {
     it('returns objects scoped to user org ordered by createdAt desc', async () => {
@@ -143,7 +154,7 @@ describe('ObjectsService', () => {
     });
   });
 
-  // ─── addParticipant ──────────────────────────────────────────────────────────
+  // ─── addParticipant ─────────────────────────────────────────────────────────
 
   describe('addParticipant', () => {
     const dto = {
@@ -228,7 +239,7 @@ describe('ObjectsService', () => {
     });
   });
 
-  // ─── getDetail ───────────────────────────────────────────────────────────────
+  // ─── getDetail ──────────────────────────────────────────────────────────────
 
   describe('getDetail', () => {
     const mockObjFull = {
@@ -266,6 +277,19 @@ describe('ObjectsService', () => {
       expect(result.current?.gapFlag).toBe(false);
     });
 
+    it('converts object permitDate and connectionDate to YYYY-MM-DD strings', async () => {
+      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue({
+        ...mockObjFull,
+        permitDate: new Date('2025-01-15'),
+        connectionDate: new Date('2027-06-01'),
+      });
+
+      const result = await service.getDetail(USER_ID, OBJECT_ID);
+
+      expect(result.object.permitDate).toBe('2025-01-15');
+      expect(result.object.connectionDate).toBe('2027-06-01');
+    });
+
     it('includes current participants mapped with role field', async () => {
       (prisma.objectParticipant.findMany as jest.Mock).mockResolvedValue([{
         participantRole: 'general_contractor',
@@ -279,6 +303,71 @@ describe('ObjectsService', () => {
 
       expect(result.participants[0].role).toBe('general_contractor');
       expect(result.participants[0].validFrom).toBe('2026-01-01');
+    });
+
+    it('includes currentPeriod when a period exists', async () => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue({
+        id: 5,
+        periodNumber: 3,
+        status: 'open',
+        openedAt: NOW,
+        closedAt: null,
+      });
+
+      const result = await service.getDetail(USER_ID, OBJECT_ID);
+
+      expect(result.currentPeriod).toEqual({
+        id: 5,
+        periodNumber: 3,
+        status: 'open',
+        openedAt: NOW.toISOString(),
+        closedAt: null,
+      });
+    });
+
+    it('sets currentPeriod=null when no period exists', async () => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.getDetail(USER_ID, OBJECT_ID);
+
+      expect(result.currentPeriod).toBeNull();
+    });
+
+    it('maps history snapshots with period number and boqVersionNumber', async () => {
+      (prisma.readinessSnapshot.findMany as jest.Mock).mockResolvedValue([{
+        periodId: 5,
+        objectReadinessPct: '72.50',
+        weightedForecastDate: new Date('2027-08-01'),
+        criticalPathForecastDate: null,
+        gapFlag: false,
+        period: {
+          periodNumber: 3,
+          closedAt: new Date('2026-12-31'),
+          boqVersion: { versionNumber: '1.0' },
+        },
+      }]);
+
+      const result = await service.getDetail(USER_ID, OBJECT_ID);
+
+      expect(result.history).toHaveLength(1);
+      expect(result.history[0]).toMatchObject({
+        periodId: 5,
+        periodNumber: 3,
+        closedAt: new Date('2026-12-31').toISOString(),
+        objectReadinessPct: 72.5,
+        weightedForecastDate: '2027-08-01',
+        criticalPathForecastDate: null,
+        gapFlag: false,
+        boqVersionNumber: '1.0',
+      });
+    });
+
+    it('returns empty history array when no snapshots exist', async () => {
+      (prisma.readinessSnapshot.findMany as jest.Mock).mockResolvedValue([]);
+
+      const result = await service.getDetail(USER_ID, OBJECT_ID);
+
+      expect(result.history).toEqual([]);
     });
 
     it('includes activeBoq summary when version exists', async () => {
@@ -297,6 +386,16 @@ describe('ObjectsService', () => {
       const result = await service.getDetail(USER_ID, OBJECT_ID);
 
       expect(result.activeBoq).toBeNull();
+    });
+
+    it('propagates error when one of the parallel queries fails', async () => {
+      (prisma.boqVersion.findFirst as jest.Mock).mockRejectedValue(
+        new Error('DB_QUERY_FAILED'),
+      );
+
+      await expect(
+        service.getDetail(USER_ID, OBJECT_ID),
+      ).rejects.toThrow('DB_QUERY_FAILED');
     });
 
     it('throws NotFoundException when object not found', async () => {

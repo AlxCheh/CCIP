@@ -54,7 +54,7 @@ describe('BoqService', () => {
     service = module.get(BoqService);
   });
 
-  // ─── createInitial ───────────────────────────────────────────────────────────
+  // ─── createInitial ──────────────────────────────────────────────────────────
 
   describe('createInitial', () => {
     const mockVersion = {
@@ -110,6 +110,16 @@ describe('BoqService', () => {
       expect(result.itemsCount).toBe(2);
     });
 
+    it('passes changeReason to boqVersion.create', async () => {
+      await service.createInitial(USER_ID, OBJECT_ID, makeDto({ changeReason: 'Первоначальная смета' }));
+
+      expect(prisma.boqVersion.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ changeReason: 'Первоначальная смета' }),
+        }),
+      );
+    });
+
     it('throws ConflictException if active version already exists', async () => {
       (prisma.boqVersion.findFirst as jest.Mock).mockResolvedValue({ id: 99 });
 
@@ -126,6 +136,61 @@ describe('BoqService', () => {
       await expect(
         service.createInitial(USER_ID, OBJECT_ID, makeDto()),
       ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    // ─── weightCoef boundary ──────────────────────────────────────────────────
+
+    // tolerance = 0.001 strict (Math.abs(sum - 1.0) > 0.001)
+    // 0.999/1.001 look like boundaries but fail due to JS float precision:
+    // Math.abs(0.999 - 1.0) === 0.0010000000000000009 > 0.001 → throws
+    // Safe inner values: 0.9995 / 1.0005 (delta 0.0005, clearly below 0.001)
+
+    it('accepts SUM(weightCoef) = 0.9995 (clearly within ±0.001 tolerance)', async () => {
+      (prisma.boqItem.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { weightCoef: 0.9995 },
+      });
+
+      await expect(
+        service.createInitial(USER_ID, OBJECT_ID, makeDto()),
+      ).resolves.toMatchObject({ versionNumber: '1.0' });
+    });
+
+    it('accepts SUM(weightCoef) = 1.0005 (clearly within ±0.001 tolerance)', async () => {
+      (prisma.boqItem.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { weightCoef: 1.0005 },
+      });
+
+      await expect(
+        service.createInitial(USER_ID, OBJECT_ID, makeDto()),
+      ).resolves.toMatchObject({ versionNumber: '1.0' });
+    });
+
+    it('rejects SUM(weightCoef) = 0.998 (outside tolerance)', async () => {
+      (prisma.boqItem.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { weightCoef: 0.998 },
+      });
+
+      await expect(
+        service.createInitial(USER_ID, OBJECT_ID, makeDto()),
+      ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('rejects SUM(weightCoef) = 1.002 (outside tolerance)', async () => {
+      (prisma.boqItem.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { weightCoef: 1.002 },
+      });
+
+      await expect(
+        service.createInitial(USER_ID, OBJECT_ID, makeDto()),
+      ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('propagates transaction error when $transaction rejects', async () => {
+      (prisma.$transaction as jest.Mock).mockRejectedValue(new Error('TX_ROLLBACK'));
+
+      await expect(
+        service.createInitial(USER_ID, OBJECT_ID, makeDto()),
+      ).rejects.toThrow('TX_ROLLBACK');
     });
 
     it('throws NotFoundException when object belongs to different org', async () => {
@@ -147,7 +212,7 @@ describe('BoqService', () => {
     });
   });
 
-  // ─── getActive ───────────────────────────────────────────────────────────────
+  // ─── getActive ──────────────────────────────────────────────────────────────
 
   describe('getActive', () => {
     it('returns active version with items', async () => {
@@ -195,7 +260,7 @@ describe('BoqService', () => {
     });
   });
 
-  // ─── listVersions ────────────────────────────────────────────────────────────
+  // ─── listVersions ───────────────────────────────────────────────────────────
 
   describe('listVersions', () => {
     it('returns all versions ordered by createdAt asc', async () => {
