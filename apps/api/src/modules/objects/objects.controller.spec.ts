@@ -7,7 +7,9 @@ import { CreateParticipantDto } from './dto/create-participant.dto';
 const USER_ID = 42;
 const OBJECT_ID = 10;
 
-const mockReq = { user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' } };
+const mockReq = {
+  user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' },
+};
 
 describe('ObjectsController', () => {
   let controller: ObjectsController;
@@ -82,14 +84,20 @@ describe('ObjectsController', () => {
     });
 
     it('parses user id string to number before passing to service', async () => {
-      const reqWithDifferentId = { user: { id: '7', email: 'a@b.com', role: 'admin' } };
+      const reqWithDifferentId = {
+        user: { id: '7', email: 'a@b.com', role: 'admin' },
+      };
       await controller.getDetail(OBJECT_ID, reqWithDifferentId);
 
       expect(objectsService.getDetail).toHaveBeenCalledWith(7, OBJECT_ID);
     });
 
     it('returns the service result', async () => {
-      const expected = { object: { id: OBJECT_ID }, hasAnalytics: false, current: null };
+      const expected = {
+        object: { id: OBJECT_ID },
+        hasAnalytics: false,
+        current: null,
+      };
       objectsService.getDetail.mockResolvedValue(expected as any);
 
       const result = await controller.getDetail(OBJECT_ID, mockReq);
@@ -110,7 +118,11 @@ describe('ObjectsController', () => {
     it('delegates to objectsService.addParticipant with userId, objectId and dto', async () => {
       await controller.addParticipant(OBJECT_ID, dto, mockReq);
 
-      expect(objectsService.addParticipant).toHaveBeenCalledWith(USER_ID, OBJECT_ID, dto);
+      expect(objectsService.addParticipant).toHaveBeenCalledWith(
+        USER_ID,
+        OBJECT_ID,
+        dto,
+      );
     });
 
     it('returns the service result', async () => {

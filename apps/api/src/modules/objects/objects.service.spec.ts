@@ -37,7 +37,9 @@ describe('ObjectsService', () => {
     } as unknown as jest.Mocked<PrismaService>;
 
     staleness = {
-      getStalenessMeta: jest.fn().mockResolvedValue({ isStale: false, refreshedAt: NOW.toISOString() }),
+      getStalenessMeta: jest
+        .fn()
+        .mockResolvedValue({ isStale: false, refreshedAt: NOW.toISOString() }),
     } as unknown as jest.Mocked<MvStalenessService>;
 
     const module = await Test.createTestingModule({
@@ -55,13 +57,21 @@ describe('ObjectsService', () => {
 
   describe('create', () => {
     const mockCreated = {
-      id: OBJECT_ID, name: 'Склад №1', objectClass: 'II', address: 'Москва',
-      permitNumber: 'RU-123', permitDate: new Date('2025-01-15'),
-      connectionDate: new Date('2027-06-01'), status: 'active', createdAt: NOW,
+      id: OBJECT_ID,
+      name: 'Склад №1',
+      objectClass: 'II',
+      address: 'Москва',
+      permitNumber: 'RU-123',
+      permitDate: new Date('2025-01-15'),
+      connectionDate: new Date('2027-06-01'),
+      status: 'active',
+      createdAt: NOW,
     };
 
     beforeEach(() => {
-      (prisma.constructionObject.create as jest.Mock).mockResolvedValue(mockCreated);
+      (prisma.constructionObject.create as jest.Mock).mockResolvedValue(
+        mockCreated,
+      );
     });
 
     it('creates object with organizationId from user', async () => {
@@ -105,7 +115,9 @@ describe('ObjectsService', () => {
 
     it('works without optional fields', async () => {
       (prisma.constructionObject.create as jest.Mock).mockResolvedValue({
-        ...mockCreated, permitDate: null, connectionDate: null,
+        ...mockCreated,
+        permitDate: null,
+        connectionDate: null,
       });
 
       const result = await service.create(USER_ID, { name: 'Склад №1' });
@@ -131,8 +143,22 @@ describe('ObjectsService', () => {
   describe('list', () => {
     it('returns objects scoped to user org ordered by createdAt desc', async () => {
       (prisma.constructionObject.findMany as jest.Mock).mockResolvedValue([
-        { id: 1, name: 'A', objectClass: 'II', status: 'active', connectionDate: null, createdAt: NOW },
-        { id: 2, name: 'B', objectClass: 'III', status: 'active', connectionDate: new Date('2027-01-01'), createdAt: new Date('2026-01-01') },
+        {
+          id: 1,
+          name: 'A',
+          objectClass: 'II',
+          status: 'active',
+          connectionDate: null,
+          createdAt: NOW,
+        },
+        {
+          id: 2,
+          name: 'B',
+          objectClass: 'III',
+          status: 'active',
+          connectionDate: new Date('2027-01-01'),
+          createdAt: new Date('2026-01-01'),
+        },
       ]);
 
       const result = await service.list(USER_ID);
@@ -176,7 +202,9 @@ describe('ObjectsService', () => {
     };
 
     beforeEach(() => {
-      (prisma.objectParticipant.create as jest.Mock).mockResolvedValue(mockParticipant);
+      (prisma.objectParticipant.create as jest.Mock).mockResolvedValue(
+        mockParticipant,
+      );
     });
 
     it('closes existing current record for same role before creating new one', async () => {
@@ -221,7 +249,9 @@ describe('ObjectsService', () => {
     });
 
     it('throws NotFoundException when object not found', async () => {
-      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.addParticipant(USER_ID, OBJECT_ID, dto),
@@ -243,13 +273,21 @@ describe('ObjectsService', () => {
 
   describe('getDetail', () => {
     const mockObjFull = {
-      id: OBJECT_ID, name: 'Склад №1', objectClass: 'II', address: 'Москва',
-      permitNumber: 'RU-123', permitDate: null, connectionDate: null,
-      status: 'active', organizationId: ORG_ID,
+      id: OBJECT_ID,
+      name: 'Склад №1',
+      objectClass: 'II',
+      address: 'Москва',
+      permitNumber: 'RU-123',
+      permitDate: null,
+      connectionDate: null,
+      status: 'active',
+      organizationId: ORG_ID,
     };
 
     beforeEach(() => {
-      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(mockObjFull);
+      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(
+        mockObjFull,
+      );
     });
 
     it('returns object detail with hasAnalytics=false when MV has no rows', async () => {
@@ -263,12 +301,14 @@ describe('ObjectsService', () => {
     });
 
     it('returns hasAnalytics=true with analytics data when MV row exists', async () => {
-      (prisma.$queryRawUnsafe as jest.Mock).mockResolvedValue([{
-        objReadinessPct: '72.50',
-        weightedForecastDate: new Date('2027-08-01'),
-        criticalPathForecastDate: new Date('2027-09-01'),
-        gapFlag: false,
-      }]);
+      (prisma.$queryRawUnsafe as jest.Mock).mockResolvedValue([
+        {
+          objReadinessPct: '72.50',
+          weightedForecastDate: new Date('2027-08-01'),
+          criticalPathForecastDate: new Date('2027-09-01'),
+          gapFlag: false,
+        },
+      ]);
 
       const result = await service.getDetail(USER_ID, OBJECT_ID);
 
@@ -291,13 +331,15 @@ describe('ObjectsService', () => {
     });
 
     it('includes current participants mapped with role field', async () => {
-      (prisma.objectParticipant.findMany as jest.Mock).mockResolvedValue([{
-        participantRole: 'general_contractor',
-        orgName: 'ООО Строй',
-        contactPerson: 'Иванов',
-        contactEmail: 'i@s.ru',
-        validFrom: new Date('2026-01-01'),
-      }]);
+      (prisma.objectParticipant.findMany as jest.Mock).mockResolvedValue([
+        {
+          participantRole: 'general_contractor',
+          orgName: 'ООО Строй',
+          contactPerson: 'Иванов',
+          contactEmail: 'i@s.ru',
+          validFrom: new Date('2026-01-01'),
+        },
+      ]);
 
       const result = await service.getDetail(USER_ID, OBJECT_ID);
 
@@ -334,18 +376,20 @@ describe('ObjectsService', () => {
     });
 
     it('maps history snapshots with period number and boqVersionNumber', async () => {
-      (prisma.readinessSnapshot.findMany as jest.Mock).mockResolvedValue([{
-        periodId: 5,
-        objectReadinessPct: '72.50',
-        weightedForecastDate: new Date('2027-08-01'),
-        criticalPathForecastDate: null,
-        gapFlag: false,
-        period: {
-          periodNumber: 3,
-          closedAt: new Date('2026-12-31'),
-          boqVersion: { versionNumber: '1.0' },
+      (prisma.readinessSnapshot.findMany as jest.Mock).mockResolvedValue([
+        {
+          periodId: 5,
+          objectReadinessPct: '72.50',
+          weightedForecastDate: new Date('2027-08-01'),
+          criticalPathForecastDate: null,
+          gapFlag: false,
+          period: {
+            periodNumber: 3,
+            closedAt: new Date('2026-12-31'),
+            boqVersion: { versionNumber: '1.0' },
+          },
         },
-      }]);
+      ]);
 
       const result = await service.getDetail(USER_ID, OBJECT_ID);
 
@@ -372,12 +416,18 @@ describe('ObjectsService', () => {
 
     it('includes activeBoq summary when version exists', async () => {
       (prisma.boqVersion.findFirst as jest.Mock).mockResolvedValue({
-        id: 1, versionNumber: '1.0', _count: { boqItems: 5 },
+        id: 1,
+        versionNumber: '1.0',
+        _count: { boqItems: 5 },
       });
 
       const result = await service.getDetail(USER_ID, OBJECT_ID);
 
-      expect(result.activeBoq).toEqual({ id: 1, versionNumber: '1.0', itemsCount: 5 });
+      expect(result.activeBoq).toEqual({
+        id: 1,
+        versionNumber: '1.0',
+        itemsCount: 5,
+      });
     });
 
     it('sets activeBoq=null when no active version', async () => {
@@ -393,27 +443,30 @@ describe('ObjectsService', () => {
         new Error('DB_QUERY_FAILED'),
       );
 
-      await expect(
-        service.getDetail(USER_ID, OBJECT_ID),
-      ).rejects.toThrow('DB_QUERY_FAILED');
+      await expect(service.getDetail(USER_ID, OBJECT_ID)).rejects.toThrow(
+        'DB_QUERY_FAILED',
+      );
     });
 
     it('throws NotFoundException when object not found', async () => {
-      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
 
-      await expect(
-        service.getDetail(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getDetail(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException when object belongs to different org', async () => {
       (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue({
-        ...mockObjFull, organizationId: 'other-org',
+        ...mockObjFull,
+        organizationId: 'other-org',
       });
 
-      await expect(
-        service.getDetail(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getDetail(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

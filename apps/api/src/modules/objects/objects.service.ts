@@ -36,7 +36,9 @@ export class ObjectsService {
         address: dto.address,
         permitNumber: dto.permitNumber,
         permitDate: dto.permitDate ? new Date(dto.permitDate) : undefined,
-        connectionDate: dto.connectionDate ? new Date(dto.connectionDate) : undefined,
+        connectionDate: dto.connectionDate
+          ? new Date(dto.connectionDate)
+          : undefined,
         organizationId: user.organizationId,
         createdBy: userId,
       },
@@ -87,7 +89,11 @@ export class ObjectsService {
     }));
   }
 
-  async addParticipant(userId: number, objectId: number, dto: CreateParticipantDto) {
+  async addParticipant(
+    userId: number,
+    objectId: number,
+    dto: CreateParticipantDto,
+  ) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { organizationId: true },
@@ -106,7 +112,11 @@ export class ObjectsService {
 
     // SCD Type 2: close existing current record for same role
     await this.prisma.objectParticipant.updateMany({
-      where: { objectId, participantRole: dto.participantRole, isCurrent: true },
+      where: {
+        objectId,
+        participantRole: dto.participantRole,
+        isCurrent: true,
+      },
       data: {
         isCurrent: false,
         validTo: validFrom,

@@ -56,6 +56,10 @@ export class ObjectsController {
     @Body() dto: CreateParticipantDto,
     @Request() req: AuthRequest,
   ) {
-    return this.objectsService.addParticipant(parseInt(req.user.id, 10), id, dto);
+    return this.objectsService.addParticipant(
+      parseInt(req.user.id, 10),
+      id,
+      dto,
+    );
   }
 }

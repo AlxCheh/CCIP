@@ -5,7 +5,9 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 
 const USER_ID = 42;
 
-const mockReq = { user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' } };
+const mockReq = {
+  user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' },
+};
 
 describe('SystemConfigController', () => {
   let controller: SystemConfigController;
@@ -19,7 +21,9 @@ describe('SystemConfigController', () => {
 
     const module = await Test.createTestingModule({
       controllers: [SystemConfigController],
-      providers: [{ provide: SystemConfigService, useValue: systemConfigService }],
+      providers: [
+        { provide: SystemConfigService, useValue: systemConfigService },
+      ],
     }).compile();
 
     controller = module.get(SystemConfigController);
@@ -35,7 +39,9 @@ describe('SystemConfigController', () => {
     });
 
     it('parses user id string to number before passing to service', async () => {
-      const reqWithDifferentId = { user: { id: '5', email: 'a@b.com', role: 'director' } };
+      const reqWithDifferentId = {
+        user: { id: '5', email: 'a@b.com', role: 'director' },
+      };
       await controller.list(reqWithDifferentId);
 
       expect(systemConfigService.list).toHaveBeenCalledWith(5);
@@ -43,7 +49,11 @@ describe('SystemConfigController', () => {
 
     it('returns the full config list from service', async () => {
       const expected = [
-        { key: 'min_readiness_pct', value: 70, description: 'Minimum readiness percent' },
+        {
+          key: 'min_readiness_pct',
+          value: 70,
+          description: 'Minimum readiness percent',
+        },
         { key: 'staleness_days', value: 7, description: 'Days until stale' },
       ];
       systemConfigService.list.mockResolvedValue(expected as any);
@@ -80,14 +90,24 @@ describe('SystemConfigController', () => {
     });
 
     it('parses user id string to number before passing to service', async () => {
-      const reqWithDifferentId = { user: { id: '99', email: 'a@b.com', role: 'admin' } };
+      const reqWithDifferentId = {
+        user: { id: '99', email: 'a@b.com', role: 'admin' },
+      };
       await controller.update('any_key', dto, reqWithDifferentId);
 
-      expect(systemConfigService.update).toHaveBeenCalledWith(99, 'any_key', dto);
+      expect(systemConfigService.update).toHaveBeenCalledWith(
+        99,
+        'any_key',
+        dto,
+      );
     });
 
     it('returns the updated config entry from service', async () => {
-      const expected = { key: 'min_readiness_pct', value: 75, description: 'Minimum readiness percent' };
+      const expected = {
+        key: 'min_readiness_pct',
+        value: 75,
+        description: 'Minimum readiness percent',
+      };
       systemConfigService.update.mockResolvedValue(expected as any);
 
       const result = await controller.update('min_readiness_pct', dto, mockReq);

@@ -6,11 +6,18 @@ import { CreateBoqDto } from './dto/create-boq.dto';
 const USER_ID = 42;
 const OBJECT_ID = 10;
 
-const mockReq = { user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' } };
+const mockReq = {
+  user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' },
+};
 
 const makeDto = (): CreateBoqDto => ({
   items: [
-    { workCode: 'W-01', name: 'Земляные работы', planVolume: 100, contractValue: 600_000 },
+    {
+      workCode: 'W-01',
+      name: 'Земляные работы',
+      planVolume: 100,
+      contractValue: 600_000,
+    },
   ],
 });
 
@@ -39,14 +46,24 @@ describe('BoqController', () => {
     it('delegates to boqService.createInitial with numeric userId, objectId and dto', async () => {
       await controller.create(OBJECT_ID, makeDto(), mockReq);
 
-      expect(boqService.createInitial).toHaveBeenCalledWith(USER_ID, OBJECT_ID, makeDto());
+      expect(boqService.createInitial).toHaveBeenCalledWith(
+        USER_ID,
+        OBJECT_ID,
+        makeDto(),
+      );
     });
 
     it('parses user id string to number before passing to service', async () => {
-      const reqWithLargeId = { user: { id: '99', email: 'a@b.com', role: 'admin' } };
+      const reqWithLargeId = {
+        user: { id: '99', email: 'a@b.com', role: 'admin' },
+      };
       await controller.create(OBJECT_ID, makeDto(), reqWithLargeId);
 
-      expect(boqService.createInitial).toHaveBeenCalledWith(99, OBJECT_ID, expect.anything());
+      expect(boqService.createInitial).toHaveBeenCalledWith(
+        99,
+        OBJECT_ID,
+        expect.anything(),
+      );
     });
 
     it('returns the service result', async () => {

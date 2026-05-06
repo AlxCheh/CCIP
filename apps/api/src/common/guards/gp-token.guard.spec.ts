@@ -74,7 +74,9 @@ describe('GpTokenGuard', () => {
 
   it('uses GP_TOKEN_INVALID message for all invalid/expired cases', async () => {
     (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
-    await expect(guard.canActivate(makeCtx('bad'))).rejects.toThrow('GP_TOKEN_INVALID');
+    await expect(guard.canActivate(makeCtx('bad'))).rejects.toThrow(
+      'GP_TOKEN_INVALID',
+    );
   });
 
   it('uses GP_ALREADY_SUBMITTED message for already-used token', async () => {
@@ -97,7 +99,9 @@ describe('GpTokenGuard', () => {
       gpSubmittedAt: null,
     });
 
-    await expect(guard.canActivate(makeCtx('boundary-token'))).resolves.toBe(true);
+    await expect(guard.canActivate(makeCtx('boundary-token'))).resolves.toBe(
+      true,
+    );
 
     jest.useRealTimers();
   });

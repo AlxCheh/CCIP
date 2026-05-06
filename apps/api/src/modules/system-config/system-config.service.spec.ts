@@ -13,7 +13,11 @@ describe('SystemConfigService', () => {
 
   beforeEach(async () => {
     prisma = {
-      user: { findUniqueOrThrow: jest.fn().mockResolvedValue({ organizationId: ORG_ID }) },
+      user: {
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({ organizationId: ORG_ID }),
+      },
       systemConfig: {
         findMany: jest.fn(),
         upsert: jest.fn(),
@@ -35,8 +39,20 @@ describe('SystemConfigService', () => {
   describe('list', () => {
     it('returns all configs for user org', async () => {
       (prisma.systemConfig.findMany as jest.Mock).mockResolvedValue([
-        { key: 'N_flag_threshold', valueType: 'numeric', valueNumeric: 3, description: 'Min discrepancies', updatedAt: NOW },
-        { key: 'decay_factor', valueType: 'numeric', valueNumeric: 0.9, description: 'Decay factor', updatedAt: null },
+        {
+          key: 'N_flag_threshold',
+          valueType: 'numeric',
+          valueNumeric: 3,
+          description: 'Min discrepancies',
+          updatedAt: NOW,
+        },
+        {
+          key: 'decay_factor',
+          valueType: 'numeric',
+          valueNumeric: 0.9,
+          description: 'Decay factor',
+          updatedAt: null,
+        },
       ]);
 
       const result = await service.list(USER_ID);
@@ -51,7 +67,13 @@ describe('SystemConfigService', () => {
 
     it('converts valueNumeric to number', async () => {
       (prisma.systemConfig.findMany as jest.Mock).mockResolvedValue([
-        { key: 'weight_threshold', valueType: 'numeric', valueNumeric: 0.1, description: null, updatedAt: NOW },
+        {
+          key: 'weight_threshold',
+          valueType: 'numeric',
+          valueNumeric: 0.1,
+          description: null,
+          updatedAt: NOW,
+        },
       ]);
 
       const result = await service.list(USER_ID);
@@ -62,7 +84,13 @@ describe('SystemConfigService', () => {
 
     it('returns null value when valueNumeric is null', async () => {
       (prisma.systemConfig.findMany as jest.Mock).mockResolvedValue([
-        { key: 'N_flag_threshold', valueType: 'numeric', valueNumeric: null, description: null, updatedAt: null },
+        {
+          key: 'N_flag_threshold',
+          valueType: 'numeric',
+          valueNumeric: null,
+          description: null,
+          updatedAt: null,
+        },
       ]);
 
       const result = await service.list(USER_ID);
@@ -73,7 +101,13 @@ describe('SystemConfigService', () => {
 
     it('returns updatedAt as ISO string when present', async () => {
       (prisma.systemConfig.findMany as jest.Mock).mockResolvedValue([
-        { key: 'N_flag_threshold', valueType: 'numeric', valueNumeric: 3, description: null, updatedAt: NOW },
+        {
+          key: 'N_flag_threshold',
+          valueType: 'numeric',
+          valueNumeric: 3,
+          description: null,
+          updatedAt: NOW,
+        },
       ]);
 
       const result = await service.list(USER_ID);
@@ -130,8 +164,16 @@ describe('SystemConfigService', () => {
 
       expect(prisma.systemConfig.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { organizationId_key: { organizationId: ORG_ID, key: 'N_flag_threshold' } },
-          update: expect.objectContaining({ valueNumeric: 5, updatedBy: USER_ID }),
+          where: {
+            organizationId_key: {
+              organizationId: ORG_ID,
+              key: 'N_flag_threshold',
+            },
+          },
+          update: expect.objectContaining({
+            valueNumeric: 5,
+            updatedBy: USER_ID,
+          }),
           create: expect.objectContaining({
             key: 'N_flag_threshold',
             organizationId: ORG_ID,
@@ -147,7 +189,8 @@ describe('SystemConfigService', () => {
       await service.update(USER_ID, 'N_flag_threshold', { value: 5 });
       const after = Date.now();
 
-      const upsertArgs = (prisma.systemConfig.upsert as jest.Mock).mock.calls[0][0];
+      const upsertArgs = (prisma.systemConfig.upsert as jest.Mock).mock
+        .calls[0][0];
       const updatedAt: Date = upsertArgs.update.updatedAt;
 
       expect(updatedAt).toBeInstanceOf(Date);
@@ -156,7 +199,9 @@ describe('SystemConfigService', () => {
     });
 
     it('returns updated config with value as number', async () => {
-      const result = await service.update(USER_ID, 'N_flag_threshold', { value: 5 });
+      const result = await service.update(USER_ID, 'N_flag_threshold', {
+        value: 5,
+      });
 
       expect(result.key).toBe('N_flag_threshold');
       expect(result.value).toBe(5);
@@ -174,10 +219,17 @@ describe('SystemConfigService', () => {
     });
 
     it.each([
-      'N_flag_threshold', 'M_flag_window', 'weight_threshold',
-      'forecast_gap_alert', 'tolerance_threshold', 'overrun_warning_limit',
-      'avg_pace_periods', 'decay_factor', 'spike_threshold',
-      'zero_report_alert_days', 'baseline_correction_threshold',
+      'N_flag_threshold',
+      'M_flag_window',
+      'weight_threshold',
+      'forecast_gap_alert',
+      'tolerance_threshold',
+      'overrun_warning_limit',
+      'avg_pace_periods',
+      'decay_factor',
+      'spike_threshold',
+      'zero_report_alert_days',
+      'baseline_correction_threshold',
     ])('accepts known key: %s', async (key) => {
       await expect(
         service.update(USER_ID, key, { value: 1 }),

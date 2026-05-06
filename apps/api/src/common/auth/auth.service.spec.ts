@@ -6,7 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_V4_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
@@ -49,7 +50,12 @@ describe('AuthService', () => {
 
     it('throws UnauthorizedException for wrong password', async () => {
       await expect(
-        service.login('user@example.com', 'wrongpassword', 'agent', '127.0.0.1'),
+        service.login(
+          'user@example.com',
+          'wrongpassword',
+          'agent',
+          '127.0.0.1',
+        ),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -95,7 +101,12 @@ describe('AuthService', () => {
     });
 
     it('calls signAsync with correct JWT payload', async () => {
-      await service.login('user@example.com', 'password123', 'agent', '127.0.0.1');
+      await service.login(
+        'user@example.com',
+        'password123',
+        'agent',
+        '127.0.0.1',
+      );
 
       expect(jwtSignAsync).toHaveBeenCalledWith({
         sub: '1',
@@ -302,7 +313,9 @@ describe('AuthService', () => {
     });
 
     it('is idempotent — does not throw when token is not found', async () => {
-      (prisma.refreshToken.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (prisma.refreshToken.updateMany as jest.Mock).mockResolvedValue({
+        count: 0,
+      });
 
       await expect(service.logout('unknown-token')).resolves.toBeUndefined();
     });

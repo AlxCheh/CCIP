@@ -31,7 +31,8 @@ describe('StorageService', () => {
               if (val === undefined) throw new Error(`Missing config: ${key}`);
               return val;
             },
-            get: (key: string, defaultValue?: string) => configValues[key] ?? defaultValue,
+            get: (key: string, defaultValue?: string) =>
+              configValues[key] ?? defaultValue,
           },
         },
       ],
@@ -44,10 +45,12 @@ describe('StorageService', () => {
     mockSend = jest.fn().mockResolvedValue({});
 
     (S3Client as jest.MockedClass<typeof S3Client>).mockImplementation(
-      () => ({ send: mockSend } as unknown as S3Client),
+      () => ({ send: mockSend }) as unknown as S3Client,
     );
-    (PutObjectCommand as jest.MockedClass<typeof PutObjectCommand>).mockImplementation(
-      (params) => ({ ...params } as unknown as PutObjectCommand),
+    (
+      PutObjectCommand as jest.MockedClass<typeof PutObjectCommand>
+    ).mockImplementation(
+      (params) => ({ ...params }) as unknown as PutObjectCommand,
     );
 
     service = await buildModule();
@@ -88,7 +91,8 @@ describe('StorageService', () => {
             useValue: {
               getOrThrow: (key: string) => {
                 const val = configWithoutRegion[key];
-                if (val === undefined) throw new Error(`Missing config: ${key}`);
+                if (val === undefined)
+                  throw new Error(`Missing config: ${key}`);
                 return val;
               },
               get: (_key: string, defaultValue?: string) => defaultValue,
@@ -125,7 +129,11 @@ describe('StorageService', () => {
 
     it('returns the S3 key unchanged on success', async () => {
       const key = 'org-uuid/10/rdc/456-drawing.pdf';
-      const result = await service.upload(key, Buffer.from('data'), 'application/pdf');
+      const result = await service.upload(
+        key,
+        Buffer.from('data'),
+        'application/pdf',
+      );
 
       expect(result).toBe(key);
     });
@@ -139,7 +147,11 @@ describe('StorageService', () => {
     });
 
     it('works with an empty buffer', async () => {
-      const result = await service.upload('empty-key', Buffer.alloc(0), 'application/pdf');
+      const result = await service.upload(
+        'empty-key',
+        Buffer.alloc(0),
+        'application/pdf',
+      );
 
       expect(result).toBe('empty-key');
       expect(PutObjectCommand).toHaveBeenCalledWith(

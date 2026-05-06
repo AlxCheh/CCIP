@@ -33,7 +33,11 @@ export class BoqController {
     @Body() dto: CreateBoqDto,
     @Request() req: AuthRequest,
   ) {
-    return this.boqService.createInitial(parseInt(req.user.id, 10), objectId, dto);
+    return this.boqService.createInitial(
+      parseInt(req.user.id, 10),
+      objectId,
+      dto,
+    );
   }
 
   @Get('objects/:objectId/boq/active')

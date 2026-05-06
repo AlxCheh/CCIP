@@ -7,9 +7,13 @@ import { UploadDocumentDto } from './dto/upload-document.dto';
 const USER_ID = 42;
 const OBJECT_ID = 10;
 
-const mockReq = { user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' } };
+const mockReq = {
+  user: { id: String(USER_ID), email: 'admin@example.com', role: 'admin' },
+};
 
-const makeFile = (overrides: Partial<Express.Multer.File> = {}): Express.Multer.File => ({
+const makeFile = (
+  overrides: Partial<Express.Multer.File> = {},
+): Express.Multer.File => ({
   fieldname: 'file',
   originalname: 'plan.pdf',
   encoding: '7bit',
@@ -47,19 +51,34 @@ describe('DocumentsController', () => {
 
     it('throws BadRequestException when no file is provided', () => {
       expect(() =>
-        controller.upload(OBJECT_ID, dto, undefined as unknown as Express.Multer.File, mockReq),
+        controller.upload(
+          OBJECT_ID,
+          dto,
+          undefined as unknown as Express.Multer.File,
+          mockReq,
+        ),
       ).toThrow(BadRequestException);
     });
 
     it('throws with FILE_REQUIRED message when file is absent', () => {
       expect(() =>
-        controller.upload(OBJECT_ID, dto, undefined as unknown as Express.Multer.File, mockReq),
+        controller.upload(
+          OBJECT_ID,
+          dto,
+          undefined as unknown as Express.Multer.File,
+          mockReq,
+        ),
       ).toThrow('FILE_REQUIRED');
     });
 
     it('does not call service when file is absent', () => {
       try {
-        controller.upload(OBJECT_ID, dto, undefined as unknown as Express.Multer.File, mockReq);
+        controller.upload(
+          OBJECT_ID,
+          dto,
+          undefined as unknown as Express.Multer.File,
+          mockReq,
+        );
       } catch {
         // expected throw
       }
@@ -71,14 +90,26 @@ describe('DocumentsController', () => {
       const file = makeFile();
       await controller.upload(OBJECT_ID, dto, file, mockReq);
 
-      expect(documentsService.upload).toHaveBeenCalledWith(USER_ID, OBJECT_ID, dto, file);
+      expect(documentsService.upload).toHaveBeenCalledWith(
+        USER_ID,
+        OBJECT_ID,
+        dto,
+        file,
+      );
     });
 
     it('parses user id string to number before passing to service', async () => {
-      const reqWithDifferentId = { user: { id: '7', email: 'a@b.com', role: 'admin' } };
+      const reqWithDifferentId = {
+        user: { id: '7', email: 'a@b.com', role: 'admin' },
+      };
       await controller.upload(OBJECT_ID, dto, makeFile(), reqWithDifferentId);
 
-      expect(documentsService.upload).toHaveBeenCalledWith(7, OBJECT_ID, dto, expect.anything());
+      expect(documentsService.upload).toHaveBeenCalledWith(
+        7,
+        OBJECT_ID,
+        dto,
+        expect.anything(),
+      );
     });
 
     it('returns the service result', async () => {
@@ -89,9 +120,14 @@ describe('DocumentsController', () => {
         filePath: 'org/10/ssr/123-plan.pdf',
         uploadedAt: new Date().toISOString(),
       };
-      documentsService.upload.mockResolvedValue(expected as any);
+      documentsService.upload.mockResolvedValue(expected);
 
-      const result = await controller.upload(OBJECT_ID, dto, makeFile(), mockReq);
+      const result = await controller.upload(
+        OBJECT_ID,
+        dto,
+        makeFile(),
+        mockReq,
+      );
 
       expect(result).toEqual(expected);
     });

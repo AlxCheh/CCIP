@@ -78,7 +78,9 @@ describe('AuditLogService', () => {
       new Error('DB connection lost'),
     );
 
-    await expect(service.log(BASE_PARAMS)).rejects.toThrow('DB connection lost');
+    await expect(service.log(BASE_PARAMS)).rejects.toThrow(
+      'DB connection lost',
+    );
   });
 
   it('returns void on success', async () => {
@@ -87,7 +89,11 @@ describe('AuditLogService', () => {
   });
 
   it('does not expose update or delete methods', () => {
-    expect((service as unknown as Record<string, unknown>).update).toBeUndefined();
-    expect((service as unknown as Record<string, unknown>).delete).toBeUndefined();
+    expect(
+      (service as unknown as Record<string, unknown>).update,
+    ).toBeUndefined();
+    expect(
+      (service as unknown as Record<string, unknown>).delete,
+    ).toBeUndefined();
   });
 });
