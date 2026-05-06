@@ -18,7 +18,11 @@ const ZERO_REPORT_ID = 100;
 const BOQ_ITEM_ID = 50;
 
 const mockUser = { id: USER_ID, organizationId: ORG_ID, role: 'site_engineer' };
-const mockDirector = { id: DIRECTOR_ID, organizationId: ORG_ID, role: 'director' };
+const mockDirector = {
+  id: DIRECTOR_ID,
+  organizationId: ORG_ID,
+  role: 'director',
+};
 const mockObject = { id: OBJECT_ID, organizationId: ORG_ID };
 
 const makeZeroReport = (overrides: Partial<Record<string, unknown>> = {}) => ({
@@ -54,7 +58,9 @@ const makeCreateDto = (): CreateZeroReportDto => ({
   boqVersionId: BOQ_VERSION_ID,
 });
 
-const makeItemDto = (overrides: Partial<UpsertZeroReportItemDto> = {}): UpsertZeroReportItemDto => ({
+const makeItemDto = (
+  overrides: Partial<UpsertZeroReportItemDto> = {},
+): UpsertZeroReportItemDto => ({
   boqItemId: BOQ_ITEM_ID,
   factVolume: 100,
   source: 'field',
@@ -68,9 +74,21 @@ describe('ZeroReportService', () => {
   beforeEach(async () => {
     prisma = {
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue(mockUser) },
-      constructionObject: { findUnique: jest.fn().mockResolvedValue(mockObject) },
-      boqVersion: { findUnique: jest.fn().mockResolvedValue({ id: BOQ_VERSION_ID, objectId: OBJECT_ID, isActive: true }) },
-      boqItem: { findUnique: jest.fn().mockResolvedValue({ id: BOQ_ITEM_ID, boqVersionId: BOQ_VERSION_ID }) },
+      constructionObject: {
+        findUnique: jest.fn().mockResolvedValue(mockObject),
+      },
+      boqVersion: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: BOQ_VERSION_ID,
+          objectId: OBJECT_ID,
+          isActive: true,
+        }),
+      },
+      boqItem: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: BOQ_ITEM_ID, boqVersionId: BOQ_VERSION_ID }),
+      },
       zeroReport: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue(makeZeroReport()),
@@ -82,7 +100,9 @@ describe('ZeroReportService', () => {
         findMany: jest.fn().mockResolvedValue([makeItem()]),
         count: jest.fn().mockResolvedValue(1),
       },
-      $transaction: jest.fn().mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
+      $transaction: jest
+        .fn()
+        .mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
     } as unknown as jest.Mocked<PrismaService>;
 
     const module = await Test.createTestingModule({
@@ -115,7 +135,9 @@ describe('ZeroReportService', () => {
     });
 
     it('throws ConflictException if active zero-report already exists for object', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport());
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport(),
+      );
 
       await expect(
         service.create(USER_ID, OBJECT_ID, makeCreateDto()),
@@ -123,7 +145,9 @@ describe('ZeroReportService', () => {
     });
 
     it('throws ConflictException with ZERO_REPORT_ALREADY_EXISTS code', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport());
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport(),
+      );
 
       await expect(
         service.create(USER_ID, OBJECT_ID, makeCreateDto()),
@@ -131,7 +155,9 @@ describe('ZeroReportService', () => {
     });
 
     it('throws NotFoundException when object does not exist', async () => {
-      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.create(USER_ID, OBJECT_ID, makeCreateDto()),
@@ -189,17 +215,17 @@ describe('ZeroReportService', () => {
     it('throws NotFoundException when no zero-report exists for object', async () => {
       (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.getByObject(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getByObject(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException with ZERO_REPORT_NOT_FOUND code', async () => {
       (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.getByObject(USER_ID, OBJECT_ID),
-      ).rejects.toThrow('ZERO_REPORT_NOT_FOUND');
+      await expect(service.getByObject(USER_ID, OBJECT_ID)).rejects.toThrow(
+        'ZERO_REPORT_NOT_FOUND',
+      );
     });
 
     it('throws NotFoundException when object belongs to different org', async () => {
@@ -208,9 +234,9 @@ describe('ZeroReportService', () => {
         organizationId: 'other-org',
       });
 
-      await expect(
-        service.getByObject(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getByObject(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -218,13 +244,24 @@ describe('ZeroReportService', () => {
 
   describe('upsertItem', () => {
     it('upserts zero-report item with factVolume and source', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft' }),
+      );
 
-      const result = await service.upsertItem(USER_ID, OBJECT_ID, makeItemDto());
+      const result = await service.upsertItem(
+        USER_ID,
+        OBJECT_ID,
+        makeItemDto(),
+      );
 
       expect(prisma.zeroReportItem.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ zeroReportId_boqItemId: { zeroReportId: ZERO_REPORT_ID, boqItemId: BOQ_ITEM_ID } }),
+          where: expect.objectContaining({
+            zeroReportId_boqItemId: {
+              zeroReportId: ZERO_REPORT_ID,
+              boqItemId: BOQ_ITEM_ID,
+            },
+          }),
           create: expect.objectContaining({ factVolume: 100, source: 'field' }),
           update: expect.objectContaining({ factVolume: 100, source: 'field' }),
         }),
@@ -241,7 +278,9 @@ describe('ZeroReportService', () => {
     });
 
     it('throws UnprocessableEntityException when status is not draft', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'submitted' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'submitted' }),
+      );
 
       await expect(
         service.upsertItem(USER_ID, OBJECT_ID, makeItemDto()),
@@ -249,7 +288,9 @@ describe('ZeroReportService', () => {
     });
 
     it('throws UnprocessableEntityException with ZERO_REPORT_INVALID_STATUS when not draft', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'approved' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'approved' }),
+      );
 
       await expect(
         service.upsertItem(USER_ID, OBJECT_ID, makeItemDto()),
@@ -257,9 +298,18 @@ describe('ZeroReportService', () => {
     });
 
     it('stores doc1Value, doc2Value, doc3Value and sets crossVerified when all docs provided', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
-      const itemWithDocs = makeItem({ doc1Value: 98, doc2Value: 99, doc3Value: 100, crossVerified: true });
-      (prisma.zeroReportItem.upsert as jest.Mock).mockResolvedValue(itemWithDocs);
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft' }),
+      );
+      const itemWithDocs = makeItem({
+        doc1Value: 98,
+        doc2Value: 99,
+        doc3Value: 100,
+        crossVerified: true,
+      });
+      (prisma.zeroReportItem.upsert as jest.Mock).mockResolvedValue(
+        itemWithDocs,
+      );
 
       const dto = makeItemDto({ doc1Value: 98, doc2Value: 99, doc3Value: 100 });
       const result = await service.upsertItem(USER_ID, OBJECT_ID, dto);
@@ -272,9 +322,15 @@ describe('ZeroReportService', () => {
 
   describe('submit', () => {
     it('transitions status from draft to submitted', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft' }),
+      );
       (prisma.zeroReport.update as jest.Mock).mockResolvedValue(
-        makeZeroReport({ status: 'submitted', submittedAt: new Date(), submittedBy: USER_ID }),
+        makeZeroReport({
+          status: 'submitted',
+          submittedAt: new Date(),
+          submittedBy: USER_ID,
+        }),
       );
 
       const result = await service.submit(USER_ID, OBJECT_ID);
@@ -294,25 +350,29 @@ describe('ZeroReportService', () => {
     it('throws NotFoundException when no zero-report exists', async () => {
       (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.submit(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.submit(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws UnprocessableEntityException when status is not draft', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'submitted' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'submitted' }),
+      );
 
-      await expect(
-        service.submit(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(UnprocessableEntityException);
+      await expect(service.submit(USER_ID, OBJECT_ID)).rejects.toThrow(
+        UnprocessableEntityException,
+      );
     });
 
     it('throws UnprocessableEntityException with ZERO_REPORT_INVALID_STATUS when already submitted', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'approved' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'approved' }),
+      );
 
-      await expect(
-        service.submit(USER_ID, OBJECT_ID),
-      ).rejects.toThrow('ZERO_REPORT_INVALID_STATUS');
+      await expect(service.submit(USER_ID, OBJECT_ID)).rejects.toThrow(
+        'ZERO_REPORT_INVALID_STATUS',
+      );
     });
   });
 
@@ -320,13 +380,19 @@ describe('ZeroReportService', () => {
 
   describe('approve', () => {
     it('transitions status from submitted to approved', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+        mockDirector,
+      );
       // First call: find current report; second call: check for existing approved (returns null)
       (prisma.zeroReport.findFirst as jest.Mock)
         .mockResolvedValueOnce(makeZeroReport({ status: 'submitted' }))
         .mockResolvedValueOnce(null);
       (prisma.zeroReport.update as jest.Mock).mockResolvedValue(
-        makeZeroReport({ status: 'approved', approvedAt: new Date(), approvedBy: DIRECTOR_ID }),
+        makeZeroReport({
+          status: 'approved',
+          approvedAt: new Date(),
+          approvedBy: DIRECTOR_ID,
+        }),
       );
 
       const result = await service.approve(DIRECTOR_ID, OBJECT_ID);
@@ -344,51 +410,69 @@ describe('ZeroReportService', () => {
     });
 
     it('throws NotFoundException when no zero-report exists', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+        mockDirector,
+      );
       (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.approve(DIRECTOR_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.approve(DIRECTOR_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws UnprocessableEntityException when status is not submitted', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+        mockDirector,
+      );
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft' }),
+      );
 
-      await expect(
-        service.approve(DIRECTOR_ID, OBJECT_ID),
-      ).rejects.toThrow(UnprocessableEntityException);
+      await expect(service.approve(DIRECTOR_ID, OBJECT_ID)).rejects.toThrow(
+        UnprocessableEntityException,
+      );
     });
 
     it('throws UnprocessableEntityException with ZERO_REPORT_INVALID_STATUS when already approved', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'approved' }));
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+        mockDirector,
+      );
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'approved' }),
+      );
 
-      await expect(
-        service.approve(DIRECTOR_ID, OBJECT_ID),
-      ).rejects.toThrow('ZERO_REPORT_INVALID_STATUS');
+      await expect(service.approve(DIRECTOR_ID, OBJECT_ID)).rejects.toThrow(
+        'ZERO_REPORT_INVALID_STATUS',
+      );
     });
 
     it('invariant: cannot approve when another approved zero-report exists for object', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+        mockDirector,
+      );
       (prisma.zeroReport.findFirst as jest.Mock)
         .mockResolvedValueOnce(makeZeroReport({ status: 'submitted' })) // find current
         .mockResolvedValueOnce(makeZeroReport({ id: 999, status: 'approved' })); // find existing approved
 
-      await expect(
-        service.approve(DIRECTOR_ID, OBJECT_ID),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.approve(DIRECTOR_ID, OBJECT_ID)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     // Critical #1 — approve uses $transaction
     it('wraps approve logic in a prisma $transaction', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue(
+        mockDirector,
+      );
       (prisma.zeroReport.findFirst as jest.Mock)
         .mockResolvedValueOnce(makeZeroReport({ status: 'submitted' }))
         .mockResolvedValueOnce(null);
       (prisma.zeroReport.update as jest.Mock).mockResolvedValue(
-        makeZeroReport({ status: 'approved', approvedAt: new Date(), approvedBy: DIRECTOR_ID }),
+        makeZeroReport({
+          status: 'approved',
+          approvedAt: new Date(),
+          approvedBy: DIRECTOR_ID,
+        }),
       );
 
       await service.approve(DIRECTOR_ID, OBJECT_ID);
@@ -456,21 +540,25 @@ describe('ZeroReportService', () => {
 
   describe('submit (item count validation)', () => {
     it('throws UnprocessableEntityException when report has no items', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft' }),
+      );
       (prisma.zeroReportItem.count as jest.Mock).mockResolvedValue(0);
 
-      await expect(
-        service.submit(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(UnprocessableEntityException);
+      await expect(service.submit(USER_ID, OBJECT_ID)).rejects.toThrow(
+        UnprocessableEntityException,
+      );
     });
 
     it('throws UnprocessableEntityException with ZERO_REPORT_NO_ITEMS code when no items', async () => {
-      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(makeZeroReport({ status: 'draft' }));
+      (prisma.zeroReport.findFirst as jest.Mock).mockResolvedValue(
+        makeZeroReport({ status: 'draft' }),
+      );
       (prisma.zeroReportItem.count as jest.Mock).mockResolvedValue(0);
 
-      await expect(
-        service.submit(USER_ID, OBJECT_ID),
-      ).rejects.toThrow('ZERO_REPORT_NO_ITEMS');
+      await expect(service.submit(USER_ID, OBJECT_ID)).rejects.toThrow(
+        'ZERO_REPORT_NO_ITEMS',
+      );
     });
   });
 

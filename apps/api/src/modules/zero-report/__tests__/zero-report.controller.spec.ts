@@ -8,11 +8,23 @@ const USER_ID = 1;
 const DIRECTOR_ID = 2;
 const OBJECT_ID = 10;
 
-const mockScReq = { user: { id: String(USER_ID), email: 'sc@example.com', role: 'site_engineer' } };
-const mockDirectorReq = { user: { id: String(DIRECTOR_ID), email: 'director@example.com', role: 'director' } };
+const mockScReq = {
+  user: { id: String(USER_ID), email: 'sc@example.com', role: 'site_engineer' },
+};
+const mockDirectorReq = {
+  user: {
+    id: String(DIRECTOR_ID),
+    email: 'director@example.com',
+    role: 'director',
+  },
+};
 
 const makeCreateDto = (): CreateZeroReportDto => ({ boqVersionId: 5 });
-const makeItemDto = (): UpsertZeroReportItemDto => ({ boqItemId: 50, factVolume: 100, source: 'field' });
+const makeItemDto = (): UpsertZeroReportItemDto => ({
+  boqItemId: 50,
+  factVolume: 100,
+  source: 'field',
+});
 
 const mockReport = {
   id: 100,
@@ -48,8 +60,12 @@ describe('ZeroReportController', () => {
       create: jest.fn().mockResolvedValue(mockReport),
       getByObject: jest.fn().mockResolvedValue({ ...mockReport, items: [] }),
       upsertItem: jest.fn().mockResolvedValue(mockItem),
-      submit: jest.fn().mockResolvedValue({ ...mockReport, status: 'submitted' }),
-      approve: jest.fn().mockResolvedValue({ ...mockReport, status: 'approved' }),
+      submit: jest
+        .fn()
+        .mockResolvedValue({ ...mockReport, status: 'submitted' }),
+      approve: jest
+        .fn()
+        .mockResolvedValue({ ...mockReport, status: 'approved' }),
     } as unknown as jest.Mocked<ZeroReportService>;
 
     const module = await Test.createTestingModule({
@@ -66,20 +82,34 @@ describe('ZeroReportController', () => {
     it('delegates to zeroReportService.create with numeric userId, objectId and dto', async () => {
       await controller.create(OBJECT_ID, makeCreateDto(), mockScReq);
 
-      expect(zeroReportService.create).toHaveBeenCalledWith(USER_ID, OBJECT_ID, makeCreateDto());
+      expect(zeroReportService.create).toHaveBeenCalledWith(
+        USER_ID,
+        OBJECT_ID,
+        makeCreateDto(),
+      );
     });
 
     it('parses user id string to number before passing to service', async () => {
-      const req = { user: { id: '99', email: 'sc@test.com', role: 'site_engineer' } };
+      const req = {
+        user: { id: '99', email: 'sc@test.com', role: 'site_engineer' },
+      };
       await controller.create(OBJECT_ID, makeCreateDto(), req);
 
-      expect(zeroReportService.create).toHaveBeenCalledWith(99, OBJECT_ID, expect.anything());
+      expect(zeroReportService.create).toHaveBeenCalledWith(
+        99,
+        OBJECT_ID,
+        expect.anything(),
+      );
     });
 
     it('returns the service result', async () => {
       zeroReportService.create.mockResolvedValue(mockReport as any);
 
-      const result = await controller.create(OBJECT_ID, makeCreateDto(), mockScReq);
+      const result = await controller.create(
+        OBJECT_ID,
+        makeCreateDto(),
+        mockScReq,
+      );
 
       expect(result).toEqual(mockReport);
     });
@@ -91,7 +121,10 @@ describe('ZeroReportController', () => {
     it('delegates to zeroReportService.getByObject with userId and objectId', async () => {
       await controller.getByObject(OBJECT_ID, mockScReq);
 
-      expect(zeroReportService.getByObject).toHaveBeenCalledWith(USER_ID, OBJECT_ID);
+      expect(zeroReportService.getByObject).toHaveBeenCalledWith(
+        USER_ID,
+        OBJECT_ID,
+      );
     });
 
     it('returns the service result with items', async () => {
@@ -110,13 +143,21 @@ describe('ZeroReportController', () => {
     it('delegates to zeroReportService.upsertItem with userId, objectId and dto', async () => {
       await controller.upsertItem(OBJECT_ID, makeItemDto(), mockScReq);
 
-      expect(zeroReportService.upsertItem).toHaveBeenCalledWith(USER_ID, OBJECT_ID, makeItemDto());
+      expect(zeroReportService.upsertItem).toHaveBeenCalledWith(
+        USER_ID,
+        OBJECT_ID,
+        makeItemDto(),
+      );
     });
 
     it('returns the service result', async () => {
-      zeroReportService.upsertItem.mockResolvedValue(mockItem as any);
+      zeroReportService.upsertItem.mockResolvedValue(mockItem);
 
-      const result = await controller.upsertItem(OBJECT_ID, makeItemDto(), mockScReq);
+      const result = await controller.upsertItem(
+        OBJECT_ID,
+        makeItemDto(),
+        mockScReq,
+      );
 
       expect(result).toEqual(mockItem);
     });
@@ -147,11 +188,16 @@ describe('ZeroReportController', () => {
     it('delegates to zeroReportService.approve with director userId and objectId', async () => {
       await controller.approve(OBJECT_ID, mockDirectorReq);
 
-      expect(zeroReportService.approve).toHaveBeenCalledWith(DIRECTOR_ID, OBJECT_ID);
+      expect(zeroReportService.approve).toHaveBeenCalledWith(
+        DIRECTOR_ID,
+        OBJECT_ID,
+      );
     });
 
     it('parses director user id string to number', async () => {
-      const req = { user: { id: '99', email: 'director@test.com', role: 'director' } };
+      const req = {
+        user: { id: '99', email: 'director@test.com', role: 'director' },
+      };
       await controller.approve(OBJECT_ID, req);
 
       expect(zeroReportService.approve).toHaveBeenCalledWith(99, OBJECT_ID);

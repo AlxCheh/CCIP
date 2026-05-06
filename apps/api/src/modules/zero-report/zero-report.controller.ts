@@ -34,7 +34,11 @@ export class ZeroReportController {
     @Body() dto: CreateZeroReportDto,
     @Request() req: AuthRequest,
   ) {
-    return this.zeroReportService.create(parseInt(req.user.id, 10), objectId, dto);
+    return this.zeroReportService.create(
+      parseInt(req.user.id, 10),
+      objectId,
+      dto,
+    );
   }
 
   @Get('objects/:objectId/zero-report')
@@ -43,7 +47,10 @@ export class ZeroReportController {
     @Param('objectId', ParseIntPipe) objectId: number,
     @Request() req: AuthRequest,
   ) {
-    return this.zeroReportService.getByObject(parseInt(req.user.id, 10), objectId);
+    return this.zeroReportService.getByObject(
+      parseInt(req.user.id, 10),
+      objectId,
+    );
   }
 
   @Post('objects/:objectId/zero-report/items')
@@ -54,7 +61,11 @@ export class ZeroReportController {
     @Body() dto: UpsertZeroReportItemDto,
     @Request() req: AuthRequest,
   ) {
-    return this.zeroReportService.upsertItem(parseInt(req.user.id, 10), objectId, dto);
+    return this.zeroReportService.upsertItem(
+      parseInt(req.user.id, 10),
+      objectId,
+      dto,
+    );
   }
 
   @Post('objects/:objectId/zero-report/submit')

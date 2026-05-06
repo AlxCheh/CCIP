@@ -17,8 +17,18 @@ const mockObject = { organizationId: ORG_ID };
 
 const makeDto = (overrides: Partial<CreateBoqDto> = {}): CreateBoqDto => ({
   items: [
-    { workCode: 'W-01', name: 'Земляные работы', planVolume: 100, contractValue: 600_000 },
-    { workCode: 'W-02', name: 'Бетон фундамент', planVolume: 50, contractValue: 400_000 },
+    {
+      workCode: 'W-01',
+      name: 'Земляные работы',
+      planVolume: 100,
+      contractValue: 600_000,
+    },
+    {
+      workCode: 'W-02',
+      name: 'Бетон фундамент',
+      planVolume: 50,
+      contractValue: 400_000,
+    },
   ],
   ...overrides,
 });
@@ -30,7 +40,9 @@ describe('BoqService', () => {
   beforeEach(async () => {
     prisma = {
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue(mockUser) },
-      constructionObject: { findUnique: jest.fn().mockResolvedValue(mockObject) },
+      constructionObject: {
+        findUnique: jest.fn().mockResolvedValue(mockObject),
+      },
       boqVersion: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
@@ -41,14 +53,13 @@ describe('BoqService', () => {
         aggregate: jest.fn().mockResolvedValue({ _sum: { weightCoef: 1.0 } }),
         findMany: jest.fn(),
       },
-      $transaction: jest.fn().mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
+      $transaction: jest
+        .fn()
+        .mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
     } as unknown as jest.Mocked<PrismaService>;
 
     const module = await Test.createTestingModule({
-      providers: [
-        BoqService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [BoqService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(BoqService);
@@ -68,14 +79,26 @@ describe('BoqService', () => {
 
     const mockItems = [
       {
-        id: 1, workCode: 'W-01', name: 'Земляные работы', unit: null,
-        planVolume: 600000, contractValue: 600000, weightCoef: 0.6,
-        isCritical: false, status: 'active',
+        id: 1,
+        workCode: 'W-01',
+        name: 'Земляные работы',
+        unit: null,
+        planVolume: 600000,
+        contractValue: 600000,
+        weightCoef: 0.6,
+        isCritical: false,
+        status: 'active',
       },
       {
-        id: 2, workCode: 'W-02', name: 'Бетон фундамент', unit: null,
-        planVolume: 400000, contractValue: 400000, weightCoef: 0.4,
-        isCritical: false, status: 'active',
+        id: 2,
+        workCode: 'W-02',
+        name: 'Бетон фундамент',
+        unit: null,
+        planVolume: 400000,
+        contractValue: 400000,
+        weightCoef: 0.4,
+        isCritical: false,
+        status: 'active',
       },
     ];
 
@@ -101,8 +124,14 @@ describe('BoqService', () => {
       expect(prisma.boqItem.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.arrayContaining([
-            expect.objectContaining({ workCode: 'W-01', contractValue: 600_000 }),
-            expect.objectContaining({ workCode: 'W-02', contractValue: 400_000 }),
+            expect.objectContaining({
+              workCode: 'W-01',
+              contractValue: 600_000,
+            }),
+            expect.objectContaining({
+              workCode: 'W-02',
+              contractValue: 400_000,
+            }),
           ]),
         }),
       );
@@ -111,11 +140,17 @@ describe('BoqService', () => {
     });
 
     it('passes changeReason to boqVersion.create', async () => {
-      await service.createInitial(USER_ID, OBJECT_ID, makeDto({ changeReason: 'Первоначальная смета' }));
+      await service.createInitial(
+        USER_ID,
+        OBJECT_ID,
+        makeDto({ changeReason: 'Первоначальная смета' }),
+      );
 
       expect(prisma.boqVersion.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ changeReason: 'Первоначальная смета' }),
+          data: expect.objectContaining({
+            changeReason: 'Первоначальная смета',
+          }),
         }),
       );
     });
@@ -186,7 +221,9 @@ describe('BoqService', () => {
     });
 
     it('propagates transaction error when $transaction rejects', async () => {
-      (prisma.$transaction as jest.Mock).mockRejectedValue(new Error('TX_ROLLBACK'));
+      (prisma.$transaction as jest.Mock).mockRejectedValue(
+        new Error('TX_ROLLBACK'),
+      );
 
       await expect(
         service.createInitial(USER_ID, OBJECT_ID, makeDto()),
@@ -204,7 +241,9 @@ describe('BoqService', () => {
     });
 
     it('throws NotFoundException when object does not exist', async () => {
-      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.constructionObject.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
 
       await expect(
         service.createInitial(USER_ID, OBJECT_ID, makeDto()),
@@ -225,9 +264,15 @@ describe('BoqService', () => {
         createdAt: new Date('2026-05-06T10:00:00Z'),
         boqItems: [
           {
-            id: 1, workCode: 'W-01', name: 'Земляные работы', unit: null,
-            planVolume: 600000, contractValue: 600000, weightCoef: 0.6,
-            isCritical: false, status: 'active',
+            id: 1,
+            workCode: 'W-01',
+            name: 'Земляные работы',
+            unit: null,
+            planVolume: 600000,
+            contractValue: 600000,
+            weightCoef: 0.6,
+            isCritical: false,
+            status: 'active',
           },
         ],
       };
@@ -244,9 +289,9 @@ describe('BoqService', () => {
     it('throws NotFoundException when no active version exists', async () => {
       (prisma.boqVersion.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.getActive(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getActive(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException when object belongs to different org', async () => {
@@ -254,9 +299,9 @@ describe('BoqService', () => {
         organizationId: 'other-org',
       });
 
-      await expect(
-        service.getActive(USER_ID, OBJECT_ID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getActive(USER_ID, OBJECT_ID)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -266,15 +311,21 @@ describe('BoqService', () => {
     it('returns all versions ordered by createdAt asc', async () => {
       const mockVersions = [
         {
-          id: 1, versionNumber: '1.0', changeType: 'initial',
-          changeReason: null, isActive: false,
+          id: 1,
+          versionNumber: '1.0',
+          changeType: 'initial',
+          changeReason: null,
+          isActive: false,
           createdAt: new Date('2026-04-01T00:00:00Z'),
           approvedAt: new Date('2026-04-02T00:00:00Z'),
           _count: { boqItems: 5 },
         },
         {
-          id: 2, versionNumber: '1.1', changeType: 'update',
-          changeReason: 'Корректировка смет', isActive: true,
+          id: 2,
+          versionNumber: '1.1',
+          changeType: 'update',
+          changeReason: 'Корректировка смет',
+          isActive: true,
           createdAt: new Date('2026-05-01T00:00:00Z'),
           approvedAt: null,
           _count: { boqItems: 6 },

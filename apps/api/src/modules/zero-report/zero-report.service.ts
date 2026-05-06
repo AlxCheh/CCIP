@@ -92,7 +92,11 @@ export class ZeroReportService {
     return this.formatReportWithItems(report);
   }
 
-  async upsertItem(userId: number, objectId: number, dto: UpsertZeroReportItemDto) {
+  async upsertItem(
+    userId: number,
+    objectId: number,
+    dto: UpsertZeroReportItemDto,
+  ) {
     await this.checkObjectAccess(userId, objectId);
 
     const report = await this.prisma.zeroReport.findFirst({
