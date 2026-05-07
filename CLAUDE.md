@@ -43,7 +43,7 @@ DEFAULT → direct agent of primary intent
 | DEVOPS   | ccip-devops        | general-purpose   |
 | QA       | ccip-qa            | general-purpose   |
 | MOBILE   | ccip-mobile        | general-purpose   |
-| SECURITY | security-reviewer  | ccip-architect    |
+| SECURITY | ccip-security      | ccip-architect    |
 | DOC      | ccip-doc-writer    | general-purpose   |
 
 ## Risk Rules
@@ -55,6 +55,9 @@ risk unclear  → default MEDIUM
 ```
 ```
 IF intent == ARCH → ccip-architect leads
+IF intent == SECURITY → ccip-security leads (full write, threat model, RBAC audit, pre-launch review)
+  security-reviewer is NOT a primary agent — it is a co-agent triggered automatically by risk:HIGH
+  security-reviewer triggers on: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog changes
 ```
 
 ## Agent Selection
