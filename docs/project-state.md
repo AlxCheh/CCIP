@@ -17,6 +17,7 @@
 | **Next Milestone** | M-05b завершён → M-05c разблокирован |
 | **Active Blockers** | см. §3 |
 | **Open Feedbacks** | 0 |
+| **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/red-team-2026-05-07.md`) |
 
 ---
 
