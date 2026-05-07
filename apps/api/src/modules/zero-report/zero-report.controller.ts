@@ -27,7 +27,7 @@ export class ZeroReportController {
   constructor(private readonly zeroReportService: ZeroReportService) {}
 
   @Post('objects/:objectId/zero-report')
-  @Roles('site_engineer', 'admin')
+  @Roles('engineer', 'admin')
   @HttpCode(HttpStatus.CREATED)
   create(
     @Param('objectId', ParseIntPipe) objectId: number,
@@ -42,7 +42,7 @@ export class ZeroReportController {
   }
 
   @Get('objects/:objectId/zero-report')
-  @Roles('director', 'site_engineer', 'admin')
+  @Roles('director', 'engineer', 'admin')
   getByObject(
     @Param('objectId', ParseIntPipe) objectId: number,
     @Request() req: AuthRequest,
@@ -54,7 +54,7 @@ export class ZeroReportController {
   }
 
   @Post('objects/:objectId/zero-report/items')
-  @Roles('site_engineer', 'admin')
+  @Roles('engineer', 'admin')
   @HttpCode(HttpStatus.OK)
   upsertItem(
     @Param('objectId', ParseIntPipe) objectId: number,
@@ -69,7 +69,7 @@ export class ZeroReportController {
   }
 
   @Post('objects/:objectId/zero-report/submit')
-  @Roles('site_engineer', 'admin')
+  @Roles('engineer', 'admin')
   @HttpCode(HttpStatus.OK)
   submit(
     @Param('objectId', ParseIntPipe) objectId: number,

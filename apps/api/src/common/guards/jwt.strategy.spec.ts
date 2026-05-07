@@ -54,7 +54,7 @@ describe('JwtStrategy', () => {
       const result = strategy.validate({
         sub: '99',
         email: 'e@e.com',
-        role: 'sc',
+        role: 'stroycontrol',
         organizationId: 'org',
       });
 
@@ -82,7 +82,7 @@ describe('JwtStrategy', () => {
     });
 
     it('preserves all three role values correctly', () => {
-      const roles = ['admin', 'director', 'sc'] as const;
+      const roles = ['admin', 'director', 'stroycontrol'] as const;
 
       for (const role of roles) {
         const result = strategy.validate({

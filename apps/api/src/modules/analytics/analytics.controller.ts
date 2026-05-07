@@ -15,7 +15,7 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  @Roles('director', 'sc', 'admin')
+  @Roles('director', 'stroycontrol', 'admin')
   getDashboard(@Query() query: DashboardQueryDto, @Request() req: AuthRequest) {
     return this.analyticsService.getDashboard(parseInt(req.user.id, 10), query);
   }

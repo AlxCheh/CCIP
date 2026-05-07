@@ -34,13 +34,13 @@ export class ObjectsController {
   }
 
   @Get()
-  @Roles('director', 'sc', 'admin')
+  @Roles('director', 'stroycontrol', 'admin')
   list(@Request() req: AuthRequest) {
     return this.objectsService.list(parseInt(req.user.id, 10));
   }
 
   @Get(':id')
-  @Roles('director', 'sc', 'admin')
+  @Roles('director', 'stroycontrol', 'admin')
   getDetail(
     @Param('id', ParseIntPipe) id: number,
     @Request() req: AuthRequest,

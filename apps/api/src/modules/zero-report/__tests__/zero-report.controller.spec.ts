@@ -9,7 +9,7 @@ const DIRECTOR_ID = 2;
 const OBJECT_ID = 10;
 
 const mockScReq = {
-  user: { id: String(USER_ID), email: 'sc@example.com', role: 'site_engineer' },
+  user: { id: String(USER_ID), email: 'sc@example.com', role: 'engineer' },
 };
 const mockDirectorReq = {
   user: {
@@ -91,7 +91,7 @@ describe('ZeroReportController', () => {
 
     it('parses user id string to number before passing to service', async () => {
       const req = {
-        user: { id: '99', email: 'sc@test.com', role: 'site_engineer' },
+        user: { id: '99', email: 'sc@test.com', role: 'engineer' },
       };
       await controller.create(OBJECT_ID, makeCreateDto(), req);
 

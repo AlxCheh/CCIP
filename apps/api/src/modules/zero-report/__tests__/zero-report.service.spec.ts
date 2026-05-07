@@ -17,7 +17,7 @@ const BOQ_VERSION_ID = 5;
 const ZERO_REPORT_ID = 100;
 const BOQ_ITEM_ID = 50;
 
-const mockUser = { id: USER_ID, organizationId: ORG_ID, role: 'site_engineer' };
+const mockUser = { id: USER_ID, organizationId: ORG_ID, role: 'engineer' };
 const mockDirector = {
   id: DIRECTOR_ID,
   organizationId: ORG_ID,

@@ -23,7 +23,7 @@ export class SystemConfigController {
   constructor(private readonly systemConfigService: SystemConfigService) {}
 
   @Get()
-  @Roles('director', 'sc', 'admin')
+  @Roles('director', 'stroycontrol', 'admin')
   list(@Request() req: AuthRequest) {
     return this.systemConfigService.list(parseInt(req.user.id, 10));
   }

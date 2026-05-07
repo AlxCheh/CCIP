@@ -41,7 +41,7 @@ export class BoqController {
   }
 
   @Get('objects/:objectId/boq/active')
-  @Roles('director', 'sc', 'admin')
+  @Roles('director', 'stroycontrol', 'admin')
   getActive(
     @Param('objectId', ParseIntPipe) objectId: number,
     @Request() req: AuthRequest,
@@ -50,7 +50,7 @@ export class BoqController {
   }
 
   @Get('objects/:objectId/boq-versions')
-  @Roles('director', 'sc', 'admin')
+  @Roles('director', 'stroycontrol', 'admin')
   listVersions(
     @Param('objectId', ParseIntPipe) objectId: number,
     @Request() req: AuthRequest,
