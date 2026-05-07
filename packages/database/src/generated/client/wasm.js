@@ -488,7 +488,12 @@ exports.Prisma.JsonNullValueFilter = {
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
 };
-
+exports.UserRole = exports.$Enums.UserRole = {
+  admin: 'admin',
+  director: 'director',
+  stroycontrol: 'stroycontrol',
+  engineer: 'engineer'
+};
 
 exports.Prisma.ModelName = {
   Organization: 'Organization',
