@@ -11,6 +11,8 @@ import {
 import { Roles } from '../../common/guards/roles.decorator';
 import { PeriodService } from './period.service';
 import { OpenPeriodDto } from './dto/open-period.dto';
+import { SubmitGpDto } from './dto/submit-gp.dto';
+import { UpsertPeriodFactDto } from './dto/upsert-period-fact.dto';
 
 interface AuthRequest {
   user: { id: string; email: string; role: string; organizationId: string };
@@ -29,6 +31,15 @@ export class PeriodController {
     );
   }
 
+  @Get(':id')
+  @Roles('director', 'stroycontrol', 'admin')
+  findById(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest,
+  ) {
+    return this.periodService.findById(id, parseInt(req.user.id, 10));
+  }
+
   @Patch(':id/close')
   @Roles('stroycontrol', 'admin')
   close(@Param('id', ParseIntPipe) id: number, @Request() req: AuthRequest) {
@@ -39,5 +50,27 @@ export class PeriodController {
   @Roles('director', 'stroycontrol', 'admin')
   byObject(@Param('objectId', ParseIntPipe) objectId: number) {
     return this.periodService.findByObject(objectId);
+  }
+
+  // Public endpoint — authenticated by GP token embedded in URL
+  @Post('gp/submit/:token')
+  submitGp(@Param('token') token: string, @Body() dto: SubmitGpDto) {
+    return this.periodService.submitGp(token, dto.gpSubmittedByName, dto.items);
+  }
+
+  @Patch(':id/facts/:boqItemId')
+  @Roles('stroycontrol', 'admin')
+  upsertFact(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('boqItemId', ParseIntPipe) boqItemId: number,
+    @Body() dto: UpsertPeriodFactDto,
+    @Request() req: AuthRequest,
+  ) {
+    return this.periodService.upsertPeriodFact(
+      id,
+      boqItemId,
+      dto.scVolume,
+      parseInt(req.user.id, 10),
+    );
   }
 }

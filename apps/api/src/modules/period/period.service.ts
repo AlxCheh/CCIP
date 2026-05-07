@@ -2,9 +2,18 @@ import {
   Injectable,
   ConflictException,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { Prisma } from '@ccip/database';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
+
+// Days until GP submission token expires (default: 14 days from SystemConfig or constant)
+const GP_TOKEN_EXPIRES_DAYS = 14;
+
+// Period statuses that allow SC fact entry
+const SC_FACT_ALLOWED_STATUSES = ['gp_submitted', 'verification'];
 
 @Injectable()
 export class PeriodService {
@@ -13,10 +22,13 @@ export class PeriodService {
     private readonly auditLog: AuditLogService,
   ) {}
 
+  // ─── openPeriod ──────────────────────────────────────────────────────────────
+
   async openPeriod(objectId: number, actorId: number) {
-    return this.prisma.$transaction(async (tx) => {
+    try {
+    return await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${String(objectId)})::bigint)`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(('x' || left(md5(${String(objectId)}), 16))::bit(64)::bigint)`;
 
       const obj = await tx.constructionObject.findUniqueOrThrow({
         where: { id: objectId },
@@ -43,6 +55,13 @@ export class PeriodService {
         select: { id: true },
       });
 
+      const now = new Date();
+      // TODO M-05b: заменить на sla_force_close_at - 1h после реализации SLA scheduler
+      // Требует добавления sla_force_close_at в схему/SystemConfig
+      const gpTokenExpiresAt = new Date(
+        now.getTime() + GP_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
+      );
+
       const period = await tx.period.create({
         data: {
           objectId,
@@ -50,9 +69,14 @@ export class PeriodService {
           periodNumber: (last?.periodNumber ?? 0) + 1,
           status: 'open',
           openedBy: actorId,
-          openedAt: new Date(),
+          openedAt: now,
+          gpSubmissionToken: randomUUID(),
+          gpTokenExpiresAt,
         },
       });
+
+      // TODO M-06: отправить email ГП с gpSubmissionToken через NotificationService
+      // Email должен отправляться ПОСЛЕ транзакции (не внутри)
 
       await this.auditLog.log({
         tableName: 'periods',
@@ -65,7 +89,197 @@ export class PeriodService {
 
       return period;
     });
+    } catch (e: unknown) {
+      // PostgreSQL lock timeout error code: 55P03
+      if (
+        e instanceof Error &&
+        'code' in e &&
+        (e as { code: string }).code === '55P03'
+      ) {
+        throw new ConflictException('PERIOD_LOCK_TIMEOUT');
+      }
+      throw e;
+    }
   }
+
+  // ─── findById ────────────────────────────────────────────────────────────────
+
+  async findById(periodId: number, actorId: number) {
+    const actor = await this.prisma.user.findUniqueOrThrow({
+      where: { id: actorId },
+      select: { organizationId: true },
+    });
+
+    const period = await this.prisma.period.findFirst({
+      where: {
+        id: periodId,
+        object: { organizationId: actor.organizationId },
+      },
+      include: { periodFacts: true },
+    });
+
+    if (!period) throw new NotFoundException('PERIOD_NOT_FOUND');
+
+    return period;
+  }
+
+  // ─── submitGp ────────────────────────────────────────────────────────────────
+
+  async submitGp(
+    token: string,
+    gpSubmittedByName: string,
+    items: Array<{ boqItemId: number; gpVolume: number | unknown; gpNote?: string }>,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const period = await tx.period.findFirst({
+        where: { gpSubmissionToken: token },
+        include: { object: { select: { organizationId: true } } },
+      });
+
+      if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
+
+      if (period.gpTokenExpiresAt && period.gpTokenExpiresAt < new Date()) {
+        throw new ForbiddenException('GP_TOKEN_EXPIRED');
+      }
+
+      if (period.gpSubmittedAt !== null) {
+        throw new ForbiddenException('GP_ALREADY_SUBMITTED');
+      }
+
+      if (period.status !== 'open') {
+        throw new ConflictException('PERIOD_WRONG_STATUS');
+      }
+
+      // Upsert PeriodFact for each submitted item
+      for (const item of items) {
+        await tx.periodFact.upsert({
+          where: {
+            periodId_boqItemId: {
+              periodId: period.id,
+              boqItemId: item.boqItemId,
+            },
+          },
+          create: {
+            periodId: period.id,
+            boqItemId: item.boqItemId,
+            gpVolume: item.gpVolume as never,
+            gpNote: item.gpNote ?? null,
+          },
+          update: {
+            gpVolume: item.gpVolume as never,
+            gpNote: item.gpNote ?? null,
+          },
+        });
+      }
+
+      const updated = await tx.period.update({
+        where: { id: period.id },
+        data: {
+          gpSubmittedAt: new Date(),
+          gpSubmittedByName,
+          status: 'gp_submitted',
+        },
+      });
+
+      await this.auditLog.log({
+        tableName: 'periods',
+        recordId: BigInt(period.id),
+        action: 'gp_submitted',
+        newData: { gpSubmittedByName, itemCount: items.length },
+        organizationId: period.object.organizationId,
+      });
+
+      return updated;
+    });
+  }
+
+  // ─── upsertPeriodFact ────────────────────────────────────────────────────────
+
+  async upsertPeriodFact(
+    periodId: number,
+    boqItemId: number,
+    scVolume: number | unknown,
+    actorId: number,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const period = await tx.period.findUniqueOrThrow({
+        where: { id: periodId },
+        include: { object: { select: { organizationId: true } } },
+      });
+
+      if (!SC_FACT_ALLOWED_STATUSES.includes(period.status)) {
+        throw new ConflictException('PERIOD_WRONG_STATUS');
+      }
+
+      // Find existing fact to retrieve gpVolume for delta computation
+      const existingFact = await tx.periodFact.findFirst({
+        where: { periodId, boqItemId },
+        select: { gpVolume: true },
+      });
+
+      // Compute discrepancy based on gpVolume
+      const gpVol =
+        existingFact?.gpVolume !== undefined && existingFact.gpVolume !== null
+          ? Number(existingFact.gpVolume)
+          : null;
+      const scVol = Number(scVolume);
+
+      let discrepancyType: number | null;
+      let discrepancyStatus: string;
+      let acceptedVolume: number | null;
+
+      if (gpVol !== null && Math.abs(gpVol - scVol) === 0) {
+        discrepancyType = null;
+        discrepancyStatus = 'confirmed';
+        acceptedVolume = scVol;
+      } else {
+        discrepancyType = 1;
+        discrepancyStatus = 'open';
+        acceptedVolume = null;
+      }
+
+      const updatedFact = await tx.periodFact.upsert({
+        where: { periodId_boqItemId: { periodId, boqItemId } },
+        create: {
+          periodId,
+          boqItemId,
+          scVolume: new Prisma.Decimal(scVolume as number),
+          discrepancyType,
+          discrepancyStatus,
+          acceptedVolume:
+            acceptedVolume !== null ? new Prisma.Decimal(acceptedVolume) : null,
+        },
+        update: {
+          scVolume: new Prisma.Decimal(scVolume as number),
+          discrepancyType,
+          discrepancyStatus,
+          acceptedVolume:
+            acceptedVolume !== null ? new Prisma.Decimal(acceptedVolume) : null,
+        },
+      });
+
+      // Transition period to verification if it was in gp_submitted
+      if (period.status === 'gp_submitted') {
+        await tx.period.update({
+          where: { id: periodId },
+          data: { status: 'verification' },
+        });
+      }
+
+      await this.auditLog.log({
+        tableName: 'period_facts',
+        recordId: BigInt(updatedFact.id),
+        action: 'period_fact_upserted',
+        newData: { periodId, boqItemId, scVolume, discrepancyType, discrepancyStatus },
+        performedBy: actorId,
+        organizationId: period.object.organizationId,
+      });
+
+      return updatedFact;
+    });
+  }
+
+  // ─── closePeriod ────────────────────────────────────────────────────────────
 
   async closePeriod(periodId: number, actorId: number) {
     return this.prisma.$transaction(async (tx) => {
@@ -74,12 +288,37 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
-      if (period.status !== 'open')
-        throw new ConflictException('PERIOD_NOT_OPEN');
+      if (period.status !== 'verification') {
+        throw new ConflictException('PERIOD_WRONG_STATUS');
+      }
+
+      // Check for open discrepancies across all period facts
+      const openDiscrepancyCount = await tx.discrepancy.count({
+        where: {
+          periodFact: { periodId },
+          status: 'open',
+        },
+      });
+
+      if (openDiscrepancyCount > 0) {
+        throw new ConflictException('OPEN_DISCREPANCIES_EXIST');
+      }
 
       const updated = await tx.period.update({
         where: { id: periodId },
         data: { status: 'closed', closedAt: new Date(), closedBy: actorId },
+      });
+
+      // Create ReadinessSnapshot — placeholder until Analytics Engine (M-05c) is implemented
+      // TODO M-05c: заменить 0 на реальный calcReadiness() из AnalyticsService
+      // TODO M-05c: добавить INSERT work_pace в эту же транзакцию (ADR-011)
+      // TODO M-05b: после транзакции enqueue BullMQ job для REFRESH MATERIALIZED VIEW CONCURRENTLY
+      await tx.readinessSnapshot.create({
+        data: {
+          periodId,
+          objectId: period.objectId,
+          objectReadinessPct: 0,
+        },
       });
 
       await this.auditLog.log({
@@ -93,6 +332,8 @@ export class PeriodService {
       return updated;
     });
   }
+
+  // ─── findByObject ────────────────────────────────────────────────────────────
 
   async findByObject(objectId: number) {
     return this.prisma.period.findMany({
