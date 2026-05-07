@@ -48,7 +48,7 @@
   - `POST /gp/submit/:token` — ГП заполняет `gp_volume` по позициям (только открытые поля из XLS)
   - Одноразовость: `gp_submitted_at IS NOT NULL` → 403 `GP_ALREADY_SUBMITTED`
   - Истечение: `gp_token_expires_at < NOW()` → 403 `GP_TOKEN_EXPIRED`
-  - Артефакт: `apps/api/src/gp/gp.module.ts`
+  - Артефакт: `apps/api/src/modules/period/period.module.ts`
 
 - `[H]` 🔴 CRITICAL PATH — Верификация SC
   - `PATCH /periods/:id/facts/:boq_item_id` — SC вводит `sc_volume`
@@ -70,7 +70,7 @@
   - `GET /periods/:id/discrepancies` — журнал (не передаётся ГП)
   - Тип 3: `DisputeFlagService` — проверяет `N_flag_threshold` за `M_flag_window` → флаг на дашборде
 
-- `[H]` 🔴 CRITICAL PATH — `SlaSchedulerModule` — BullMQ Worker (⚠️ ADR-005)
+- `[H]` 🔴 CRITICAL PATH — `DisputeSlaModule` — BullMQ Worker (⚠️ ADR-005)
   - **ROLE=worker** env: worker регистрирует процессоры; api-процесс не регистрирует
   - При Тип 2 выставлен: INSERT `sla_events` (Сценарий A: day+3, day+5)
   - BullMQ.add(`jobId='sla-{event.id}'`, delay=Δt, attempts=3)
@@ -78,7 +78,7 @@
   - Idempotency guard: `if (event.executedAt) return`
   - Day 3: уведомление директору; Day 5: `force_close` → status='forced_sc_figure'
   - DELETE guard триггер на `sla_events` (⚠️ ADR-005, P-24) — нельзя удалить выполненное событие
-  - Артефакт: `apps/api/src/sla-scheduler/sla-scheduler.module.ts`
+  - Артефакт: `apps/api/src/modules/dispute-sla/dispute-sla.module.ts`
   - Критерий: убить Redis, рестартовать worker → все pending SLA события восстановлены
 
 ### 5.3 AnalyticsEngine (Блок E, ⚠️ ADR-011)
