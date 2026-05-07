@@ -22,7 +22,14 @@ IF ambiguity exists → resolve before routing; do not guess
 ```
 IF intents >= 3 OR risk == HIGH
 → enumerate all intents explicitly → planner
-ELSE → direct agent
+
+IF intents == 2 AND risk IN [LOW, MEDIUM]
+→ primary agent of intent[0] + co-agent of intent[1] (see Multi-intent §)
+
+IF intents == 1 AND risk == MEDIUM
+→ direct agent of that intent; flag output for review (see Risk Rules)
+
+DEFAULT → direct agent of primary intent
 ```
 
 ## Intent → Agent → Backup

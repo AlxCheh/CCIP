@@ -25,18 +25,19 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 - ADR-012: multi-tenancy — tenant_id на всех таблицах, RLS policy
 - ADR-014: push notifications — FCM/APNs через очередь
 
-## RBAC матрица (соблюдать строго)
+## RBAC матрица (канонический набор — enum UserRole в Prisma)
+- `admin` — управление объектом, пользователями, конфигурацией
 - `director` — read-only дашборд, утверждение 0-отчёта
-- `supervisor` (стройконтроль) — создание/закрытие периода, верификация работ
-- `contractor` (ГП) — подача данных через GpToken, без прямого доступа к API
-- `admin` — управление объектом, пользователями
+- `stroycontrol` — создание/закрытие периода, верификация работ
+- `engineer` — инженер ПТО, заполнение 0-отчёта, BoQ позиции
+- ГП (генподрядчик) — внешний актор без серверного аккаунта; подача данных через `GpTokenGuard` по UUID-токену в URL (ADR-009). Frontend помечает UI-режим флагом `'gp'`, но это **не** значение колонки `users.role`.
 
 ## Источники контекста
 - `docs/architecture/auth-security.md` — детали Auth и RBAC
 - `docs/architecture/sync-engine.md` — детали Sync API
 - `docs/decisions/ADR-009-rbac-gp-token.md`
 - `docs/decisions/ADR-012-multitenancy.md`
-- `backend/database/schema.sql` — таблицы users, roles, audit_log
+- `packages/database/prisma/schema.prisma` — единственный источник схемы БД (модели User, Organization, AuditLog)
 
 ## Правила работы
 1. Каждый endpoint — с explicit role check через Guard, без implicit доступа.

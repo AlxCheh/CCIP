@@ -19,7 +19,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - BullMQ workers: обработка очередей, retry-стратегии
 
 ## Ключевые ADR для этого модуля
-- ADR-002: period concurrency — advisory lock `pg_advisory_xact_lock(period_id)`
+- ADR-002: period concurrency — advisory lock `pg_advisory_xact_lock(('x' || left(md5(<object_id>), 16))::bit(64)::bigint)` (`hashtext()` запрещён — нестабилен между мажорными версиями PG)
 - ADR-004: MV staleness ≤ 5 мин в рабочее время, refresh CONCURRENTLY
 - ADR-005: SLA worker — одна реплика, `strategy: Recreate`, Redis AOF
 - ADR-006: BoQ versioning через effective_from / snapshot

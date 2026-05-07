@@ -7,7 +7,7 @@
 NestJS Guards + JWT (Access 15 мин / Refresh 30 дней в БД) для внутренних пользователей + stateless UUID-токен в URL для ГП.
 
 ## Контекст
-Четыре роли (`stroycontrol`, `director`, `admin`, worker) с принципиально разными правами. ГП — внешний актор без учётной записи, взаимодействует один раз за период. Rate limiting активен с первого деплоя.
+Четыре канонические роли (`admin`, `director`, `stroycontrol`, `engineer`) с принципиально разными правами, закреплены через Prisma enum `UserRole`. ГП — внешний актор без учётной записи, взаимодействует один раз за период. Rate limiting активен с первого деплоя.
 
 ## Практический кейс
 Открывается период → генерируется `gpSubmissionToken = randomUUID()`, `gpTokenExpiresAt = sla_force_close_at - 1h`. ГП получает email со ссылкой `/gp/submit/:token`, кликает — `GpTokenGuard` проверяет: токен существует, не истёк, `gpSubmittedAt IS NULL`. После подачи атомарно `gpSubmittedAt = NOW()` — повторная подача → `GP_ALREADY_SUBMITTED`.
