@@ -29,12 +29,12 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 - `docs/architecture_v1_0.md` — полная архитектура
 - `docs/architecture/*.md` — детализация по модулям
 - `docs/decisions/ADR-*.md` — все принятые решения
-- `docs/errors_log.md` — зафиксированные ошибки
+- `docs/errors/errors_log.md` — зафиксированные ошибки
 
 ## Правила работы
 1. Перед любым архитектурным изменением — проверить конфликт с существующими ADR.
 2. Новое архитектурное решение оформлять как ADR с полями: Status, Context, Decision, Consequences.
-3. Все найденные противоречия фиксировать в `docs/errors_log.md`.
+3. Все найденные противоречия фиксировать в `docs/errors/errors_log.md`.
 4. Читать только релевантные секции: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не открывать архитектурный файл целиком.
 5. При code review — фокус на корректности state machine transitions, идемпотентности операций, соблюдении append-only принципа.
 
