@@ -117,7 +117,7 @@ ls docs/architecture/
 - `docs/decisions/` — только список файлов (не читать содержимое)
 - `docs/delivery/` — только список файлов
 - `docs/architecture/` — только список файлов
-- `CCIP/docs/errors/errors_log.md` — только для добавления записи в конец
+- `docs/errors/errors_log.md` — только для добавления записи в конец
 
 ## Правила
 
