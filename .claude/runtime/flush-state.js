@@ -5,9 +5,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '../../..');
-const STATE_FILE = path.join(ROOT, 'CCIP/.claude/runtime/session-state.json');
-const FEEDBACK_FILE = path.join(ROOT, 'CCIP/docs/tasks/feedback-loop.md');
+const ROOT = path.resolve(__dirname, '../..');
+const STATE_FILE = path.join(ROOT, '.claude/runtime/session-state.json');
+const FEEDBACK_FILE = path.join(ROOT, 'docs/tasks/feedback-loop.md');
 
 function run() {
   if (!fs.existsSync(STATE_FILE)) return;

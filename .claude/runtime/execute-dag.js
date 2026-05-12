@@ -30,9 +30,9 @@ const rl   = require('readline');
 
 // ── config ────────────────────────────────────────────────────────────────────
 
-const ROOT       = path.resolve(__dirname, '../../..');
-const STATE_FILE = path.join(ROOT, 'CCIP/.claude/runtime/session-state.json');
-const AGENTS_DIR = path.join(ROOT, 'CCIP/.claude/agents');
+const ROOT       = path.resolve(__dirname, '../..');
+const STATE_FILE = path.join(ROOT, '.claude/runtime/session-state.json');
+const AGENTS_DIR = path.join(ROOT, '.claude/agents');
 const TIMEOUT_MS = 5 * 60 * 1000;
 const RETRY_BASE = 2000;             // ms — base for exponential backoff
 

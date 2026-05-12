@@ -16,8 +16,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT    = path.resolve(__dirname, '../../..');
-const STATE   = path.join(ROOT, 'CCIP/.claude/runtime/session-state.json');
+const ROOT    = path.resolve(__dirname, '../..');
+const STATE   = path.join(ROOT, '.claude/runtime/session-state.json');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

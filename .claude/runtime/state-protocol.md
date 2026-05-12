@@ -1,7 +1,7 @@
 # Runtime State Protocol
 
 Единственный источник истины о текущей сессии между вызовами агентов.
-Файл: `CCIP/.claude/runtime/session-state.json`
+Файл: `.claude/runtime/session-state.json`
 
 ---
 

@@ -139,4 +139,4 @@ model: claude-sonnet-4-6
 
 ## Источники контекста (только при явной необходимости)
 
-- `CCIP/docs/architecture/auth-security.md` — детали Auth/RBAC (читать с limit:30 → offset)
+- `docs/architecture/auth-security.md` — детали Auth/RBAC (читать с limit:30 → offset)

@@ -19,10 +19,10 @@ model: claude-haiku-4-5-20251001
 
 ```
 git log --since="7 days ago" --name-only --pretty=format: -- \
-  CCIP/docs/decisions/ \
-  CCIP/.claude/agents/ \
-  CCIP/docs/delivery/ \
-  CCIP/docs/architecture/ \
+  docs/decisions/ \
+  .claude/agents/ \
+  docs/delivery/ \
+  docs/architecture/ \
   CLAUDE.md
 ```
 
@@ -41,14 +41,14 @@ git log --since="7 days ago" --name-only --pretty=format: -- \
 #### 2.1 Проверка секции "Document Routing" в CLAUDE.md
 
 Для каждого пути в секции "Document Routing":
-- проверить что файл существует: `ls CCIP/<path>`
+- проверить что файл существует: `ls <path>`
 - если файл не найден → пометить как `[BROKEN LINK]`
 - если появились новые документы → добавить в таблицу маршрутизации
 
 #### 2.2 Проверка таблицы субагентов "Intent → Agent → Backup" в CLAUDE.md
 
 ```
-ls CCIP/.claude/agents/
+ls .claude/agents/
 ```
 Сравнить с таблицей в секции "Intent → Agent → Backup":
 - агент есть в файлах, но не в таблице → добавить строку
@@ -58,7 +58,7 @@ ls CCIP/.claude/agents/
 #### 2.3 Проверка ADR-ссылок
 
 ```
-ls CCIP/docs/decisions/
+ls docs/decisions/
 ```
 Сравнить список ADR с упоминаниями в "Document Routing" CLAUDE.md.
 Зафиксировать новые ADR, которые не упомянуты нигде в CLAUDE.md.
@@ -66,7 +66,7 @@ ls CCIP/docs/decisions/
 #### 2.4 Проверка архитектурных секций
 
 ```
-ls CCIP/docs/architecture/
+ls docs/architecture/
 ```
 Сравнить с секцией "Document Routing". Добавить новые модули.
 
@@ -113,10 +113,10 @@ ls CCIP/docs/architecture/
 ## Источники контекста (читать только при необходимости)
 
 - `CLAUDE.md` — основной объект аудита
-- `CCIP/.claude/agents/*.md` — только `description:` из frontmatter (первые 5 строк)
-- `CCIP/docs/decisions/` — только список файлов (не читать содержимое)
-- `CCIP/docs/delivery/` — только список файлов
-- `CCIP/docs/architecture/` — только список файлов
+- `.claude/agents/*.md` — только `description:` из frontmatter (первые 5 строк)
+- `docs/decisions/` — только список файлов (не читать содержимое)
+- `docs/delivery/` — только список файлов
+- `docs/architecture/` — только список файлов
 - `CCIP/docs/errors/errors_log.md` — только для добавления записи в конец
 
 ## Правила

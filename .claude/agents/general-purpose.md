@@ -25,7 +25,7 @@ model: claude-sonnet-4-6
 
 ## Правила работы
 
-1. Перед началом — прочитать `CCIP/.claude/runtime/session-state.json` (task + intents + handoff_notes).
+1. Перед началом — прочитать `.claude/runtime/session-state.json` (task + intents + handoff_notes).
 2. Фиксировать все найденные противоречия в `docs/errors/errors_log.md`.
 3. При обнаружении необходимости ADR — делегировать ccip-architect, не создавать ADR самостоятельно.
 4. Файлы > 100 строк читать с `limit: 30` сначала, затем `offset` + `limit` по нужному разделу.
