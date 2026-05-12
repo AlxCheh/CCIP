@@ -35,7 +35,7 @@ IF intents >= 3 OR risk == HIGH → planner
 
 1. Определить intents задачи (из CLAUDE.md: ARCH, SCHEMA, BACKEND, AUX, FRONTEND, MOBILE, DEVOPS, QA, SECURITY, DOC)
 2. Определить risk (из CLAUDE.md Risk Rules: HIGH / MEDIUM / LOW)
-3. Проверить agent status из `docs/feedback-loop.md` — NOMINAL / DEGRADED / SUSPENDED
+3. Проверить agent status из `docs/tasks/feedback-loop.md` — NOMINAL / DEGRADED / SUSPENDED
 4. Построить execution DAG
 5. Вернуть план в формате ниже
 
