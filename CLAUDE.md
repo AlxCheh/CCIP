@@ -46,6 +46,18 @@ DEFAULT → direct agent of primary intent
 | SECURITY | ccip-security      | ccip-architect    |
 | DOC      | ccip-doc-writer    | general-purpose   |
 
+## Auxiliary Agents (auto-triggered, not via Intent table)
+| Agent                       | Trigger                                |
+|-----------------------------|----------------------------------------|
+| security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
+| ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
+| ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
+| ccip-claude-md-auditor      | расписание (см. settings.json)         |
+| ccip-navigator-optimizer    | изменения CLAUDE.md §3–§6 или index.md  |
+| ccip-session-optimizer      | "Завершаем сессию" trigger             |
+| consistency-checker         | по запросу при cross-doc анализе       |
+| general-purpose             | fallback при DEGRADED specialist       |
+
 ## Risk Rules
 ```
 HIGH          → add security-reviewer as co-agent
