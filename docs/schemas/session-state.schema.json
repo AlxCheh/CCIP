@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/session-state.json",
+  "title": "CCIP Session State",
+  "type": "object",
+  "required": ["session_id", "task", "intents", "risk", "confidence", "routing", "status"],
+  "properties": {
+    "session_id":   { "type": "string" },
+    "task":         { "type": "string" },
+    "intents":      { "type": "array", "items": { "type": "string" } },
+    "risk":         { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+    "confidence":   { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+    "routing":      { "type": "string", "enum": ["direct", "planner", "multi-agent"] },
+    "dag":          { "type": "array" },
+    "current_step": { "type": "integer", "minimum": 0 },
+    "agent_outputs":{ "type": "object" },
+    "status":       { "type": "string", "enum": ["init", "planning", "executing", "done", "blocked"] },
+    "started_at":   { "type": "string" },
+    "observations": { "type": "array" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/agent-frontmatter.json",
+  "title": "CCIP Agent Frontmatter",
+  "type": "object",
+  "required": ["name", "description", "tools"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "kebab-case, должно совпадать с именем файла"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 40,
+      "description": "≥40 символов — используется планировщиком для матчинга"
+    },
+    "tools": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*(,\\s+[A-Z][A-Za-z0-9]*)*$",
+      "description": "CSV список инструментов: Read, Write, Edit, Glob, Grep, Bash"
+    },
+    "model": {
+      "type": "string",
+      "enum": ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-4-5-20251001"]
+    }
+  },
+  "additionalProperties": false
+}
