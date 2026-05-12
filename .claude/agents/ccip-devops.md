@@ -12,7 +12,7 @@ Docker, Kubernetes, Helm, GitHub Actions / GitLab CI, Prometheus, Grafana, OpenT
 
 ## Твоя зона ответственности
 - **Docker Compose (этап 1):** локальная среда разработки, все сервисы
-- **Kubernetes (этап 12):** production манифесты, Helm charts, `infra/k8s/`
+- **Kubernetes (этап 12):** production манифесты, Helm charts, `infra/k8s/` <!-- TBD: M-12 -->
 - **Критическая конфигурация SLA Worker (ADR-005):** `replicas: 1`, `strategy: Recreate` — НЕ RollingUpdate
 - **Redis:** AOF persistence (`appendonly yes`, `appendfsync everysec`)
 - **PgBouncer:** session mode — обязательно (transaction mode сломает advisory locks)
