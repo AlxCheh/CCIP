@@ -3,7 +3,7 @@
   "$id": "https://ccip.local/schemas/agent-frontmatter.json",
   "title": "CCIP Agent Frontmatter",
   "type": "object",
-  "required": ["name", "description", "tools"],
+  "required": ["name", "description", "tools", "model"],
   "properties": {
     "name": {
       "type": "string",

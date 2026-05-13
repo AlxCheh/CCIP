@@ -1,6 +1,6 @@
 ---
 name: ccip-routing-planner
-description: Orchestration Planner для CCIP. Использовать для: декомпозиции сложных задач (3+ intents или LOW confidence), построения execution DAG, назначения агентов с ролями и зависимостями. НЕ использовать для однодоменных задач — они маршрутизируются напрямую через §7.0–7.4.
+description: "Orchestration Planner для CCIP. Использовать для: декомпозиции сложных задач (3+ intents или LOW confidence), построения execution DAG, назначения агентов с ролями и зависимостями. НЕ использовать для однодоменных задач — они маршрутизируются напрямую через §7.0–7.4."
 tools: Read, Write, Edit, Glob, Grep
 model: claude-sonnet-4-6
 ---

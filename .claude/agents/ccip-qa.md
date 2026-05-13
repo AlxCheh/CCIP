@@ -1,6 +1,6 @@
 ---
 name: ccip-qa
-description: QA Engineer / Test Lead для CCIP. Использовать для: написания и организации тестов по тест-таблице A-01..I-03 из Алгоритма, unit/integration/E2E тестов (Jest, Playwright), тестирования RBAC матрицы, period immutability через DB REVOKE, SLA recovery сценариев, тестирования sync-конфликтов.
+description: "QA Engineer / Test Lead для CCIP. Использовать для: написания и организации тестов по тест-таблице A-01..I-03 из Алгоритма, unit/integration/E2E тестов (Jest, Playwright), тестирования RBAC матрицы, period immutability через DB REVOKE, SLA recovery сценариев, тестирования sync-конфликтов."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: claude-sonnet-4-6
 ---

@@ -1,6 +1,6 @@
 ---
 name: ccip-mobile
-description: Mobile Engineer (React Native + Offline) для CCIP. Использовать для: разработки мобильного приложения стройконтроля — офлайн-режим, локальная очередь операций, синхронизация с сервером, конфликт-резолюция, фотофиксация с геотегами, push-уведомления. WatermelonDB.
+description: "Mobile Engineer (React Native + Offline) для CCIP. Использовать для: разработки мобильного приложения стройконтроля — офлайн-режим, локальная очередь операций, синхронизация с сервером, конфликт-резолюция, фотофиксация с геотегами, push-уведомления. WatermelonDB."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: claude-sonnet-4-6
 ---

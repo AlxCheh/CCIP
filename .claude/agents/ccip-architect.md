@@ -1,6 +1,6 @@
 ---
 name: ccip-architect
-description: Software Architect / Tech Lead для CCIP. Использовать для: принятия и проверки ADR, оценки архитектурных решений, code review критических модулей (PeriodEngine, Auth, Analytics), проверки соответствия принятым ADR-001..ADR-014, проектирования новых модулей, разрешения технических развилок.
+description: "Software Architect / Tech Lead для CCIP. Использовать для: принятия и проверки ADR, оценки архитектурных решений, code review критических модулей (PeriodEngine, Auth, Analytics), проверки соответствия принятым ADR-001..ADR-014, проектирования новых модулей, разрешения технических развилок."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: claude-sonnet-4-6
 ---
