@@ -1,3 +1,12 @@
+---
+adr: ADR-006
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/baseline/
+  - apps/api/src/modules/analytics/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-006 — BoQ Versioning: work_lineage_id и кросс-версионная агрегация
 
 **Статус:** Принято rev 2

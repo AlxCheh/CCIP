@@ -1,3 +1,11 @@
+---
+adr: ADR-003
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/sync/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-003 — Офлайн-конфликты: два SC на одной позиции
 
 **Статус:** Принято rev 2

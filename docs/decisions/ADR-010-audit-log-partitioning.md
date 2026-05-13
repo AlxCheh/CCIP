@@ -1,3 +1,12 @@
+---
+adr: ADR-010
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/common/audit/
+  - packages/database/prisma/schema.prisma
+  - packages/database/prisma/migrations/
+---
+
 # ADR-010 — Audit Log: партиционирование и append-only гарантии
 
 **Статус:** Принято rev 2

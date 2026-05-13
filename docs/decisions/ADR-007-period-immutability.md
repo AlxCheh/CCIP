@@ -1,3 +1,12 @@
+---
+adr: ADR-007
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/period/
+  - apps/api/src/common/audit/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-007 — Неизменность закрытых периодов и целостность Audit Log
 
 **Статус:** Принято rev 2

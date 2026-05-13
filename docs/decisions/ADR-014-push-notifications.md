@@ -1,3 +1,10 @@
+---
+adr: ADR-014
+status: Принято
+impl_anchors:
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-014 — Push-уведомления: Firebase Cloud Messaging (FCM)
 
 **Статус:** Принято

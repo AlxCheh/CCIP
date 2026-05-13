@@ -1,3 +1,12 @@
+---
+adr: ADR-004
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/analytics/
+  - apps/api/src/modules/admin/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-004 — Дрейф Materialized View
 
 **Статус:** Принято rev 2

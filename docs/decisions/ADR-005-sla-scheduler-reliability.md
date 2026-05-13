@@ -1,3 +1,12 @@
+---
+adr: ADR-005
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/dispute-sla/
+  - infra/docker/docker-compose.yml
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-005 — SLA Scheduler: надёжность и идемпотентность
 
 **Статус:** Принято rev 2

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/adr-frontmatter.json",
+  "title": "CCIP ADR Frontmatter",
+  "type": "object",
+  "required": ["adr", "status", "impl_anchors"],
+  "properties": {
+    "adr": {
+      "type": "string",
+      "pattern": "^ADR-\\d{3}$",
+      "description": "Идентификатор ADR в формате ADR-NNN"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["Draft", "Принято", "Принято rev 2", "Superseded", "Deprecated"]
+    },
+    "impl_anchors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Список файлов/каталогов реализации; проверяется adr-anchors.js"
+    },
+    "supersedes": {
+      "type": "string",
+      "pattern": "^ADR-\\d{3}$"
+    },
+    "superseded_by": {
+      "type": "string",
+      "pattern": "^ADR-\\d{3}$"
+    }
+  },
+  "additionalProperties": false
+}

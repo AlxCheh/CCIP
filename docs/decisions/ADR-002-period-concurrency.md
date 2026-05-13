@@ -1,3 +1,12 @@
+---
+adr: ADR-002
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/period/
+  - apps/api/src/common/scheduler/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-002 — Конкурентное открытие периодов
 
 **Статус:** Принято rev 2

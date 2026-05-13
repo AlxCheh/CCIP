@@ -1,3 +1,13 @@
+---
+adr: ADR-009
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/common/guards/
+  - apps/api/src/common/auth/
+  - apps/api/src/modules/init/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-009 — RBAC и GP Stateless Token
 
 **Статус:** Принято rev 2

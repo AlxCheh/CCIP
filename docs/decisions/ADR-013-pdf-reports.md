@@ -1,3 +1,11 @@
+---
+adr: ADR-013
+status: Принято
+impl_anchors:
+  - apps/api/src/modules/period/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-013 — PDF-генерация отчётов: Puppeteer + S3 + async BullMQ
 
 **Статус:** Принято

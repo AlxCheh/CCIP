@@ -1,3 +1,11 @@
+---
+adr: ADR-008
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/sync/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-008 — WatermelonDB и граница offline/online операций
 
 **Статус:** Принято rev 2

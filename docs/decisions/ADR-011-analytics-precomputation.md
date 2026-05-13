@@ -1,3 +1,12 @@
+---
+adr: ADR-011
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/period/
+  - apps/api/src/modules/analytics/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-011 — Стратегия предвычисления аналитики
 
 **Статус:** Принято rev 2

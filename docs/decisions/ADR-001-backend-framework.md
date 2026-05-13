@@ -1,3 +1,20 @@
+---
+adr: ADR-001
+status: Принято rev 2
+impl_anchors:
+  - apps/api/src/modules/period/
+  - apps/api/src/modules/zero-report/
+  - apps/api/src/modules/dispute-sla/
+  - apps/api/src/modules/analytics/
+  - apps/api/src/modules/baseline/
+  - apps/api/src/modules/sync/
+  - apps/api/src/modules/init/
+  - apps/api/src/common/guards/
+  - apps/api/src/common/prisma/
+  - apps/api/src/common/scheduler/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-001 — Backend Framework
 
 **Статус:** Принято rev 2

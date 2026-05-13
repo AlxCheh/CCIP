@@ -1,3 +1,12 @@
+---
+adr: ADR-012
+status: Принято
+impl_anchors:
+  - apps/api/src/common/prisma/
+  - apps/api/src/common/guards/
+  - packages/database/prisma/schema.prisma
+---
+
 # ADR-012 — Multi-tenancy: organization_id в WHERE
 
 **Статус:** Принято
