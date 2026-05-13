@@ -73,8 +73,8 @@ model: claude-sonnet-4-6
 
 **RBAC matrix (ADR-009):**
 - `director` → только read-only + `approve ZeroReport`
-- `supervisor` → `create/close period`, `verify works`
-- `contractor` → только GpToken flow, без прямого доступа к основному API
+- `stroycontrol` → `create/close period`, `verify works`
+- ГП (gpToken-authorized, не UserRole) → только GpToken flow, без прямого доступа к основному API
 - `admin` → `manage object`, `manage users`
 
 ### Шаг 3 — Вывести structured result

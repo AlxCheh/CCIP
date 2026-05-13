@@ -58,8 +58,8 @@ ZeroReport завершён → разблокируется создание п
 |------|-----------|--------|
 | `admin` | создаёт объект, управляет пользователями | полный |
 | `director` | утверждает нулевой отчёт | read + approve |
-| `supervisor` | стройконтроль, верификация | create/close period |
-| `contractor` | подача данных через GpToken | GpToken flow only |
+| `stroycontrol` | стройконтроль, верификация | create/close period |
+| ГП (gpToken, не UserRole) | подача данных через GpToken | GpToken flow only |
 
 Назначение ролей — через `object_participants` таблицу с tenant_id изоляцией.
 
