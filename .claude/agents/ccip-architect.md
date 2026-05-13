@@ -38,7 +38,7 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 4. Читать только релевантные секции: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не открывать архитектурный файл целиком.
 5. При code review — фокус на корректности state machine transitions, идемпотентности операций, соблюдении append-only принципа.
 
-## State Contract (§15)
+## State Contract (CLAUDE.md §15)
 
 **Input** — читать из `session-state.json` при старте:
 - `task` — описание задачи

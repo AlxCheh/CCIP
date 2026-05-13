@@ -41,7 +41,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 5. Тест-таблица из Алгоритма Part 4 — обязательное покрытие для каждого реализованного кейса.
 6. Read архитектурных и алгоритмических файлов: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не читать файл целиком.
 
-## State Contract (§15)
+## State Contract (CLAUDE.md §15)
 
 **Input** — читать из `session-state.json` при старте:
 - `task` + `intents` — уточнить, какой модуль затронут (C/D/E)

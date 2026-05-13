@@ -46,7 +46,7 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 4. GpToken — отдельный flow, не смешивать с основным JWT.
 5. tenant_id — проверять на уровне middleware до любой бизнес-логики.
 
-## State Contract (§15)
+## State Contract (CLAUDE.md §15)
 
 **Input** — читать из `session-state.json` при старте:
 - `task` + `intents` — проверить наличие `AUX`

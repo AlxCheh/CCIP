@@ -49,7 +49,7 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 5. Перед оптимизацией запроса — EXPLAIN (ANALYZE, BUFFERS) на реальных данных.
 6. Все изменения схемы — через Prisma migrate, не через raw SQL напрямую.
 
-## State Contract (§15)
+## State Contract (CLAUDE.md §15)
 
 **Input** — читать из `session-state.json` при старте:
 - `task` + `intents` — проверить наличие `SCHEMA`

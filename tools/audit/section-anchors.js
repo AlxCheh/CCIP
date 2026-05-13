@@ -6,7 +6,8 @@ const { gitRoot } = require('./_lib/git-root');
 const { walk } = require('./_lib/walk');
 const { fail, ok } = require('./_lib/report');
 
-const REF_PAT = /\(§(\d+(?:\.\d+)*)\)/g;
+// Только same-file ссылки: (§N) без предшествующего "файл.md "
+const REF_PAT = /(?:^|[^.])\(§(\d+(?:\.\d+)*)\)/g;
 // Заголовки вида "## 3. Foo", "### 5.2 Bar", "## §15 State Contract"
 const HEAD_PAT = /^#{2,4}\s+(?:§)?(\d+(?:\.\d+)*)[\.\s§]/gm;
 
