@@ -31,7 +31,7 @@ model: claude-sonnet-4-6
 - `docs/concept_oks_v1_5.md` — бизнес-концепция (primary source)
 - `docs/algorithm_v1_3.md` — алгоритм расчётов (primary source)
 - `docs/delivery_plan_v1_0.md` — mapping требований на этапы
-- `docs/errors_log.md` — зафиксированные противоречия
+- `docs/errors/errors_log.md` — зафиксированные противоречия
 
 ## Правила работы
 1. Каждая user story — с acceptance criteria в формате Given/When/Then.

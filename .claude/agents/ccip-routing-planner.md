@@ -97,5 +97,5 @@ IF intents >= 3 OR risk == HIGH → planner
 
 1. Не исполнять план самому — только производить структуру для основного контекста.
 2. Не читать лишние документы: если задача ясна из CLAUDE.md + project-state.md — не открывать arch.
-3. Все найденные противоречия фиксировать в `docs/errors_log.md`.
+3. Все найденные противоречия фиксировать в `docs/errors/errors_log.md`.
 4. Если задача имеет < 3 intents и risk != HIGH — вернуть: `{ "routing": "direct", "reason": "insufficient complexity for planner" }`.

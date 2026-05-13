@@ -123,7 +123,7 @@ model: claude-haiku-4-5-20251001
 - [ ] <предложение по реорганизации файлов / сплиту документа>
 ```
 
-Чек-лист фиксируется в `docs/errors_log.md → Session Optimization section`.
+Чек-лист фиксируется в `docs/errors/errors_log.md → Session Optimization section`.
 
 ---
 
