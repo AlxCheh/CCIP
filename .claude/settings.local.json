@@ -35,6 +35,7 @@
       "Bash(node tools/audit/delivery-paths.js)",
       "Bash(node tools/audit/memory-fs-sync.js)",
       "Bash(node tools/audit/allowlist-literal.js)",
+      "Bash(node tools/audit/pen-test-smoke.js)",
       "Bash(node tools/audit/adr-immutability.js)",
       "Bash(node tools/audit/changelog-presence.js)"
     ]
