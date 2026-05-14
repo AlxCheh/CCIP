@@ -10,8 +10,41 @@ env:
   NODE_VERSION: '20'
 
 jobs:
+  audit:
+    name: Zero-Drift Audit Suite
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run audit suite
+        run: pnpm audit-suite
+
+      - name: pnpm audit (npm advisories)
+        run: pnpm audit --audit-level=high
+
+      - name: Run audit lib tests
+        run: pnpm test:audit
+
   ci:
     name: Lint · Typecheck · Prisma · Test
+    needs: audit
     runs-on: ubuntu-latest
 
     services:
