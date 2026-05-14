@@ -37,7 +37,9 @@
       "Bash(node tools/audit/allowlist-literal.js)",
       "Bash(node tools/audit/pen-test-smoke.js)",
       "Bash(node tools/audit/adr-immutability.js)",
-      "Bash(node tools/audit/changelog-presence.js)"
+      "Bash(node tools/audit/changelog-presence.js)",
+      "Bash(node tools/audit/section-anchors.js --target)",
+      "Bash(node tools/audit/dead-refs.js --target)"
     ]
   }
 }
