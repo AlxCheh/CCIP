@@ -6,7 +6,13 @@ const { gitRoot } = require('./_lib/git-root');
 const { walk } = require('./_lib/walk');
 const { fail, ok } = require('./_lib/report');
 
-const PATH_PAT = /(?:^|[\s\(\[`>])((?:\.claude|docs|apps|packages|infra|tools)\/[A-Za-z0-9_./\-]+)/g;
+const PATH_PAT = /(?:^|[\s\(\[`>])((?:\.claude|docs|apps|packages|infra|tools)\/[A-Za-z0-9_./*\-]+)/g;
+
+// Audit-документы цитируют пути из находок (как DEAD-REF, так и stale).
+// По дизайну содержат "плохие" ссылки — не валидируем их.
+const AUDIT_DOC_ALLOWLIST = [
+  'docs/audits/multi-agent-ecosystem-2026-05-07.md',
+];
 
 function stripCodeBlocks(md) {
   return md
@@ -14,9 +20,27 @@ function stripCodeBlocks(md) {
     .replace(/`[^`\n]*`/g, '');
 }
 
+// Resolve ref against fs, supporting wildcard suffixes (foo/*, foo.*).
+function refExists(root, ref) {
+  if (ref.endsWith('/*')) {
+    const dir = path.join(root, ref.slice(0, -2));
+    return fs.existsSync(dir);
+  }
+  if (ref.endsWith('.*')) {
+    const base = ref.slice(0, -2);
+    const dir = path.dirname(base);
+    const prefix = path.basename(base) + '.';
+    const absDir = path.join(root, dir);
+    if (!fs.existsSync(absDir)) return false;
+    return fs.readdirSync(absDir).some(name => name.startsWith(prefix));
+  }
+  return fs.existsSync(path.join(root, ref));
+}
+
 const args = process.argv.slice(2);
 const targetIdx = args.indexOf('--target');
 const targets = targetIdx >= 0 ? [args[targetIdx + 1]] : null;
+const useAllowlist = targets === null;
 
 const root = gitRoot();
 const files = targets || walk(root, ['**/*.md']);
@@ -24,16 +48,13 @@ const files = targets || walk(root, ['**/*.md']);
 let violations = 0;
 for (const file of files) {
   const rel = path.relative(root, file).replace(/\\/g, '/');
+  if (useAllowlist && AUDIT_DOC_ALLOWLIST.includes(rel)) continue;
   const content = stripCodeBlocks(fs.readFileSync(file, 'utf-8'));
   let m;
   PATH_PAT.lastIndex = 0;
   while ((m = PATH_PAT.exec(content))) {
     let ref = m[1].replace(/[.,;:)\]]+$/, '');
-    // Поддержка glob-паттернов: .../* считаем за каталог
-    let check = ref;
-    if (check.endsWith('/*')) check = check.slice(0, -2);
-    const abs = path.join(root, check);
-    if (!fs.existsSync(abs)) {
+    if (!refExists(root, ref)) {
       violations++;
       fail('DEAD-REF', ref, { file: rel });
     }
