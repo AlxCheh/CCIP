@@ -15,7 +15,10 @@
 
 - `[H]` Инициализировать `apps/mobile` (React Native + Expo или bare workflow)
   - WatermelonDB: локальная схема, зеркалящая ключевые сущности (periods, period_facts, boq_items, sync_queue)
-  - Артефакт: `apps/mobile/src/database/schema.ts`
+  - Артефакт (planned):
+    ```
+    apps/mobile/src/database/schema.ts
+    ```
 
 - `[H]` Auth: login (JWT → AsyncStorage для access; refresh через HTTP-only cookie)
 
@@ -27,7 +30,10 @@
   - Идемпотентность `open_period`: дубль в очереди заменяется (upsert по operation+period_id)
   - **Только онлайн (UI блокирует офлайн):** `close_period`, `submit_gp_template`, `approve_zero_report`
   - `is_syncing` флаг для reconciliation при рестарте приложения
-  - Артефакт: `apps/mobile/src/sync/SyncManager.ts`
+  - Артефакт (planned):
+    ```
+    apps/mobile/src/sync/SyncManager.ts
+    ```
 
 ### 9.3 Критические экраны Mobile
 

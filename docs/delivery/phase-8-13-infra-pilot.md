@@ -52,7 +52,10 @@
 - `[H]` 🔴 CRITICAL PATH — `/gp/submit/:token`
   - Лёгкая страница без авторизации; 2 поля на позицию: `gp_volume` + `note`
   - Подтверждение отправки; блокировка повторной подачи
-  - Артефакт: `apps/web/src/pages/GpSubmitPage.tsx`
+  - Артефакт (planned):
+    ```
+    apps/web/src/pages/GpSubmitPage.tsx
+    ```
 
 ---
 

@@ -104,12 +104,12 @@
 
 - `[H]` PrismaModule — глобальный, инжектируется во все сервисы
   - `onModuleInit()`: `$connect()`; `onModuleDestroy()`: `$disconnect()`
-  - Артефакт: `apps/api/src/prisma/prisma.module.ts`
+  - Артефакт: `apps/api/src/common/prisma/prisma.module.ts`
 
 - `[H]` AuditLogService — реализовать **первым** среди сервисов
   - Метод: `record({ tableName, recordId, action, oldData, newData, reason, performedBy })`
   - **Только INSERT** — нет методов update/delete (⚠️ ADR-007, ADR-010)
-  - Артефакт: `apps/api/src/audit-log/audit-log.service.ts`
+  - Артефакт: `apps/api/src/common/audit/audit-log.service.ts`
   - Критерий: `REVOKE UPDATE,DELETE` для `ccip_app` проверен интеграционным тестом
 
 ### 2.2 Аутентификация (⚠️ ADR-009)
@@ -118,7 +118,7 @@
   - `POST /auth/login` → Access Token (15 min, Bearer) + Refresh Token (30d, HTTP-only cookie)
   - `POST /auth/refresh` → ротация Refresh Token; хэш SHA-256 в `refresh_tokens`
   - `POST /auth/logout` → `revoked_at = NOW()`
-  - Артефакт: `apps/api/src/auth/auth.module.ts` + `JwtStrategy` + `RefreshStrategy`
+  - Артефакт: `apps/api/src/common/guards/auth.module.ts` + `JwtStrategy` + `RefreshStrategy`
   - Критерий: refresh token ротируется; повторное использование старого возвращает 401
 
 - `[H]` 🔴 CRITICAL PATH — `JwtAuthGuard` + `RolesGuard` — глобальная регистрация
@@ -131,7 +131,7 @@
   - Блокировка после `gp_submitted_at IS NOT NULL`
   - Блокировка после `gp_token_expires_at < NOW()`
   - Rate limiting: `@Throttle(10, 60)` (активен с первого деплоя)
-  - Артефакт: `apps/api/src/auth/gp-token.guard.ts`
+  - Артефакт: `apps/api/src/common/guards/gp-token.guard.ts`
 
 - `[M]` UsersModule — CRUD пользователей (только Admin)
   - `GET /users`, `POST /users`, `PATCH /users/:id`, `DELETE /users/:id` (soft delete `is_active=false`)
@@ -142,7 +142,7 @@
   - Если RLS: Prisma `$extends` + SET LOCAL при каждой транзакции
   - Если `organization_id`: Prisma middleware добавляет фильтр ко всем queries
   - **Все последующие сервисы зависят от этого слоя**
-  - Артефакт: `apps/api/src/prisma/tenant.middleware.ts`
+  - Артефакт: `apps/api/src/common/prisma/tenant.middleware.ts`
   - Критерий: пользователь tenant A не видит данных tenant B — проверено тестом
 
 ---
@@ -156,12 +156,12 @@
   - `POST /objects` — создание паспорта (L1): name, class, permit_number, connection_date
   - `GET /objects`, `GET /objects/:id`
   - `POST /objects/:id/participants` — SCD Type 2: сохранить `valid_from/valid_to/is_current`
-  - Артефакт: `apps/api/src/objects/objects.module.ts`
+  - Артефакт: `apps/api/src/modules/objects/objects.module.ts`
 
 - `[H]` 🔴 CRITICAL PATH — `SystemConfigModule`
   - `GET /config` — все 11 параметров L0
   - `PATCH /config` — только `@Roles('admin')`
-  - Артефакт: `apps/api/src/system-config/system-config.module.ts`
+  - Артефакт: `apps/api/src/modules/system-config/system-config.module.ts`
 
 - `[H]` 🔴 CRITICAL PATH — `BoQModule` — версионирование BoQ (Блок G, ⚠️ ADR-006)
   - `POST /objects/:id/boq` — создать BoQ v1.0 с позициями
@@ -169,8 +169,8 @@
   - `GET /objects/:id/boq/active` — текущая активная версия
   - `GET /objects/:id/boq-versions` — журнал версий
   - Триггер `trg_boq_items_weight_coef` проверяется на уровне DB; сервис читает ошибку и пробрасывает 422
-  - Артефакт: `apps/api/src/boq/boq.module.ts`
+  - Артефакт: `apps/api/src/modules/boq/boq.module.ts`
   - Критерий: POST с `SUM(weight_coef) != 1.0` возвращает 422 с понятным сообщением
 
 - `[M]` L2-документы: `POST /objects/:id/documents` — загрузка ССР/РДЦ/калплана в S3
-  - Артефакт: `apps/api/src/documents/documents.module.ts`
+  - Артефакт: `apps/api/src/modules/documents/documents.module.ts`

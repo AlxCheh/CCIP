@@ -175,12 +175,12 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
 
 - `[H]` PrismaModule — глобальный, инжектируется в все сервисы
   - `onModuleInit()`: `$connect()`; `onModuleDestroy()`: `$disconnect()`
-  - Артефакт: `apps/api/src/prisma/prisma.module.ts`
+  - Артефакт: `apps/api/src/common/prisma/prisma.module.ts`
 
 - `[H]` AuditLogService — реализовать **первым** среди сервисов
   - Метод: `record({ tableName, recordId, action, oldData, newData, reason, performedBy })`
   - **Только INSERT** — нет методов update/delete (⚠️ ADR-007, ADR-010)
-  - Артефакт: `apps/api/src/audit-log/audit-log.service.ts`
+  - Артефакт: `apps/api/src/common/audit/audit-log.service.ts`
   - Критерий: `REVOKE UPDATE,DELETE` для `ccip_app` проверен интеграционным тестом
 
 ### 2.2 Аутентификация (⚠️ ADR-009)
@@ -189,7 +189,7 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `POST /auth/login` → Access Token (15 min, Bearer) + Refresh Token (30d, HTTP-only cookie)
   - `POST /auth/refresh` → ротация Refresh Token; хэш SHA-256 в `refresh_tokens`
   - `POST /auth/logout` → `revoked_at = NOW()`
-  - Артефакт: `apps/api/src/auth/auth.module.ts` + `JwtStrategy` + `RefreshStrategy`
+  - Артефакт: `apps/api/src/common/guards/auth.module.ts` + `JwtStrategy` + `RefreshStrategy`
   - Критерий: refresh token ротируется; повторное использование старого возвращает 401
 
 - `[H]` 🔴 CRITICAL PATH — `JwtAuthGuard` + `RolesGuard` — глобальная регистрация
@@ -202,7 +202,7 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - Блокировка после `gp_submitted_at IS NOT NULL`
   - Блокировка после `gp_token_expires_at < NOW()`
   - Rate limiting: `@Throttle(10, 60)` (активен с первого деплоя)
-  - Артефакт: `apps/api/src/auth/gp-token.guard.ts`
+  - Артефакт: `apps/api/src/common/guards/gp-token.guard.ts`
 
 - `[M]` UsersModule — CRUD пользователей (только Admin)
   - `GET /users`, `POST /users`, `PATCH /users/:id`, `DELETE /users/:id` (soft delete `is_active=false`)
@@ -213,7 +213,7 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - Если RLS: Prisma `$extends` + SET LOCAL при каждой транзакции
   - Если `organization_id`: Prisma middleware добавляет фильтр ко всем queries
   - **Все последующие сервисы зависят от этого слоя**
-  - Артефакт: `apps/api/src/prisma/tenant.middleware.ts`
+  - Артефакт: `apps/api/src/common/prisma/tenant.middleware.ts`
   - Критерий: пользователь tenant A не видит данных tenant B — проверено тестом
 
 ---
@@ -227,12 +227,12 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `POST /objects` — создание паспорта (L1): name, class, permit_number, connection_date
   - `GET /objects`, `GET /objects/:id`
   - `POST /objects/:id/participants` — SCD Type 2: сохранить `valid_from/valid_to/is_current`
-  - Артефакт: `apps/api/src/objects/objects.module.ts`
+  - Артефакт: `apps/api/src/modules/objects/objects.module.ts`
 
 - `[H]` 🔴 CRITICAL PATH — `SystemConfigModule`
   - `GET /config` — все 11 параметров L0
   - `PATCH /config` — только `@Roles('admin')`
-  - Артефакт: `apps/api/src/system-config/system-config.module.ts`
+  - Артефакт: `apps/api/src/modules/system-config/system-config.module.ts`
 
 - `[H]` 🔴 CRITICAL PATH — `BoQModule` — версионирование BoQ (Блок G, ⚠️ ADR-006)
   - `POST /objects/:id/boq` — создать BoQ v1.0 с позициями
@@ -240,11 +240,11 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `GET /objects/:id/boq/active` — текущая активная версия
   - `GET /objects/:id/boq-versions` — журнал версий
   - Триггер `trg_boq_items_weight_coef` проверяется на уровне DB; сервис читает ошибку и пробрасывает 422
-  - Артефакт: `apps/api/src/boq/boq.module.ts`
+  - Артефакт: `apps/api/src/modules/boq/boq.module.ts`
   - Критерий: POST с `SUM(weight_coef) != 1.0` возвращает 422 с понятным сообщением
 
 - `[M]` L2-документы: `POST /objects/:id/documents` — загрузка ССР/РДЦ/калплана в S3
-  - Артефакт: `apps/api/src/documents/documents.module.ts`
+  - Артефакт: `apps/api/src/modules/documents/documents.module.ts`
 
 ---
 
@@ -260,7 +260,7 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `POST /objects/:id/zero-report/approve` — `@Roles('director')` → status='approved'
   - Инвариант: только один `approved` 0-отчёт (`uq_zero_reports_approved`)
   - SLA-напоминание: если не утверждён за `zero_report_alert_days` (L0) → уведомление директору
-  - Артефакт: `apps/api/src/zero-report/zero-report.module.ts`
+  - Артефакт: `apps/api/src/modules/zero-report/zero-report.module.ts`
   - Критерий: открытие периода без approved 0-отчёта → 403 `ZERO_REPORT_NOT_APPROVED`
 
 ---
@@ -282,7 +282,7 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
     - Отправить шаблон-письмо ГП с токеном
   - `GET /objects/:id/periods` — список периодов
   - `GET /objects/:id/periods/:period_id` — детали периода
-  - Артефакт: `apps/api/src/periods/periods.module.ts`
+  - Артефакт: `apps/api/src/modules/period/period.module.ts`
 
 - `[H]` 🔴 CRITICAL PATH — Подача ГП через `GpTokenGuard`
   - `POST /gp/submit/:token` — ГП заполняет `gp_volume` по позициям (только открытые поля из XLS)
@@ -318,7 +318,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - Idempotency guard: `if (event.executedAt) return`
   - Day 3: уведомление директору; Day 5: `force_close` → status='forced_sc_figure'
   - DELETE guard триггер на `sla_events` (⚠️ ADR-005, P-24) — нельзя удалить выполненное событие
-  - Артефакт: `apps/api/src/modules/dispute-sla/dispute-sla.module.ts`
+  - Артефакт (planned):
+    ```
+    apps/api/src/modules/dispute-sla/dispute-sla.module.ts
+    ```
   - Критерий: убить Redis, рестартовать worker → все pending SLA события восстановлены
 
 ### 5.3 AnalyticsEngine (Блок E, ⚠️ ADR-011)
@@ -329,14 +332,17 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `calcForecasts()`: `weighted_forecast_date` + `critical_path_forecast_date` (MAX по `weight_coef ≥ weight_threshold` ∪ `is_critical`)
   - `recalcSnapshotCascade(periodId)` — для Admin-корректировки: пересчитать все последующие снимки (⚠️ ADR-007)
   - **Live-расчёт на дашборде запрещён** — только из `readiness_snapshots`
-  - Артефакт: `apps/api/src/analytics/analytics.service.ts`
+  - Артефакт: `apps/api/src/modules/analytics/analytics.service.ts`
 
 - `[H]` MV Refresh Worker (⚠️ ADR-004)
   - BullMQ job: `REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status`
   - При exhausted retries (3 попытки): `mv_refresh_log.is_stale = TRUE` немедленно
   - Self-healing cron: каждые 5 минут проверяет `is_stale = TRUE` → re-queue refresh
   - Fixed manual jobId для дедупликации
-  - Артефакт: `apps/api/src/analytics/mv-refresh.worker.ts`
+  - Артефакт (planned):
+    ```
+    apps/api/src/modules/analytics/mv-refresh.worker.ts
+    ```
   - Критерий: имитировать исчерпание retry → `is_stale = TRUE` → cron восстанавливает
 
 ---
@@ -352,7 +358,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `POST /baseline-update-requests/:id/approve` — `@Roles('admin')`, только если `period.status != 'open'`
   - При approve: UPDATE `plan_volume` → RECALC `weight_coef` → CREATE new `boq_version`
   - Новая версия: `work_lineage_id` наследуется от predecessor (⚠️ ADR-006)
-  - Артефакт: `apps/api/src/baseline-update/baseline-update.module.ts`
+  - Артефакт (planned):
+    ```
+    apps/api/src/modules/baseline-update/baseline-update.module.ts
+    ```
 
 ### 6.2 Смена ГП (Блок H)
 
@@ -368,7 +377,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - Только `@Roles('admin')`
   - Транзакция: вызов `fn_admin_correct_fact()` (SECURITY DEFINER) → INSERT в `audit_log` с reason
   - После транзакции: async `recalcSnapshotCascade(periodId)` для всех последующих снимков
-  - Артефакт: `apps/api/src/admin/admin-correction.service.ts`
+  - Артефакт (planned):
+    ```
+    apps/api/src/modules/admin/admin-correction.service.ts
+    ```
   - Критерий: `period_facts` обновляется только через эту функцию; прямой UPDATE через `ccip_app` → ошибка прав
 
 ### 6.4 Уведомления
@@ -377,7 +389,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - `NotificationService.notify(userId, type, referenceTable, referenceId, message)`
   - INSERT в `notifications`; async отправка через SMTP
   - `GET /notifications` — для текущего пользователя; `PATCH /notifications/:id/read`
-  - Артефакт: `apps/api/src/notifications/notifications.module.ts`
+  - Артефакт (planned):
+    ```
+    apps/api/src/modules/notifications/notifications.module.ts
+    ```
 
 ---
 
@@ -396,7 +411,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
     - `resolveConflict()` перечитывает актуальное серверное значение из БД (не из `conflict_data.server`)
   - `POST /sync/photos` — multipart, по одному файлу, resumable
   - Архивация: cron job — DELETE `sync_queue WHERE status IN ('applied','rejected','escalated') AND created_at < NOW()-30d`
-  - Артефакт: `apps/api/src/sync/sync.module.ts`
+  - Артефакт (planned):
+    ```
+    apps/api/src/modules/sync/sync.module.ts
+    ```
   - Критерий: `last-write-wins` невозможен конструктивно; конфликт при одинаковом version возвращает 200 с `conflict_data`
 
 ---
@@ -453,7 +471,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - Лёгкая страница без авторизации
   - 2 поля на позицию: `gp_volume` + `note`
   - Подтверждение отправки; блокировка повторной подачи
-  - Артефакт: `apps/web/src/pages/GpSubmitPage.tsx`
+  - Артефакт (planned):
+    ```
+    apps/web/src/pages/GpSubmitPage.tsx
+    ```
 
 ---
 
@@ -466,7 +487,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
 
 - `[H]` Инициализировать `apps/mobile` (React Native + Expo или bare workflow)
   - WatermelonDB: локальная схема, зеркалящая ключевые сущности (periods, period_facts, boq_items, sync_queue)
-  - Артефакт: `apps/mobile/src/database/schema.ts`
+  - Артефакт (planned):
+    ```
+    apps/mobile/src/database/schema.ts
+    ```
 
 - `[H]` Auth: login (JWT → AsyncStorage для access; refresh через HTTP-only cookie)
 
@@ -478,7 +502,10 @@ ADR-012 (multi-tenancy) → Репозитории + окружения
   - Идемпотентность `open_period`: дубль в очереди заменяется (upsert по operation+period_id)
   - **Только онлайн (UI блокирует офлайн):** `close_period`, `submit_gp_template`, `approve_zero_report`
   - `is_syncing` флаг для reconciliation при рестарте приложения
-  - Артефакт: `apps/mobile/src/sync/SyncManager.ts`
+  - Артефакт (planned):
+    ```
+    apps/mobile/src/sync/SyncManager.ts
+    ```
 
 ### 9.3 Критические экраны Mobile
 
