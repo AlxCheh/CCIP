@@ -17,7 +17,7 @@
     "db:seed": "pnpm --filter @ccip/database seed",
     "audit-suite": "node tools/audit/audit-suite.js",
     "audit-suite:fix": "node tools/audit/audit-suite.js --fix",
-    "test:audit": "node --test tools/audit/__tests__"
+    "test:audit": "node --test \"tools/audit/__tests__/**/*.test.js\""
   },
   "devDependencies": {
     "ajv": "^8.17.1",
