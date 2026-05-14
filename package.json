@@ -17,12 +17,15 @@
     "db:seed": "pnpm --filter @ccip/database seed",
     "audit-suite": "node tools/audit/audit-suite.js",
     "audit-suite:fix": "node tools/audit/audit-suite.js --fix",
-    "test:audit": "node --test \"tools/audit/__tests__/**/*.test.js\""
+    "test:audit": "node --test \"tools/audit/__tests__/**/*.test.js\"",
+    "prepare": "husky"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "gray-matter": "^4.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"

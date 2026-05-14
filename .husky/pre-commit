@@ -1,0 +1,5 @@
+# Pre-commit: fast audit suite (длинные проверки — в CI).
+pnpm audit-suite || {
+  echo "[pre-commit] audit-suite failed. Fix or use --no-verify (НЕ рекомендуется)."
+  exit 1
+}
