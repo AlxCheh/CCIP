@@ -1,0 +1,38 @@
+name: Portable Clone Test
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # nightly 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  random-clone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate random target dir
+        id: dir
+        run: |
+          uuid=$(uuidgen)
+          echo "path=/tmp/ccip-$uuid" >> $GITHUB_OUTPUT
+
+      - name: Clone into random dir
+        run: |
+          git clone "https://github.com/${{ github.repository }}.git" "${{ steps.dir.outputs.path }}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: ${{ steps.dir.outputs.path }}/pnpm-lock.yaml
+
+      - name: Install
+        working-directory: ${{ steps.dir.outputs.path }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit suite (must work from random path)
+        working-directory: ${{ steps.dir.outputs.path }}
+        run: pnpm audit-suite
