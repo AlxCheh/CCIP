@@ -61,10 +61,17 @@ function run() {
 
   fs.appendFileSync(FEEDBACK_FILE, block, 'utf-8');
 
-  // Clear observations from state; use atomic tmp→rename (same as execute-dag.js).
+  // Clear observations from state; use atomic tmp→fsync→rename.
   state.observations = [];
-  const tmp = STATE_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+  const tmp = STATE_FILE + '.tmp.' + process.pid;
+  const data = JSON.stringify(state, null, 2) + '\n';
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
   fs.renameSync(tmp, STATE_FILE);
 
   process.stdout.write(`[flush-state] ${observations.length} observation(s) → feedback-loop.md (session: ${sessionId})\n`);
