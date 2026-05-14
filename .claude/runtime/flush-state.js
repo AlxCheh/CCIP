@@ -72,7 +72,12 @@ function run() {
   } finally {
     fs.closeSync(fd);
   }
-  fs.renameSync(tmp, STATE_FILE);
+  try {
+    fs.renameSync(tmp, STATE_FILE);
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
 
   process.stdout.write(`[flush-state] ${observations.length} observation(s) → feedback-loop.md (session: ${sessionId})\n`);
 }

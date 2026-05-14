@@ -36,7 +36,14 @@ function writeState(state) {
   } finally {
     fs.closeSync(fd);
   }
-  fs.renameSync(tmp, STATE);
+  try {
+    fs.renameSync(tmp, STATE);
+  } catch (e) {
+    // Cleanup the orphaned tmp on rename failure (e.g. Windows EBUSY/EACCES under
+    // concurrent writers). Without this the .tmp leaks and breaks the "atomic" guarantee.
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
   try {
     const dirFd = fs.openSync(path.dirname(STATE), 'r');
     fs.fsyncSync(dirFd);
