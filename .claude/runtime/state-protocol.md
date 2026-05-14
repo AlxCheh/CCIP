@@ -31,9 +31,9 @@ Session Start
 |---|---|---|
 | `session_id` | string | `YYYY-MM-DD-HHMM` |
 | `task` | string | Краткое описание задачи (1-2 предложения) |
-| `intents` | string[] | Из §7.0: ARCH, SCHEMA, BACKEND_CORE, ... |
-| `risk` | string | `LOW` \| `MEDIUM` \| `HIGH` (§7.7) |
-| `confidence` | string | `HIGH` \| `MEDIUM` \| `LOW` (§7.1) |
+| `intents` | string[] | Из Intent → Agent table CLAUDE.md: ARCH, SCHEMA, BACKEND_CORE, ... |
+| `risk` | string | `LOW` \| `MEDIUM` \| `HIGH` (см. Risk Rules CLAUDE.md) |
+| `confidence` | string | `HIGH` \| `MEDIUM` \| `LOW` (см. Fast Path / Planner CLAUDE.md) |
 | `routing` | string | `direct` \| `planner` \| `multi-agent` |
 | `started_at` | string | ISO 8601 timestamp |
 | `status` | string | `init` → `planning` → `executing` → `done` \| `blocked` |

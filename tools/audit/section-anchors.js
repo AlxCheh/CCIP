@@ -11,9 +11,22 @@ const REF_PAT = /(?:^|[^.])\(§(\d+(?:\.\d+)*)\)/g;
 // Заголовки вида "## 3. Foo", "### 5.2 Bar", "## §15 State Contract"
 const HEAD_PAT = /^#{2,4}\s+(?:§)?(\d+(?:\.\d+)*)[\.\s§]/gm;
 
+// В этих файлах (§N) — cross-doc ref по конвенции (Концепция, audit checklist, plan).
+const CROSS_DOC_ALLOWLIST = [
+  'docs/plans/2026-05-12-zero-drift-compliance-section10.md',
+  'docs/team_roles_v1_0.md',
+];
+
+function stripCodeBlocks(md) {
+  return md
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`\n]*`/g, '');
+}
+
 const args = process.argv.slice(2);
 const targetIdx = args.indexOf('--target');
 const targets = targetIdx >= 0 ? [args[targetIdx + 1]] : null;
+const useAllowlist = targets === null;
 
 const root = gitRoot();
 const files = targets || walk(root, ['**/*.md']);
@@ -21,7 +34,8 @@ const files = targets || walk(root, ['**/*.md']);
 let violations = 0;
 for (const file of files) {
   const rel = path.relative(root, file).replace(/\\/g, '/');
-  const content = fs.readFileSync(file, 'utf-8');
+  if (useAllowlist && CROSS_DOC_ALLOWLIST.includes(rel)) continue;
+  const content = stripCodeBlocks(fs.readFileSync(file, 'utf-8'));
   const refs = new Set();
   let m;
   REF_PAT.lastIndex = 0;
