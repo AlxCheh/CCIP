@@ -27,7 +27,23 @@ function readState() {
 }
 
 function writeState(state) {
-  fs.writeFileSync(STATE, JSON.stringify(state, null, 2) + '\n', 'utf-8');
+  const tmp = STATE + '.tmp.' + process.pid;
+  const data = JSON.stringify(state, null, 2) + '\n';
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.renameSync(tmp, STATE);
+  try {
+    const dirFd = fs.openSync(path.dirname(STATE), 'r');
+    fs.fsyncSync(dirFd);
+    fs.closeSync(dirFd);
+  } catch (e) {
+    if (e.code !== 'EPERM' && e.code !== 'EISDIR' && e.code !== 'EACCES') throw e;
+  }
 }
 
 /** Extract agent name from tool_input fields */
@@ -86,24 +102,37 @@ process.stdin.on('data', chunk => { raw += chunk; });
 process.stdin.on('end', () => {
   try {
     run(raw);
-  } catch {
-    // silent — never crash the parent session
+    process.exit(0);
+  } catch (e) {
+    process.stderr.write(`[post-agent-hook] FAIL: ${e.message}\n${e.stack || ''}\n`);
+    // Exit 0 чтобы не сломать родительскую сессию Claude Code (она ожидает 0 от hook),
+    // но факт ошибки виден в stderr и попадает в логи Claude Code.
+    process.exit(0);
   }
-  process.exit(0);
 });
 
 function run(raw) {
   // Parse hook payload
   let payload;
   try { payload = JSON.parse(raw); }
-  catch { return; }
+  catch (e) {
+    process.stderr.write(`[post-agent-hook] malformed payload: ${e.message}\n`);
+    return;
+  }
 
   // Only act on Agent tool calls
   if (payload.tool_name !== 'Agent') return;
 
-  // Load state; skip if not initialised
+  // Load state
   const state = readState();
-  if (!state || !state.session_id) return;
+  if (!state) {
+    process.stderr.write('[post-agent-hook] state file missing or unparseable\n');
+    return;
+  }
+  if (!state.session_id) {
+    process.stderr.write('[post-agent-hook] session_id empty — skip (uninitialised session)\n');
+    return;
+  }
 
   const agent = resolveAgent(payload.tool_input);
   if (!agent) return;
