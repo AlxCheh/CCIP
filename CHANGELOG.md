@@ -10,6 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 Closes findings from `docs/audits/multi-agent-ecosystem-2026-05-07.md`:
 
 - **F-001** (BLOCKER) — phantom RBAC roles `supervisor`/`contractor` in agent docs replaced with canonical `stroycontrol` / `gpToken` from `enum UserRole`.
+- **F-002** (BLOCKER) — regression-prevention infrastructure added (T-25): nightly `portable-clone.yml` clones the repo into a random `/tmp/<uuid>/` directory and runs the full audit suite, catching any reintroduction of absolute Windows paths. `.claude/settings.json` hook commands remain temporarily allowlisted in `path-canonical.js` pending canonicalization.
 - **F-003** — `CLAUDE.md §15 State Contract` section added; `(§15)` references resolved.
 - **F-005** — `docs/errors_log.md` path canonicalized in `ccip-architect.md`.
 - **F-006** — `docs/feedback-loop.md` path corrected in `ccip-routing-planner.md`.
