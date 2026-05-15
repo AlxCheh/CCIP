@@ -1,0 +1,4 @@
+# SLA Scheduler implementation anchor (ADR-001, ADR-002).
+# Placeholder until BullMQ scheduler module is implemented;
+# tracked so audit validators (dead-refs, adr-anchors) see the directory
+# in CI checkouts (git does not track empty directories).
