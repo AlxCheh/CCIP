@@ -1,0 +1,28 @@
+# CCIP CODEOWNERS — dual review for schema/orchestration/security
+#
+# Source of truth: docs/plans/2026-05-12-zero-drift-compliance-section10.md (T-27, §10.6).
+# Когда команда вырастет — добавить вторых ревьюверов на каждую секцию для true dual review.
+
+# Orchestration layer
+/CLAUDE.md                          @AlxChex
+/.claude/agents/                    @AlxChex
+/.claude/runtime/                   @AlxChex
+/.claude/settings.json              @AlxChex
+/.claude/settings.local.json        @AlxChex
+
+# Architecture & decisions
+/docs/decisions/                    @AlxChex
+/docs/architecture/                 @AlxChex
+/docs/audits/                       @AlxChex
+
+# Schema (single owner — DBA)
+/packages/database/prisma/          @AlxChex
+
+# Audit infra
+/tools/audit/                       @AlxChex
+/docs/schemas/                      @AlxChex
+
+# CI / Governance
+/.github/                           @AlxChex
+/.husky/                            @AlxChex
+/CHANGELOG.md                       @AlxChex

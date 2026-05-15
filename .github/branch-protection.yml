@@ -1,0 +1,25 @@
+# Source of truth для branch protection rules на main.
+#
+# Источник: docs/plans/2026-05-12-zero-drift-compliance-section10.md (T-27/T-29, §10.6).
+# Применяется через: gh api -X PUT /repos/:owner/:repo/branches/main/protection -f ...
+# или через terraform-github-provider в инфраструктуре.
+#
+# Required status check contexts должны точно совпадать с job names в .github/workflows/ci.yml.
+# Matrix jobs в GitHub получают суффикс «(<matrix-value>)».
+
+main:
+  required_status_checks:
+    strict: true
+    contexts:
+      - "Zero-Drift Audit Suite (ubuntu-latest)"
+      - "Zero-Drift Audit Suite (macos-latest)"
+      - "Zero-Drift Audit Suite (windows-latest)"
+      - "Lint · Typecheck · Prisma · Test"
+  enforce_admins: false
+  required_pull_request_reviews:
+    required_approving_review_count: 1
+    dismiss_stale_reviews: true
+    require_code_owner_reviews: true
+  restrictions: null
+  allow_force_pushes: false
+  allow_deletions: false
