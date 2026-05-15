@@ -16,10 +16,15 @@ main:
       - "Zero-Drift Audit Suite (windows-latest)"
       - "Lint · Typecheck · Prisma · Test"
   enforce_admins: false
-  required_pull_request_reviews:
-    required_approving_review_count: 1
-    dismiss_stale_reviews: true
-    require_code_owner_reviews: true
+  # Solo soft-mode (2026-05-15): PR-review требование отключено, потому что @AlxChex —
+  # единственный CODEOWNER, и GitHub не разрешает self-approve. Когда команда вырастет
+  # и в .github/CODEOWNERS появится второй ревьювер — восстановить:
+  #   required_pull_request_reviews:
+  #     required_approving_review_count: 1
+  #     dismiss_stale_reviews: true
+  #     require_code_owner_reviews: true
+  # См. docs/governance/branch-protection.md разделы «Soft-mode» и «Re-apply procedure».
+  required_pull_request_reviews: null
   restrictions: null
   allow_force_pushes: false
   allow_deletions: false
