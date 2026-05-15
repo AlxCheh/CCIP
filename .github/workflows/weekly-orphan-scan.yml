@@ -1,0 +1,32 @@
+name: Weekly Orphan Scan
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'  # Mon 05:00 UTC
+  workflow_dispatch:
+
+jobs:
+  orphan-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Collect orphan candidates
+        id: orphans
+        run: |
+          node tools/audit/orphan-adrs.js > orphan-report.txt 2>&1 || true
+          node tools/audit/orphan-dirs.js >> orphan-report.txt 2>&1 || true
+          cat orphan-report.txt
+      - name: Open PR with removal proposals
+        if: ${{ hashFiles('orphan-report.txt') != '' }}
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: 'chore: weekly orphan-scan report'
+          body: 'Auto-generated. See orphan-report.txt for candidates.'
+          branch: 'auto/orphan-scan'
+          add-paths: 'orphan-report.txt'
