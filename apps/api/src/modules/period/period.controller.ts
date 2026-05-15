@@ -33,10 +33,7 @@ export class PeriodController {
 
   @Get(':id')
   @Roles('director', 'stroycontrol', 'admin')
-  findById(
-    @Param('id', ParseIntPipe) id: number,
-    @Request() req: AuthRequest,
-  ) {
+  findById(@Param('id', ParseIntPipe) id: number, @Request() req: AuthRequest) {
     return this.periodService.findById(id, parseInt(req.user.id, 10));
   }
 

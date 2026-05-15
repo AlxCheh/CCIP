@@ -74,13 +74,17 @@ describe('PeriodService', () => {
   beforeEach(async () => {
     prisma = {
       constructionObject: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ organizationId: ORG_ID }),
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({ organizationId: ORG_ID }),
       },
       zeroReport: {
         findFirst: jest.fn().mockResolvedValue({ id: 1, status: 'approved' }),
       },
       user: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue({ organizationId: ORG_ID }),
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValue({ organizationId: ORG_ID }),
       },
       period: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -93,9 +97,7 @@ describe('PeriodService', () => {
         update: jest.fn().mockResolvedValue(makePeriod({ status: 'closed' })),
       },
       boqVersion: {
-        findFirstOrThrow: jest
-          .fn()
-          .mockResolvedValue({ id: BOQ_VERSION_ID }),
+        findFirstOrThrow: jest.fn().mockResolvedValue({ id: BOQ_VERSION_ID }),
       },
       periodFact: {
         findFirst: jest.fn().mockResolvedValue(makePeriodFact()),
@@ -158,7 +160,8 @@ describe('PeriodService', () => {
 
       await service.openPeriod(OBJECT_ID, ACTOR_ID);
 
-      const createCall = (prisma.period.create as jest.Mock).mock.calls[0][0] as {
+      const createCall = (prisma.period.create as jest.Mock).mock
+        .calls[0][0] as {
         data: { gpSubmissionToken: unknown };
       };
       const token = createCall.data.gpSubmissionToken;
@@ -178,14 +181,19 @@ describe('PeriodService', () => {
       await service.openPeriod(OBJECT_ID, ACTOR_ID);
       const after = Date.now();
 
-      const createCall = (prisma.period.create as jest.Mock).mock.calls[0][0] as {
+      const createCall = (prisma.period.create as jest.Mock).mock
+        .calls[0][0] as {
         data: { gpTokenExpiresAt: Date };
       };
       const expiresAt = createCall.data.gpTokenExpiresAt;
       const msIn14Days = 14 * 24 * 60 * 60 * 1000;
 
-      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + msIn14Days - 1000);
-      expect(expiresAt.getTime()).toBeLessThanOrEqual(after + msIn14Days + 1000);
+      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+        before + msIn14Days - 1000,
+      );
+      expect(expiresAt.getTime()).toBeLessThanOrEqual(
+        after + msIn14Days + 1000,
+      );
     });
 
     it('throws ForbiddenException if zero report is not approved', async () => {
@@ -246,18 +254,21 @@ describe('PeriodService', () => {
 
       await service.openPeriod(OBJECT_ID, ACTOR_ID);
 
-      const createCall = (prisma.period.create as jest.Mock).mock.calls[0][0] as {
+      const createCall = (prisma.period.create as jest.Mock).mock
+        .calls[0][0] as {
         data: { periodNumber: number };
       };
       expect(createCall.data.periodNumber).toBe(4);
     });
 
     it('throws PERIOD_LOCK_TIMEOUT when advisory lock times out', async () => {
-      const lockTimeoutError = Object.assign(new Error('lock timeout'), { code: '55P03' });
+      const lockTimeoutError = Object.assign(new Error('lock timeout'), {
+        code: '55P03',
+      });
       (prisma.$transaction as jest.Mock).mockRejectedValue(lockTimeoutError);
-      await expect(
-        service.openPeriod(OBJECT_ID, ACTOR_ID),
-      ).rejects.toThrow('PERIOD_LOCK_TIMEOUT');
+      await expect(service.openPeriod(OBJECT_ID, ACTOR_ID)).rejects.toThrow(
+        'PERIOD_LOCK_TIMEOUT',
+      );
     });
   });
 
@@ -298,9 +309,13 @@ describe('PeriodService', () => {
     });
 
     it('throws PERIOD_NOT_FOUND if period belongs to different organization', async () => {
-      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue({ organizationId: 'other-org' } as any);
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValue({
+        organizationId: 'other-org',
+      } as any);
       (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
-      await expect(service.findById(PERIOD_ID, ACTOR_ID)).rejects.toThrow('PERIOD_NOT_FOUND');
+      await expect(service.findById(PERIOD_ID, ACTOR_ID)).rejects.toThrow(
+        'PERIOD_NOT_FOUND',
+      );
     });
   });
 
@@ -309,7 +324,11 @@ describe('PeriodService', () => {
   describe('submitGp', () => {
     const GP_VOL = 100;
     const gpItems = [
-      { boqItemId: BOQ_ITEM_ID, gpVolume: GP_VOL, gpNote: 'ok' as string | undefined },
+      {
+        boqItemId: BOQ_ITEM_ID,
+        gpVolume: GP_VOL,
+        gpNote: 'ok' as string | undefined,
+      },
     ];
     const GP_NAME = 'Ivan Petrov';
 
@@ -326,7 +345,9 @@ describe('PeriodService', () => {
       expect(prisma.periodFact.upsert).toHaveBeenCalledTimes(1);
       expect(prisma.periodFact.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { periodId_boqItemId: { periodId: PERIOD_ID, boqItemId: BOQ_ITEM_ID } },
+          where: {
+            periodId_boqItemId: { periodId: PERIOD_ID, boqItemId: BOQ_ITEM_ID },
+          },
         }),
       );
     });
@@ -343,7 +364,8 @@ describe('PeriodService', () => {
           }),
         }),
       );
-      const updateCall = (prisma.period.update as jest.Mock).mock.calls[0][0] as {
+      const updateCall = (prisma.period.update as jest.Mock).mock
+        .calls[0][0] as {
         data: { gpSubmittedAt: unknown };
       };
       expect(updateCall.data.gpSubmittedAt).toBeInstanceOf(Date);
@@ -484,7 +506,8 @@ describe('PeriodService', () => {
         ACTOR_ID,
       );
 
-      const upsertCall = (prisma.periodFact.upsert as jest.Mock).mock.calls[0][0] as {
+      const upsertCall = (prisma.periodFact.upsert as jest.Mock).mock
+        .calls[0][0] as {
         update: {
           scVolume: unknown;
           discrepancyType: unknown;
@@ -500,14 +523,10 @@ describe('PeriodService', () => {
 
     it('sets discrepancyType=1 and discrepancyStatus=open when volumes differ', async () => {
       // gpVolume = 100, scVolume = 80, delta = 20
-      await service.upsertPeriodFact(
-        PERIOD_ID,
-        BOQ_ITEM_ID,
-        80,
-        ACTOR_ID,
-      );
+      await service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, 80, ACTOR_ID);
 
-      const upsertCall = (prisma.periodFact.upsert as jest.Mock).mock.calls[0][0] as {
+      const upsertCall = (prisma.periodFact.upsert as jest.Mock).mock
+        .calls[0][0] as {
         update: {
           discrepancyType: unknown;
           discrepancyStatus: unknown;
@@ -520,7 +539,12 @@ describe('PeriodService', () => {
     });
 
     it('transitions period status to verification when status was gp_submitted', async () => {
-      await service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID);
+      await service.upsertPeriodFact(
+        PERIOD_ID,
+        BOQ_ITEM_ID,
+        SC_VOLUME,
+        ACTOR_ID,
+      );
 
       expect(prisma.period.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -535,12 +559,16 @@ describe('PeriodService', () => {
         makePeriod({ status: 'verification' }),
       );
 
-      await service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID);
+      await service.upsertPeriodFact(
+        PERIOD_ID,
+        BOQ_ITEM_ID,
+        SC_VOLUME,
+        ACTOR_ID,
+      );
 
       // period.update should NOT have been called for a status transition
-      const updateCalls = (prisma.period.update as jest.Mock).mock.calls as Array<
-        Array<{ data?: { status?: string } }>
-      >;
+      const updateCalls = (prisma.period.update as jest.Mock).mock
+        .calls as Array<Array<{ data?: { status?: string } }>>;
       const statusUpdateCalls = updateCalls.filter(
         (call) => call[0]?.data?.status === 'verification',
       );
@@ -548,7 +576,12 @@ describe('PeriodService', () => {
     });
 
     it('logs audit event on upsert', async () => {
-      await service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID);
+      await service.upsertPeriodFact(
+        PERIOD_ID,
+        BOQ_ITEM_ID,
+        SC_VOLUME,
+        ACTOR_ID,
+      );
 
       expect(auditLog.log).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -648,7 +681,8 @@ describe('PeriodService', () => {
     it('sets closedAt timestamp on close', async () => {
       await service.closePeriod(PERIOD_ID, ACTOR_ID);
 
-      const updateCall = (prisma.period.update as jest.Mock).mock.calls[0][0] as {
+      const updateCall = (prisma.period.update as jest.Mock).mock
+        .calls[0][0] as {
         data: { closedAt: unknown };
       };
       expect(updateCall.data.closedAt).toBeInstanceOf(Date);
@@ -659,7 +693,10 @@ describe('PeriodService', () => {
 
   describe('findByObject', () => {
     it('returns all periods for object ordered desc', async () => {
-      const periods = [makePeriod({ periodNumber: 2 }), makePeriod({ periodNumber: 1 })];
+      const periods = [
+        makePeriod({ periodNumber: 2 }),
+        makePeriod({ periodNumber: 1 }),
+      ];
       (prisma.period.findMany as jest.Mock).mockResolvedValue(periods);
 
       const result = await service.findByObject(OBJECT_ID);

@@ -26,69 +26,70 @@ export class PeriodService {
 
   async openPeriod(objectId: number, actorId: number) {
     try {
-    return await this.prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(('x' || left(md5(${String(objectId)}), 16))::bit(64)::bigint)`;
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(('x' || left(md5(${String(objectId)}), 16))::bit(64)::bigint)`;
 
-      const obj = await tx.constructionObject.findUniqueOrThrow({
-        where: { id: objectId },
-        select: { organizationId: true },
+        const obj = await tx.constructionObject.findUniqueOrThrow({
+          where: { id: objectId },
+          select: { organizationId: true },
+        });
+
+        const zeroReport = await tx.zeroReport.findFirst({
+          where: { objectId, status: 'approved' },
+        });
+        if (!zeroReport)
+          throw new ForbiddenException('ZERO_REPORT_NOT_APPROVED');
+
+        const openPeriod = await tx.period.findFirst({
+          where: { objectId, status: 'open' },
+        });
+        if (openPeriod) throw new ConflictException('PERIOD_ALREADY_OPEN');
+
+        const last = await tx.period.findFirst({
+          where: { objectId },
+          orderBy: { periodNumber: 'desc' },
+        });
+
+        const boqVersion = await tx.boqVersion.findFirstOrThrow({
+          where: { objectId, isActive: true },
+          select: { id: true },
+        });
+
+        const now = new Date();
+        // TODO M-05b: заменить на sla_force_close_at - 1h после реализации SLA scheduler
+        // Требует добавления sla_force_close_at в схему/SystemConfig
+        const gpTokenExpiresAt = new Date(
+          now.getTime() + GP_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
+        );
+
+        const period = await tx.period.create({
+          data: {
+            objectId,
+            boqVersionId: boqVersion.id,
+            periodNumber: (last?.periodNumber ?? 0) + 1,
+            status: 'open',
+            openedBy: actorId,
+            openedAt: now,
+            gpSubmissionToken: randomUUID(),
+            gpTokenExpiresAt,
+          },
+        });
+
+        // TODO M-06: отправить email ГП с gpSubmissionToken через NotificationService
+        // Email должен отправляться ПОСЛЕ транзакции (не внутри)
+
+        await this.auditLog.log({
+          tableName: 'periods',
+          recordId: BigInt(period.id),
+          action: 'period_opened',
+          newData: { objectId, periodNumber: period.periodNumber },
+          performedBy: actorId,
+          organizationId: obj.organizationId,
+        });
+
+        return period;
       });
-
-      const zeroReport = await tx.zeroReport.findFirst({
-        where: { objectId, status: 'approved' },
-      });
-      if (!zeroReport) throw new ForbiddenException('ZERO_REPORT_NOT_APPROVED');
-
-      const openPeriod = await tx.period.findFirst({
-        where: { objectId, status: 'open' },
-      });
-      if (openPeriod) throw new ConflictException('PERIOD_ALREADY_OPEN');
-
-      const last = await tx.period.findFirst({
-        where: { objectId },
-        orderBy: { periodNumber: 'desc' },
-      });
-
-      const boqVersion = await tx.boqVersion.findFirstOrThrow({
-        where: { objectId, isActive: true },
-        select: { id: true },
-      });
-
-      const now = new Date();
-      // TODO M-05b: заменить на sla_force_close_at - 1h после реализации SLA scheduler
-      // Требует добавления sla_force_close_at в схему/SystemConfig
-      const gpTokenExpiresAt = new Date(
-        now.getTime() + GP_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-      );
-
-      const period = await tx.period.create({
-        data: {
-          objectId,
-          boqVersionId: boqVersion.id,
-          periodNumber: (last?.periodNumber ?? 0) + 1,
-          status: 'open',
-          openedBy: actorId,
-          openedAt: now,
-          gpSubmissionToken: randomUUID(),
-          gpTokenExpiresAt,
-        },
-      });
-
-      // TODO M-06: отправить email ГП с gpSubmissionToken через NotificationService
-      // Email должен отправляться ПОСЛЕ транзакции (не внутри)
-
-      await this.auditLog.log({
-        tableName: 'periods',
-        recordId: BigInt(period.id),
-        action: 'period_opened',
-        newData: { objectId, periodNumber: period.periodNumber },
-        performedBy: actorId,
-        organizationId: obj.organizationId,
-      });
-
-      return period;
-    });
     } catch (e: unknown) {
       // PostgreSQL lock timeout error code: 55P03
       if (
@@ -128,7 +129,11 @@ export class PeriodService {
   async submitGp(
     token: string,
     gpSubmittedByName: string,
-    items: Array<{ boqItemId: number; gpVolume: number | unknown; gpNote?: string }>,
+    items: Array<{
+      boqItemId: number;
+      gpVolume: unknown;
+      gpNote?: string;
+    }>,
   ) {
     return this.prisma.$transaction(async (tx) => {
       const period = await tx.period.findFirst({
@@ -198,7 +203,7 @@ export class PeriodService {
   async upsertPeriodFact(
     periodId: number,
     boqItemId: number,
-    scVolume: number | unknown,
+    scVolume: unknown,
     actorId: number,
   ) {
     return this.prisma.$transaction(async (tx) => {
@@ -270,7 +275,13 @@ export class PeriodService {
         tableName: 'period_facts',
         recordId: BigInt(updatedFact.id),
         action: 'period_fact_upserted',
-        newData: { periodId, boqItemId, scVolume, discrepancyType, discrepancyStatus },
+        newData: {
+          periodId,
+          boqItemId,
+          scVolume,
+          discrepancyType,
+          discrepancyStatus,
+        },
         performedBy: actorId,
         organizationId: period.object.organizationId,
       });
