@@ -108,7 +108,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - Line-number якорь (`file.md:2619-2640`) как контракт. Только heading-anchored ссылки; line — hint, не контракт.
 - Bare commit SHA без subject line. Формат: `"feat(...): subject"` `[sha:abc1234]`.
 - Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
-- Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана.
+- Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана. (Wave 3: hook дополнительно tolerant к `### Артефакт N — <header>` форме как defense-in-depth, но canonical emit остаётся без префикса.)
 - Placeholder row в Evidence Log при 0 claims (`| — | n/a | n/a | n/a | n/a |` и т.п.). Каноническая форма пустого Evidence Log — только header+separator, без body-rows. Хук толерантно skip'ает placeholder, но spec — header+separator only.
 
 ## Output — три артефакта (всегда в этом порядке)

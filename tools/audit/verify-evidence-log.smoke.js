@@ -169,5 +169,24 @@ console.log('\n=== case 5: cyrillic 81-byte quote (Wave 2 fix #3) ===');
   } finally { teardown(tmp); }
 }
 
+// ── case 6: Артефакт N — prefix heading tolerance (Wave 3) ──────────────────
+// Defense-in-depth: if the agent emits `### Артефакт 2 — Next-Session Bootstrap`
+// (the spec's structural label) instead of canonical `## Next-Session Bootstrap`,
+// the hook should still extract the section correctly.
+console.log('\n=== case 6: prefixed heading (Wave 3 tolerance) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-wave3-prefix.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('prefixed bootstrap heading extracts', session, 'evidence_rows_verified: 1/1');
+    expectNotIncludes('no FIREWALL_BOOTSTRAP_MISSING', session, 'FIREWALL_BOOTSTRAP_MISSING');
+    expectNotIncludes('no L3 count drift', session, 'L3_EVIDENCE_COUNT_DRIFT');
+    expectIncludes('prefixed heading: VIOLATIONS none', session, '## VIOLATIONS\n\n_none_');
+  } finally { teardown(tmp); }
+}
+
 console.log(`\n=== summary: ${failed === 0 ? 'PASS' : `FAIL (${failed} assertion(s))`} ===`);
 process.exit(failed === 0 ? 0 : 1);

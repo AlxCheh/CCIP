@@ -102,7 +102,12 @@ function extractManifestBlock(text) {
  */
 function extractSection(text, header) {
   const esc = header.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-  const startRe = new RegExp(`^(#{2,3})\\s+${esc}\\b`, 'mi');
+  // Defense-in-depth (Wave 3): tolerate optional `Артефакт N — ` prefix from
+  // the spec's structural template. Canonical emit form stays `## <header>`,
+  // but the hook still captures the section if the agent drifts to the
+  // template-labeled `### Артефакт N — <header>` form.
+  const startRe = new RegExp(
+    `^(#{2,3})\\s+(?:Артефакт\\s+\\d+\\s+[—-]\\s+)?${esc}\\b`, 'mi');
   const startMatch = text.match(startRe);
   if (!startMatch) return null;
   const level = startMatch[1].length; // 2 or 3
