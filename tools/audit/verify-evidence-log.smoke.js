@@ -118,5 +118,22 @@ console.log('\n=== case 2: clean fixture (expect 0 violations) ===');
   } finally { teardown(tmp); }
 }
 
+// ── case 3: empty bootstrap (0 claims, placeholder row tolerated) ──────────
+console.log('\n=== case 3: empty fixture (0 claims, expect 0 violations) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-empty.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('empty: VIOLATIONS none', session, '## VIOLATIONS\n\n_none_');
+    expectIncludes('empty: 0/0 verified', session, 'evidence_rows_verified: 0/0');
+    expectNotIncludes('empty: no FIREWALL trips', session, 'FIREWALL_');
+    expectNotIncludes('empty: placeholder row skipped (no L2)', session, 'L2_EVIDENCE_ROW');
+    expectNotIncludes('empty: no L3 count drift', session, 'L3_EVIDENCE_COUNT_DRIFT');
+  } finally { teardown(tmp); }
+}
+
 console.log(`\n=== summary: ${failed === 0 ? 'PASS' : `FAIL (${failed} assertion(s))`} ===`);
 process.exit(failed === 0 ? 0 : 1);

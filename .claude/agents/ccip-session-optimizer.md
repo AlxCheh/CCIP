@@ -108,6 +108,8 @@ Bootstrap прошлой сессии может быть seed для конте
 - Line-number якорь (`file.md:2619-2640`) как контракт. Только heading-anchored ссылки; line — hint, не контракт.
 - Bare commit SHA без subject line. Формат: `"feat(...): subject"` `[sha:abc1234]`.
 - Pipe `|` в `exact_substring` (ломает markdown table). Выбери другую цитату без pipe.
+- Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана.
+- Placeholder row в Evidence Log при 0 claims (`| — | n/a | n/a | n/a | n/a |` и т.п.). Каноническая форма пустого Evidence Log — только header+separator, без body-rows. Хук толерантно skip'ает placeholder, но spec — header+separator only.
 
 ## Output — три артефакта (всегда в этом порядке)
 
@@ -167,7 +169,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 
 **Кардинальный контракт:** `count(claims in bootstrap) == count(rows in Артефакт 3)`. Хук reject'ит ответ при нарушении.
 
-Если bootstrap не помещается в 300 слов — режь gotchas/constraints, не задачи. Если нечего класть в task'и (нет evidence ни на одну) — bootstrap состоит из «нет верифицированных задач, сессия завершена без active follow-ups» + текущий коммит.
+Если bootstrap не помещается в 300 слов — режь gotchas/constraints, не задачи. Если нечего класть в task'и (нет evidence ни на одну) — bootstrap состоит из «нет верифицированных задач, сессия завершена без active follow-ups» + текущий коммит. Манифест в этом случае: `bootstrap_claims: 0`, `evidence_rows: 0`; Артефакт 3 — header+separator только, БЕЗ body-row (см. §Запреты).
 
 ### Артефакт 3 — Evidence Log (≤ 25 строк)
 
@@ -188,6 +190,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 - Один row на конкретный claim. Агрегаты разбивай.
 - > 25 rows → bootstrap слишком амбициозный; сокращай bootstrap, не таблицу.
 - Если для claim нет источника, удовлетворяющего allowlist'у — claim **удаляется** из bootstrap. Не `[unverified]` тег, не «приблизительно». Удаляется.
+- При `bootstrap_claims == 0`: таблица — header+separator only. Никаких `| — |`, `| - |`, `| n/a |` placeholder-row'ов; хук их толерантно skip'ает, но spec формы — пустая table body.
 
 ## §I — Манифест инвариантов (обязательный последний блок ответа)
 

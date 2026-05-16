@@ -177,6 +177,11 @@ function parseEvidenceRows(evidenceSection) {
     if (cells.length < 5) continue;
 
     let [n, claim, source_file, anchor, ...rest] = cells;
+    // Skip placeholder rows: agent uses "—" / "-" / "" in n-column to mean
+    // "no claims this session" (legacy v2 behavior). Canonical empty Evidence
+    // Log is header+separator only, but the parser tolerates the placeholder
+    // form so a 0-claim bootstrap stays at 0 violations.
+    if (n === '—' || n === '-' || n === '') continue;
     const exact_substring = rest.join('|').replace(/^`|`$/g, '').trim();
 
     rows.push({ n, claim, source_file, anchor, quote: exact_substring });
@@ -294,9 +299,7 @@ function run(raw) {
   // ── extract artifacts ──────────────────────────────────────────────────────
   const report = extractSection(text, 'Session Optimization Report') || '';
   const evidenceSec = extractSection(text, 'Evidence Log') || '';
-  const bootstrap = extractSection(text, 'Next-Session Bootstrap')
-                 || extractSection(text, 'Bootstrap')
-                 || '';
+  const bootstrap = extractSection(text, 'Next-Session Bootstrap') || '';
 
   // ── L1b firewall: bootstrap ────────────────────────────────────────────────
   violations.push(...bootstrapFirewall(bootstrap));
