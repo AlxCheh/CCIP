@@ -421,3 +421,11 @@ ADR-010-audit-log-partitioning
 ## 14. Main Principle
 
 > Ошибки должны фиксироваться и анализироваться только в пределах соответствующего bounded context с минимальной загрузкой нерелевантного контекста.
+
+### 2026-05-16T15-08-46-650Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-05-16T15-08-46-650Z-a17ca4a.md`
+
+- FIREWALL_BOOTSTRAP_MISSING
+- L2_EVIDENCE_ROW_3: quote_not_in_source [source=repo:.claude/runtime/verify-evidence-log.js]
+- L2_EVIDENCE_ROW_6: quote_too_long(110B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]

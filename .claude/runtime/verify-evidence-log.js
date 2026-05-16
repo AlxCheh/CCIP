@@ -170,8 +170,10 @@ function parseEvidenceRows(evidenceSection) {
     if (!inBody && /^\|\s*#\s*\|/i.test(line)) continue; // header row, wait for separator
     if (!inBody) continue;
 
-    // split, drop leading/trailing empty cells from `| ... |`
-    const cells = line.split('|').map(c => c.trim());
+    // Split on un-escaped `|` only; un-escape `\|` → `|` per cell so the
+    // agent can quote source text containing literal pipes (Wave 2 fix #2).
+    const cells = line.split(/(?<!\\)\|/)
+      .map(c => c.trim().replace(/\\\|/g, '|'));
     if (cells[0] === '') cells.shift();
     if (cells[cells.length - 1] === '') cells.pop();
     if (cells.length < 5) continue;
@@ -197,7 +199,10 @@ function verifyRowSource(row) {
     return { ok: false, reason: 'source_prefix_invalid' };
   }
   if (!row.quote) return { ok: false, reason: 'quote_empty' };
-  if (row.quote.length > 80) return { ok: false, reason: `quote_too_long(${row.quote.length}B)` };
+  // Spec line 179: ≤ 80 bytes (UTF-8). Code units (.length) would under-count
+  // multi-byte chars and let Cyrillic-heavy quotes slip past (Wave 2 fix #3).
+  const quoteBytes = Buffer.byteLength(row.quote, 'utf-8');
+  if (quoteBytes > 80) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
 
   const colon = src.indexOf(':');
   const kind = src.slice(0, colon);

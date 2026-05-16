@@ -135,5 +135,39 @@ console.log('\n=== case 3: empty fixture (0 claims, expect 0 violations) ===');
   } finally { teardown(tmp); }
 }
 
+// ── case 4: escaped pipe (Wave 2 fix #2) ───────────────────────────────────
+// Quote contains `\|\|` which must be un-escaped to `||` before substring-check
+// against source containing `if (a || b) continue;`.
+console.log('\n=== case 4: escaped pipe quote (Wave 2 fix #2) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-wave2-pipe.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('pipe: 1/1 verified after un-escape', session, 'evidence_rows_verified: 1/1');
+    expectNotIncludes('pipe: no L2 trips', session, 'L2_EVIDENCE_ROW');
+    expectIncludes('pipe: VIOLATIONS none', session, '## VIOLATIONS\n\n_none_');
+  } finally { teardown(tmp); }
+}
+
+// ── case 5: cyrillic quote 81B (Wave 2 fix #3) ─────────────────────────────
+// Quote is 43 code units / 81 UTF-8 bytes. Spec says ≤80B. Current hook uses
+// `.length` (code units) and passes; fixed hook uses Buffer.byteLength.
+console.log('\n=== case 5: cyrillic 81-byte quote (Wave 2 fix #3) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-wave2-cyrillic.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('cyrillic: detects byte-length violation', session, 'quote_too_long(81B)');
+    expectIncludes('cyrillic: L2 row 1 flagged', session, 'L2_EVIDENCE_ROW_1');
+    expectIncludes('cyrillic: 0/1 verified', session, 'evidence_rows_verified: 0/1');
+  } finally { teardown(tmp); }
+}
+
 console.log(`\n=== summary: ${failed === 0 ? 'PASS' : `FAIL (${failed} assertion(s))`} ===`);
 process.exit(failed === 0 ? 0 : 1);

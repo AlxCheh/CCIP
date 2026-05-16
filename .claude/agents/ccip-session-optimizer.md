@@ -107,7 +107,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - `T-X блокирует T-Y` / `next: T-X → T-Y` без дословной формулировки порядка в plan/state-memory.
 - Line-number якорь (`file.md:2619-2640`) как контракт. Только heading-anchored ссылки; line — hint, не контракт.
 - Bare commit SHA без subject line. Формат: `"feat(...): subject"` `[sha:abc1234]`.
-- Pipe `|` в `exact_substring` (ломает markdown table). Выбери другую цитату без pipe.
+- Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
 - Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана.
 - Placeholder row в Evidence Log при 0 claims (`| — | n/a | n/a | n/a | n/a |` и т.п.). Каноническая форма пустого Evidence Log — только header+separator, без body-rows. Хук толерантно skip'ает placeholder, но spec — header+separator only.
 
@@ -151,6 +151,8 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 
 ### Артефакт 2 — Next-Session Bootstrap (≤ 60 строк / ≤ 300 слов, verbatim)
 
+**Эмит начинается с heading'а `## Next-Session Bootstrap` (h2, без префикса).** Хук `extractSection` ищет литерал `Next-Session Bootstrap` после `## ` или `### `; форма `### Артефакт 2 — Next-Session Bootstrap` НЕ распознаётся (FIREWALL_BOOTSTRAP_MISSING). Метка «Артефакт 2 —» — spec-структура, не часть emit'а.
+
 Блоки (опусти, если нет evidence; НИКОГДА не выдумывай):
 
 1. **Context (1 строка):** фаза/этап + subject последнего коммита `[sha:hint]`.
@@ -176,7 +178,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 ```markdown
 ### Evidence Log
 
-| # | claim_in_bootstrap | source_file | anchor | exact_substring (≤ 80B, без `|`) |
+| # | claim_in_bootstrap | source_file | anchor | exact_substring (≤ 80B UTF-8, `|` → `\|`) |
 |---|---|---|---|---|
 | 1 | T-27 anchor heading | repo:docs/plans/zero-drift.md | ### Task T-27: CODEOWNERS | ### Task T-27: CODEOWNERS |
 | 2 | T-28 done | state-memory:memory/zero_drift_section10_state.md | Phase 7 line | T-28 (aa42ce6) |
@@ -185,7 +187,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 Правила:
 - `source_file` ДОЛЖЕН иметь префикс `repo:` / `git:<SHA>:` / `state-memory:`. Без префикса — INVALID.
 - `exact_substring` ДОЛЖЕН удовлетворять `bytes(quote) ⊂ bytes(source_file_content)`. Хук Read'ит source и substring-check'ит. Парафраз / нормализация whitespace / перевод = провал.
-- `exact_substring` НЕ может содержать `|` (markdown-table breaker). Если оригинал содержит — выбери другую цитату из того же файла.
+- `exact_substring` с литеральным `|` ДОЛЖЕН эскейпить как `\|` (markdown-table breaker). Хук un-escape'ит `\|` → `|` перед substring-check. Длина считается в UTF-8 байтах через `Buffer.byteLength`, не code units.
 - `anchor` — heading-строка или короткий локатор. Документация, не enforcement.
 - Один row на конкретный claim. Агрегаты разбивай.
 - > 25 rows → bootstrap слишком амбициозный; сокращай bootstrap, не таблицу.
