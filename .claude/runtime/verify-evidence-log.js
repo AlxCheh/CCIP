@@ -203,6 +203,12 @@ function verifyRowSource(row) {
   if (!src || !ALLOWED_SOURCE_PREFIXES.some(p => src.startsWith(p))) {
     return { ok: false, reason: 'source_prefix_invalid' };
   }
+  // Wave 7: anti-telephone-game. Hook writes its own session artifacts under
+  // docs/errors/sessions/; citing them as Evidence recycles prior bootstrap
+  // content as if it were primary source. Reject before existence/substring.
+  if (src.startsWith('repo:docs/errors/sessions/')) {
+    return { ok: false, reason: 'source_is_session_artifact' };
+  }
   if (!row.quote) return { ok: false, reason: 'quote_empty' };
   // Spec line 179: ≤ 80 bytes (UTF-8). Code units (.length) would under-count
   // multi-byte chars and let Cyrillic-heavy quotes slip past (Wave 2 fix #3).

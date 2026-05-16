@@ -220,5 +220,22 @@ console.log('\n=== case 8: SHA not-found (Wave 5) ===');
   } finally { teardown(tmp); }
 }
 
+// ── case 9: telephone-game guard (Wave 7) ───────────────────────────────────
+// Evidence row cites `repo:docs/errors/sessions/*.md` — a hook-generated
+// session artifact. Such cites recycle prior bootstrap content as if it
+// were primary evidence (telephone game). Hook should reject.
+console.log('\n=== case 9: telephone-game guard (Wave 7) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-wave7-telephone.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('telephone: source_is_session_artifact fired', session, 'source_is_session_artifact');
+    expectIncludes('telephone: 0/1 verified', session, 'evidence_rows_verified: 0/1');
+  } finally { teardown(tmp); }
+}
+
 console.log(`\n=== summary: ${failed === 0 ? 'PASS' : `FAIL (${failed} assertion(s))`} ===`);
 process.exit(failed === 0 ? 0 : 1);
