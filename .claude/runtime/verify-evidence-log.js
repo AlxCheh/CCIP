@@ -253,6 +253,22 @@ function bootstrapFirewall(bootstrap) {
   const wc = countWords(bootstrap);
   if (wc > BOOTSTRAP_WORD_LIMIT) v.push(`FIREWALL_WORDCOUNT: ${wc} > ${BOOTSTRAP_WORD_LIMIT}`);
 
+  // Wave 4: branch claim verification. If bootstrap names a `Branch: <name>`,
+  // it MUST match `git rev-parse --abbrev-ref HEAD`. Stale claims (e.g. copied
+  // from a prior session) drift silently otherwise — see Wave 2 driver where
+  // bootstrap claimed feat/t22-auditlog-partman while HEAD was on main.
+  const branchClaim = bootstrap.match(/^Branch:\s+(\S+)/im);
+  if (branchClaim) {
+    let actual = null;
+    try {
+      actual = execSync('git rev-parse --abbrev-ref HEAD',
+        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    } catch {}
+    if (actual && branchClaim[1] !== actual) {
+      v.push(`FIREWALL_BRANCH_DRIFT: claimed=${branchClaim[1]} actual=${actual}`);
+    }
+  }
+
   return v;
 }
 

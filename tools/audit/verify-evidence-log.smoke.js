@@ -188,5 +188,21 @@ console.log('\n=== case 6: prefixed heading (Wave 3 tolerance) ===');
   } finally { teardown(tmp); }
 }
 
+// ── case 7: branch claim verification (Wave 4) ──────────────────────────────
+// Bootstrap claims `Branch: feat/definitely-nonexistent-branch-xyz` but the
+// repo HEAD is on a different branch — hook should detect the drift.
+console.log('\n=== case 7: branch drift (Wave 4) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-wave4-branch-bad.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('branch: FIREWALL_BRANCH_DRIFT fired', session, 'FIREWALL_BRANCH_DRIFT');
+    expectIncludes('branch: claimed value reported', session, 'claimed=feat/definitely-nonexistent-branch-xyz');
+  } finally { teardown(tmp); }
+}
+
 console.log(`\n=== summary: ${failed === 0 ? 'PASS' : `FAIL (${failed} assertion(s))`} ===`);
 process.exit(failed === 0 ? 0 : 1);
