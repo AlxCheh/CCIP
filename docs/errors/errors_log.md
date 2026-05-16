@@ -429,3 +429,10 @@ file: `docs/errors/sessions/2026-05-16T15-08-46-650Z-a17ca4a.md`
 - FIREWALL_BOOTSTRAP_MISSING
 - L2_EVIDENCE_ROW_3: quote_not_in_source [source=repo:.claude/runtime/verify-evidence-log.js]
 - L2_EVIDENCE_ROW_6: quote_too_long(110B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
+
+### 2026-05-16T19-15-17-191Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-05-16T19-15-17-191Z-7f167aa.md`
+
+- FIREWALL_WORDCOUNT: 354 > 300
+- L2_EVIDENCE_ROW_5: quote_too_long(101B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
