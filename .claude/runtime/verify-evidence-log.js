@@ -17,6 +17,14 @@
  *
  * Hook не блокирует ответ (PostToolUse semantics), но violations видимы.
  * Любая ошибка хука — в stderr, exit 0 (родительская сессия не падает).
+ *
+ * SKILL-EXTRACTION MARKERS (added 2026-05-16; preparation for future skill extraction)
+ *   // @skill: portable        — переезжает в skill runtime как есть
+ *   // @skill: config:<KEY>    — параметризовать; значение в project config
+ *   // @skill: project:<WHAT>  — project-bound; остаётся в CCIP или станет plugin'ом
+ * Markers — метаданные для рефакторинга, не влияют на исполнение.
+ * При extract'е: grep `@skill: portable` = skill core, grep `@skill: config` = config schema,
+ * grep `@skill: project` = CCIP-side adapter / plugin.
  */
 
 const fs = require('fs');
@@ -24,17 +32,24 @@ const path = require('path');
 const { execSync } = require('child_process');
 const crypto = require('crypto');
 
+// @skill: portable — repo-root resolution pattern
 const ROOT = path.resolve(__dirname, '../..');
+// @skill: project:archive-layout — `docs/errors/sessions/`, `session-opt-index.md`, `errors_log.md` are CCIP layout
+// @skill: portable — env-overridable persistence paths is good pattern (already plugin-friendly)
 // Persistence paths overridable via env (used by smoke tests for isolation).
 const SESSIONS_DIR = process.env.OPT_SESSIONS_DIR || path.join(ROOT, 'docs/errors/sessions');
 const INDEX_FILE   = process.env.OPT_INDEX_FILE   || path.join(ROOT, 'docs/errors/session-opt-index.md');
 const ERRORS_LOG   = process.env.OPT_ERRORS_LOG   || path.join(ROOT, 'docs/errors/errors_log.md');
+// @skill: config:lock-path — `.claude/runtime/optimizer.lock`; per-project, env-overridable
 const LOCK_FILE    = process.env.OPT_LOCK_FILE    || path.join(ROOT, '.claude/runtime/optimizer.lock');
 
+// @skill: config:self-attestation-lexemes — language-specific vocabulary (ru+en here)
 const BANNED_LEXEMES = /\b(verified|проверено|self[- ]?test|self[- ]?check|confirmed|validated|cross[- ]?checked|ensured|guaranteed)\b|[✔✅]/i;
+// @skill: config:budget-numbers — bootstrap word limit + pre-flight token/call caps; per-project tunable
 const BOOTSTRAP_WORD_LIMIT = 300;
 const PREFLIGHT_TOKEN_LIMIT = 3000;
 const PREFLIGHT_CALL_LIMIT = 6;
+// @skill: config:source-prefix-vocabulary — each prefix needs a registered resolver (see verifyRowSource)
 const ALLOWED_SOURCE_PREFIXES = ['repo:', 'git:', 'state-memory:'];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
