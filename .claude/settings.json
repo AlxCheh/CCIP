@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "node W:/Claude/CCIP/.claude/runtime/post-agent-hook.js"
+          },
+          {
+            "type": "command",
+            "command": "node W:/Claude/CCIP/.claude/runtime/verify-evidence-log.js"
           }
         ]
       }
