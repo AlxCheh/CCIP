@@ -278,34 +278,41 @@ describe('AuditLog partitioning (ADR-010, §10.5 T-22)', () => {
     expect(rows[0].active).toBe(true);
   });
 
-  test('rotation: dropping an old partition does not affect data in current partition', async () => {
+  test('rotation: dropping a non-current partition does not affect data in current partition', async () => {
     await prisma.$executeRawUnsafe(`CALL partman.run_maintenance_proc()`);
 
     const probeRecordId = BigInt(Date.now());
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO audit_log (table_name, record_id, action, performed_at, organization_id)
-      VALUES ('partition_probe', ${probeRecordId}, 'insert', NOW(), '${FIXTURE_ORG_ID}'::uuid)`);
+    try {
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO audit_log (table_name, record_id, action, performed_at, organization_id)
+        VALUES ('partition_probe', ${probeRecordId}, 'insert', NOW(), '${FIXTURE_ORG_ID}'::uuid)`);
 
-    const siblings = await prisma.$queryRaw<Array<{ partition_name: string }>>`
-      SELECT partition_tablename AS partition_name
-      FROM partman.show_partitions('public.audit_log')
-      WHERE partition_tablename NOT LIKE '%default'
-        AND partition_tablename != (
-          SELECT partition_tablename FROM partman.show_partitions('public.audit_log')
-          WHERE NOW() >= partition_range_start AND NOW() < partition_range_end
-        )
-      LIMIT 1`;
-    expect(siblings.length).toBeGreaterThan(0);
+      // Pick the partition with the largest upper bound (furthest in the future).
+      // pg_get_expr on relpartbound returns strings like:
+      //   FOR VALUES FROM ('2026-06-01 00:00:00+00') TO ('2026-07-01 00:00:00+00')
+      //   DEFAULT
+      // String-sort by the rendered bound is chronologically correct for monthly partitions
+      // (TO ('YYYY-MM-DD ...') sorts lexicographically == chronologically).
+      const targets = await prisma.$queryRaw<Array<{ partition_name: string }>>`
+        SELECT c.relname AS partition_name
+        FROM pg_inherits i
+        JOIN pg_class c ON c.oid = i.inhrelid
+        WHERE i.inhparent = 'public.audit_log'::regclass
+          AND pg_get_expr(c.relpartbound, c.oid) NOT LIKE '%DEFAULT%'
+        ORDER BY pg_get_expr(c.relpartbound, c.oid) DESC
+        LIMIT 1`;
+      expect(targets.length).toBeGreaterThan(0);
 
-    await prisma.$executeRawUnsafe(`DROP TABLE "${siblings[0].partition_name}"`);
+      await prisma.$executeRawUnsafe(`DROP TABLE "${targets[0].partition_name}"`);
 
-    const survivors = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(*)::bigint AS count FROM audit_log
-      WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`;
-    expect(Number(survivors[0].count)).toBe(1);
-
-    await prisma.$executeRawUnsafe(`
-      DELETE FROM audit_log WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`);
+      const survivors = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count FROM audit_log
+        WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`;
+      expect(Number(survivors[0].count)).toBe(1);
+    } finally {
+      await prisma.$executeRawUnsafe(`
+        DELETE FROM audit_log WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`);
+    }
   });
 });
 ```
@@ -400,8 +407,9 @@ describe('AuditLog partitioning (ADR-010, §10.5 T-22)', () => {
   контракту.
 - **Default partition name:** после `create_parent(p_default_table=true)`
   partman v5 создаёт свою default-партицию (имя обычно `audit_log_default` или
-  `audit_log_default_p`). Тесты используют `partman.show_partitions(...)`,
-  не имя — устойчиво к изменению naming convention.
+  `audit_log_default_p`). Rotation-тест использует `pg_inherits` +
+  `pg_get_expr(relpartbound)` — не зависит ни от partman API, ни от naming
+  convention.
 - **`--runInBand`** обязателен для этого пакета, потому что тесты используют
   destructive partition operations на shared DB. Это не временный workaround,
   а семантическое требование.

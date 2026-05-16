@@ -10,6 +10,12 @@
 
 **Spec:** [`docs/plans/2026-05-15-auditlog-partman-design.md`](2026-05-15-auditlog-partman-design.md)
 
+**Shell convention:** все команды ниже даны в bash-синтаксисе. На Windows-хосте есть два варианта:
+1. **Git Bash / WSL** — копируй команды как есть.
+2. **PowerShell** — для inline env-var используй `$env:DATABASE_URL='...'; pnpm ...`, `mkdir -p` → `New-Item -ItemType Directory -Force -Path ...`, `sleep 5` → `Start-Sleep -Seconds 5`. Циклы `for i in $(seq 1 30)` переписывай через `1..30 | ForEach-Object { ... }`.
+
+CI выполняется на `ubuntu-latest` — bash-команды в `.github/workflows/ci.yml` НЕ требуют адаптации.
+
 ---
 
 ## File map
@@ -33,6 +39,12 @@
 Перед началом убедитесь:
 
 - [ ] **0.1:** На `main`, working tree clean: `git status --short` → пустой вывод
+
+  > Если working tree не пустой — на момент написания плана висят правки в
+  > `docs/errors/errors_log.md` / `docs/errors/session-opt-index.md`. Решение
+  > (commit/stash/discard) принимает оператор перед созданием feature-ветки;
+  > план это не предписывает.
+
 - [ ] **0.2:** Создать feature branch: `git checkout -b feat/t22-auditlog-partman`
 - [ ] **0.3:** `pnpm install --frozen-lockfile` уже выполнен в этой сессии (для скорости последующих steps)
 - [ ] **0.4:** Docker daemon работает: `docker info` → не падает
@@ -502,34 +514,41 @@ git commit -m "test(database): audit_log extensions + partman config invariants 
 В `packages/database/test/audit-log-rotation.test.ts`, после теста `cron job audit-log-partman-maintenance is scheduled` (но всё ещё внутри `describe`), добавить:
 
 ```ts
-  test('rotation: dropping an old partition does not affect data in current partition', async () => {
+  test('rotation: dropping a non-current partition does not affect data in current partition', async () => {
     await prisma.$executeRawUnsafe(`CALL partman.run_maintenance_proc()`);
 
     const probeRecordId = BigInt(Date.now());
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO audit_log (table_name, record_id, action, performed_at, organization_id)
-      VALUES ('partition_probe', ${probeRecordId}, 'insert', NOW(), '${FIXTURE_ORG_ID}'::uuid)`);
+    try {
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO audit_log (table_name, record_id, action, performed_at, organization_id)
+        VALUES ('partition_probe', ${probeRecordId}, 'insert', NOW(), '${FIXTURE_ORG_ID}'::uuid)`);
 
-    const siblings = await prisma.$queryRaw<Array<{ partition_name: string }>>`
-      SELECT partition_tablename AS partition_name
-      FROM partman.show_partitions('public.audit_log')
-      WHERE partition_tablename NOT LIKE '%default'
-        AND partition_tablename != (
-          SELECT partition_tablename FROM partman.show_partitions('public.audit_log')
-          WHERE NOW() >= partition_range_start AND NOW() < partition_range_end
-        )
-      LIMIT 1`;
-    expect(siblings.length).toBeGreaterThan(0);
+      // Pick the partition with the largest upper bound (furthest in the future).
+      // pg_get_expr on relpartbound returns strings like:
+      //   FOR VALUES FROM ('2026-06-01 00:00:00+00') TO ('2026-07-01 00:00:00+00')
+      //   DEFAULT
+      // String-sort by the rendered bound is chronologically correct for monthly partitions
+      // (TO ('YYYY-MM-DD ...') sorts lexicographically == chronologically).
+      const targets = await prisma.$queryRaw<Array<{ partition_name: string }>>`
+        SELECT c.relname AS partition_name
+        FROM pg_inherits i
+        JOIN pg_class c ON c.oid = i.inhrelid
+        WHERE i.inhparent = 'public.audit_log'::regclass
+          AND pg_get_expr(c.relpartbound, c.oid) NOT LIKE '%DEFAULT%'
+        ORDER BY pg_get_expr(c.relpartbound, c.oid) DESC
+        LIMIT 1`;
+      expect(targets.length).toBeGreaterThan(0);
 
-    await prisma.$executeRawUnsafe(`DROP TABLE "${siblings[0].partition_name}"`);
+      await prisma.$executeRawUnsafe(`DROP TABLE "${targets[0].partition_name}"`);
 
-    const survivors = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(*)::bigint AS count FROM audit_log
-      WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`;
-    expect(Number(survivors[0].count)).toBe(1);
-
-    await prisma.$executeRawUnsafe(`
-      DELETE FROM audit_log WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`);
+      const survivors = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count FROM audit_log
+        WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`;
+      expect(Number(survivors[0].count)).toBe(1);
+    } finally {
+      await prisma.$executeRawUnsafe(`
+        DELETE FROM audit_log WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`);
+    }
   });
 ```
 
@@ -718,10 +737,8 @@ Run: `head -30 CHANGELOG.md`
 ### Changed
 - `infra/docker/docker-compose.yml`: postgres service использует local build вместо `postgres:16-alpine`
 
-closes F-T22
+closes T-22
 ```
-
-`closes F-T22` — для `changelog-presence` audit'а (см. T-29 на §10.7).
 
 - [ ] **Step 9.3: Commit**
 
