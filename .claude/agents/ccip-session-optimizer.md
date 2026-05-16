@@ -110,6 +110,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
 - Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана. (Wave 3: hook дополнительно tolerant к `### Артефакт N — <header>` форме как defense-in-depth, но canonical emit остаётся без префикса.)
 - Строка `Branch: <name>` в bootstrap, если присутствует, верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → FIREWALL_BRANCH_DRIFT (Wave 4). Либо emit'ить точное имя текущей ветки, либо опускать строку — стейл-claim'ы из предыдущей сессии запрещены.
+- Токены `[sha:NNNNNNN]` в bootstrap (4–40 hex chars) верифицируются через `git cat-file -e <sha>`. Несуществующий объект → FIREWALL_SHA_NOT_FOUND: <sha> (Wave 5). Цитируй только реальные commits — фабрикация или копирование из прошлой сессии ловится.
 - Placeholder row в Evidence Log при 0 claims (`| — | n/a | n/a | n/a | n/a |` и т.п.). Каноническая форма пустого Evidence Log — только header+separator, без body-rows. Хук толерантно skip'ает placeholder, но spec — header+separator only.
 
 ## Output — три артефакта (всегда в этом порядке)

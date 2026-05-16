@@ -269,6 +269,18 @@ function bootstrapFirewall(bootstrap) {
     }
   }
 
+  // Wave 5: SHA token verification. `[sha:NNNNNNN]` literals reference git
+  // objects; missing ones (e.g. fabricated or copied from prior session
+  // bootstrap) leak stale state. Hex capture is safe to interpolate into
+  // git cat-file because the regex only admits [0-9a-f]{4,40}.
+  for (const m of bootstrap.matchAll(/\[sha:([0-9a-f]{4,40})\]/gi)) {
+    try {
+      execSync(`git cat-file -e ${m[1]}`, { cwd: ROOT, stdio: 'ignore' });
+    } catch {
+      v.push(`FIREWALL_SHA_NOT_FOUND: ${m[1]}`);
+    }
+  }
+
   return v;
 }
 

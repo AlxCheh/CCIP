@@ -204,5 +204,21 @@ console.log('\n=== case 7: branch drift (Wave 4) ===');
   } finally { teardown(tmp); }
 }
 
+// ── case 8: SHA token verification (Wave 5) ─────────────────────────────────
+// Bootstrap references [sha:0000000] — syntactically valid 7-hex but no
+// matching git object. Hook should flag FIREWALL_SHA_NOT_FOUND.
+console.log('\n=== case 8: SHA not-found (Wave 5) ===');
+{
+  const tmp = setupTmp();
+  try {
+    const r = runHook(readFixture('optimizer-output-wave5-sha-bad.md'), tmp);
+    console.log(`  hook exit: ${r.status}`);
+    const session = latestSessionFile(tmp);
+
+    expectIncludes('sha: FIREWALL_SHA_NOT_FOUND fired', session, 'FIREWALL_SHA_NOT_FOUND');
+    expectIncludes('sha: token reported', session, '0000000');
+  } finally { teardown(tmp); }
+}
+
 console.log(`\n=== summary: ${failed === 0 ? 'PASS' : `FAIL (${failed} assertion(s))`} ===`);
 process.exit(failed === 0 ? 0 : 1);
