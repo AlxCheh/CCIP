@@ -1,21 +1,22 @@
 #!/usr/bin/env node
 /**
- * PostToolUse hook — срабатывает после любого Agent tool call.
- * Действует только если subagent_type === "ccip-session-optimizer".
+ * PostToolUse hook — verify-evidence-log.js (Wave 1 hardened)
  *
- * Задачи (детерминированная пост-обработка):
- *   1. Извлечь манифест инвариантов (```yaml ... ```) из вывода агента.
- *   2. Проверить кардинальность: bootstrap_claims == evidence_rows && unverified_rows == 0.
- *   3. Извлечь Артефакт 1 (Report) + Артефакт 3 (Evidence Log) и записать
- *      в docs/errors/sessions/<UTC-iso>-<git-short>.md.
- *   4. Дописать строку в docs/errors/session-opt-index.md.
- *   5. Дописать одну запись в docs/errors/errors_log.md → "Session Optimization".
- *   6. Снять lock .claude/runtime/optimizer.lock (если есть).
- *   7. Любая ошибка — в stderr, exit 0 (не ломаем родительскую сессию).
+ * Срабатывает после Agent tool call с subagent_type === "ccip-session-optimizer".
  *
- * Hook НЕ блокирует ответ агента (PostToolUse в Claude Code так устроен).
- * При нарушениях кардинальности — пишет VIOLATION в stderr и в session-opt-index.
- * Это видимый сигнал, что bootstrap нельзя автоматически доверять.
+ * Layered verification:
+ *   L1 (syntactic)  — manifest parsed, sentinel present, cardinality declared.
+ *   L1b (firewall)  — bootstrap не содержит self-attestation лексем, ≤300 слов.
+ *   L2 (semantic)   — каждая Evidence row substring-check против source_file.
+ *   L3 (composit.)  — parsed evidence_rows == declared evidence_rows == bootstrap_claims.
+ *
+ * Violations пишутся в:
+ *   docs/errors/sessions/<UTC-iso>-<git-short>.md  (per-session артефакт)
+ *   docs/errors/session-opt-index.md               (index row)
+ *   docs/errors/errors_log.md                      (видим следующей сессии)
+ *
+ * Hook не блокирует ответ (PostToolUse semantics), но violations видимы.
+ * Любая ошибка хука — в stderr, exit 0 (родительская сессия не падает).
  */
 
 const fs = require('fs');
@@ -24,10 +25,17 @@ const { execSync } = require('child_process');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
-const SESSIONS_DIR = path.join(ROOT, 'docs/errors/sessions');
-const INDEX_FILE = path.join(ROOT, 'docs/errors/session-opt-index.md');
-const ERRORS_LOG = path.join(ROOT, 'docs/errors/errors_log.md');
-const LOCK_FILE = path.join(ROOT, '.claude/runtime/optimizer.lock');
+// Persistence paths overridable via env (used by smoke tests for isolation).
+const SESSIONS_DIR = process.env.OPT_SESSIONS_DIR || path.join(ROOT, 'docs/errors/sessions');
+const INDEX_FILE   = process.env.OPT_INDEX_FILE   || path.join(ROOT, 'docs/errors/session-opt-index.md');
+const ERRORS_LOG   = process.env.OPT_ERRORS_LOG   || path.join(ROOT, 'docs/errors/errors_log.md');
+const LOCK_FILE    = process.env.OPT_LOCK_FILE    || path.join(ROOT, '.claude/runtime/optimizer.lock');
+
+const BANNED_LEXEMES = /\b(verified|проверено|self[- ]?test|self[- ]?check|confirmed|validated|cross[- ]?checked|ensured|guaranteed)\b|[✔✅]/i;
+const BOOTSTRAP_WORD_LIMIT = 300;
+const PREFLIGHT_TOKEN_LIMIT = 3000;
+const PREFLIGHT_CALL_LIMIT = 6;
+const ALLOWED_SOURCE_PREFIXES = ['repo:', 'git:', 'state-memory:'];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,57 +52,193 @@ function gitShortHash() {
   try {
     return execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
       .toString().trim();
-  } catch {
-    return 'nogit';
-  }
+  } catch { return 'nogit'; }
 }
 
 function utcStamp() {
   return new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, 'Z');
 }
 
-function extractYamlBlock(text, marker) {
-  const re = new RegExp(`\`\`\`yaml\\s*([\\s\\S]*?${marker}[\\s\\S]*?)\`\`\``, 'i');
-  const m = text.match(re);
-  return m ? m[1].trim() : null;
-}
-
-function parseInvariants(yamlText) {
-  if (!yamlText) return null;
-  const get = (key) => {
-    const m = yamlText.match(new RegExp(`^\\s*${key}\\s*:\\s*(.+)$`, 'm'));
-    return m ? m[1].trim().replace(/^["']|["']$/g, '') : null;
-  };
-  const num = (key) => {
-    const v = get(key);
-    if (v === null) return null;
-    const n = parseInt(v, 10);
-    return Number.isFinite(n) ? n : null;
-  };
-  return {
-    bootstrap_claims: num('bootstrap_claims'),
-    evidence_rows: num('evidence_rows'),
-    unverified_rows: num('unverified_rows'),
-    quarantined: num('quarantined'),
-    preflight_tokens: num('preflight_tokens'),
-    coverage: get('coverage'),
-    trigger_match: get('trigger_match'),
-  };
-}
-
-function extractSection(text, header) {
-  const re = new RegExp(`(### ${header}[\\s\\S]*?)(?=\\n### |\\n## |$)`, 'i');
-  const m = text.match(re);
-  return m ? m[1].trim() : null;
-}
-
-function appendFileSafe(filePath, content) {
-  try { fs.appendFileSync(filePath, content); }
-  catch (e) { process.stderr.write(`[verify-evidence-log] append fail ${filePath}: ${e.message}\n`); }
+function countWords(s) {
+  return (s.match(/\S+/g) || []).length;
 }
 
 function ensureDir(dir) {
   try { fs.mkdirSync(dir, { recursive: true }); } catch {}
+}
+
+/** atomic-ish append: single writeSync < 4KB, fsync */
+function atomicAppend(filePath, line) {
+  if (!line.endsWith('\n')) line += '\n';
+  if (Buffer.byteLength(line, 'utf-8') > 4000) {
+    line = line.slice(0, 3990) + '...\n';
+  }
+  let fd;
+  try {
+    fd = fs.openSync(filePath, 'a');
+    fs.writeSync(fd, line);
+    fs.fsyncSync(fd);
+  } catch (e) {
+    process.stderr.write(`[verify-evidence-log] append fail ${filePath}: ${e.message}\n`);
+  } finally {
+    if (fd !== undefined) { try { fs.closeSync(fd); } catch {} }
+  }
+}
+
+// ── extractors ───────────────────────────────────────────────────────────────
+
+/** Require explicit sentinel `manifest=invariants-v1` after ```yaml */
+function extractManifestBlock(text) {
+  const re = /```yaml\s+manifest=invariants-v1\s*\n([\s\S]*?)\n```/;
+  const m = text.match(re);
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * Extract section by header text. Level-aware termination:
+ * h2 (`## `) section terminates at next h1/h2 (h3 subsections allowed inside);
+ * h3 (`### `) section terminates at next h1/h2/h3.
+ * Header is regex-escaped before substitution.
+ */
+function extractSection(text, header) {
+  const esc = header.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const startRe = new RegExp(`^(#{2,3})\\s+${esc}\\b`, 'mi');
+  const startMatch = text.match(startRe);
+  if (!startMatch) return null;
+  const level = startMatch[1].length; // 2 or 3
+  const startIdx = startMatch.index;
+  const boundaryRe = new RegExp(`\\n#{1,${level}}\\s`, 'g');
+  boundaryRe.lastIndex = startIdx + startMatch[0].length;
+  const b = boundaryRe.exec(text);
+  return text.slice(startIdx, b ? b.index : text.length).trim();
+}
+
+// ── manifest parser (minimal YAML subset, no deps) ───────────────────────────
+
+/**
+ * Supports flat key:value pairs (numbers, strings with quotes, inline lists).
+ * Ignores wrapper key like `invariants:` with no value.
+ */
+function parseManifest(yamlText) {
+  if (!yamlText) return null;
+  const obj = {};
+  const lines = yamlText.split(/\r?\n/);
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\s+#[^"']*$/, ''); // strip trailing comment (not inside quotes)
+    if (!line.trim() || /^\s*#/.test(line)) continue;
+    const m = line.match(/^\s*([a-z_]+)\s*:\s*(.*?)\s*$/i);
+    if (!m) continue;
+    const key = m[1];
+    const rawVal = m[2];
+    if (!rawVal) continue; // wrapper key (e.g. `invariants:` line by itself)
+    obj[key] = parseValue(rawVal);
+  }
+  return obj;
+}
+
+function parseValue(v) {
+  v = v.trim();
+  if (/^-?\d+$/.test(v)) return parseInt(v, 10);
+  if (/^\[.*\]$/.test(v)) {
+    return v.slice(1, -1).split(',')
+      .map(s => s.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(Boolean);
+  }
+  if (/^'.*'$/.test(v) || /^".*"$/.test(v)) return v.slice(1, -1);
+  return v;
+}
+
+// ── evidence parser ──────────────────────────────────────────────────────────
+
+/**
+ * Parse markdown table rows from Evidence Log section.
+ * Expects 5-column format: | # | claim | source_file | anchor | exact_substring |
+ * Tolerates extra pipes in exact_substring by merging trailing cells.
+ */
+function parseEvidenceRows(evidenceSection) {
+  const rows = [];
+  if (!evidenceSection) return rows;
+  const lines = evidenceSection.split(/\r?\n/);
+  let inBody = false;
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    if (!line.trim().startsWith('|')) {
+      if (inBody) break; // table ended
+      continue;
+    }
+    if (/^\|\s*[-:]+\s*\|/.test(line)) { inBody = true; continue; } // separator → body starts next row
+    if (!inBody && /^\|\s*#\s*\|/i.test(line)) continue; // header row, wait for separator
+    if (!inBody) continue;
+
+    // split, drop leading/trailing empty cells from `| ... |`
+    const cells = line.split('|').map(c => c.trim());
+    if (cells[0] === '') cells.shift();
+    if (cells[cells.length - 1] === '') cells.pop();
+    if (cells.length < 5) continue;
+
+    let [n, claim, source_file, anchor, ...rest] = cells;
+    const exact_substring = rest.join('|').replace(/^`|`$/g, '').trim();
+
+    rows.push({ n, claim, source_file, anchor, quote: exact_substring });
+  }
+  return rows;
+}
+
+// ── source verification ──────────────────────────────────────────────────────
+
+function verifyRowSource(row) {
+  const src = row.source_file;
+  if (!src || !ALLOWED_SOURCE_PREFIXES.some(p => src.startsWith(p))) {
+    return { ok: false, reason: 'source_prefix_invalid' };
+  }
+  if (!row.quote) return { ok: false, reason: 'quote_empty' };
+  if (row.quote.length > 80) return { ok: false, reason: `quote_too_long(${row.quote.length}B)` };
+
+  const colon = src.indexOf(':');
+  const kind = src.slice(0, colon);
+  let rest = src.slice(colon + 1);
+
+  if (kind === 'git') {
+    // git:<SHA>:<path> — verify via `git show <SHA>:<path>`
+    const m = rest.match(/^([0-9a-f]{4,40}):(.+)$/i);
+    if (!m) return { ok: false, reason: 'git_source_format' };
+    const [, sha, gitPath] = m;
+    let content;
+    try {
+      content = execSync(`git show ${sha}:${gitPath}`, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+    } catch (e) {
+      return { ok: false, reason: `git_show_fail(${sha}:${gitPath})` };
+    }
+    return content.includes(row.quote) ? { ok: true } : { ok: false, reason: 'quote_not_in_source' };
+  }
+
+  // repo: и state-memory: — оба resolve относительно ROOT
+  const abs = path.isAbsolute(rest) ? rest : path.resolve(ROOT, rest);
+  if (!fs.existsSync(abs)) return { ok: false, reason: 'source_file_missing' };
+  let content;
+  try { content = fs.readFileSync(abs, 'utf-8'); }
+  catch (e) { return { ok: false, reason: `source_read_fail(${e.code || 'unknown'})` }; }
+
+  return content.includes(row.quote)
+    ? { ok: true }
+    : { ok: false, reason: 'quote_not_in_source' };
+}
+
+// ── bootstrap firewall ───────────────────────────────────────────────────────
+
+function bootstrapFirewall(bootstrap) {
+  const v = [];
+  if (!bootstrap) {
+    v.push('FIREWALL_BOOTSTRAP_MISSING');
+    return v;
+  }
+  const lex = bootstrap.match(BANNED_LEXEMES);
+  if (lex) v.push(`FIREWALL_SELF_ATTEST: "${lex[0]}" найдена в bootstrap`);
+
+  const wc = countWords(bootstrap);
+  if (wc > BOOTSTRAP_WORD_LIMIT) v.push(`FIREWALL_WORDCOUNT: ${wc} > ${BOOTSTRAP_WORD_LIMIT}`);
+
+  return v;
 }
 
 // ── main ─────────────────────────────────────────────────────────────────────
@@ -114,10 +258,8 @@ function run(raw) {
   catch (e) { process.stderr.write(`[verify-evidence-log] malformed payload: ${e.message}\n`); return; }
 
   if (payload.tool_name !== 'Agent') return;
-
-  const subagent = payload.tool_input?.subagent_type
-    || (payload.tool_input?.description || '').match(/ccip-session-optimizer/i)?.[0];
-  if (!subagent || !/ccip-session-optimizer/i.test(subagent)) return;
+  const subagent = payload.tool_input?.subagent_type;
+  if (subagent !== 'ccip-session-optimizer') return;
 
   const text = responseText(payload.tool_response);
   if (!text || text.length < 50) {
@@ -125,29 +267,61 @@ function run(raw) {
     return;
   }
 
-  const yamlBlock = extractYamlBlock(text, 'invariants');
-  const inv = parseInvariants(yamlBlock);
-  const report = extractSection(text, 'Session Optimization Report') || extractSection(text, 'Отчёт оптимизации') || '';
-  const evidence = extractSection(text, 'Evidence Log') || extractSection(text, 'Журнал доказательств') || '';
-  const bootstrap = extractSection(text, 'Bootstrap') || '';
-
   const violations = [];
+
+  // ── L1 syntactic: manifest ─────────────────────────────────────────────────
+  const yamlBlock = extractManifestBlock(text);
+  const inv = parseManifest(yamlBlock);
   if (!inv) {
-    violations.push('MANIFEST_MISSING: блок ```yaml invariants: ... ``` не найден');
+    violations.push('L1_MANIFEST_MISSING: блок ```yaml manifest=invariants-v1 ... ``` не найден');
   } else {
-    if (inv.bootstrap_claims === null || inv.evidence_rows === null) {
-      violations.push('CARDINALITY_FIELDS_MISSING: bootstrap_claims или evidence_rows отсутствуют');
+    if (inv.bootstrap_claims == null || inv.evidence_rows == null) {
+      violations.push('L1_CARDINALITY_FIELDS_MISSING: bootstrap_claims или evidence_rows отсутствуют');
     } else if (inv.bootstrap_claims !== inv.evidence_rows) {
-      violations.push(`CARDINALITY_MISMATCH: bootstrap_claims=${inv.bootstrap_claims} != evidence_rows=${inv.evidence_rows}`);
+      violations.push(`L1_CARDINALITY_MISMATCH: bootstrap_claims=${inv.bootstrap_claims} != evidence_rows=${inv.evidence_rows}`);
     }
-    if (inv.unverified_rows !== null && inv.unverified_rows > 0) {
-      violations.push(`UNVERIFIED_PRESENT: unverified_rows=${inv.unverified_rows} (должно быть 0)`);
+    if (inv.unverified_rows != null && inv.unverified_rows > 0) {
+      violations.push(`L1_UNVERIFIED_PRESENT: ${inv.unverified_rows}`);
     }
-    if (inv.preflight_tokens !== null && inv.preflight_tokens > 3000) {
-      violations.push(`PREFLIGHT_BUDGET_EXCEEDED: ${inv.preflight_tokens} > 3000`);
+    if (inv.preflight_tokens != null && inv.preflight_tokens > PREFLIGHT_TOKEN_LIMIT && inv.coverage !== 'partial') {
+      violations.push(`L1_PREFLIGHT_BUDGET_EXCEEDED: tokens=${inv.preflight_tokens} > ${PREFLIGHT_TOKEN_LIMIT} без coverage:partial`);
+    }
+    if (inv.preflight_calls != null && inv.preflight_calls > PREFLIGHT_CALL_LIMIT && inv.coverage !== 'partial') {
+      violations.push(`L1_PREFLIGHT_CALLS_EXCEEDED: calls=${inv.preflight_calls} > ${PREFLIGHT_CALL_LIMIT} без coverage:partial`);
     }
   }
 
+  // ── extract artifacts ──────────────────────────────────────────────────────
+  const report = extractSection(text, 'Session Optimization Report') || '';
+  const evidenceSec = extractSection(text, 'Evidence Log') || '';
+  const bootstrap = extractSection(text, 'Next-Session Bootstrap')
+                 || extractSection(text, 'Bootstrap')
+                 || '';
+
+  // ── L1b firewall: bootstrap ────────────────────────────────────────────────
+  violations.push(...bootstrapFirewall(bootstrap));
+
+  // ── L2 semantic: each evidence row ─────────────────────────────────────────
+  const rows = parseEvidenceRows(evidenceSec);
+  let verifiedCount = 0;
+  for (const row of rows) {
+    const res = verifyRowSource(row);
+    if (!res.ok) {
+      violations.push(`L2_EVIDENCE_ROW_${row.n}: ${res.reason} [source=${row.source_file}]`);
+    } else {
+      verifiedCount++;
+    }
+  }
+
+  // ── L3 compositional: parsed count == declared count ──────────────────────
+  if (inv?.evidence_rows != null && rows.length !== inv.evidence_rows) {
+    violations.push(`L3_EVIDENCE_COUNT_DRIFT: declared=${inv.evidence_rows} parsed=${rows.length}`);
+  }
+  if (rows.length > 25) {
+    violations.push(`L3_EVIDENCE_OVERFLOW: ${rows.length} rows > 25 limit`);
+  }
+
+  // ── persist ────────────────────────────────────────────────────────────────
   const stamp = utcStamp();
   const sha = gitShortHash();
   const sessionFile = `${stamp}-${sha}.md`;
@@ -158,37 +332,39 @@ function run(raw) {
   const sessionBody = [
     `# Session Optimizer artifacts — ${stamp}`,
     `git: ${sha}`,
-    `verified-by: verify-evidence-log.js`,
+    `verified-by: verify-evidence-log.js (Wave 1 hardened)`,
+    `evidence_rows_verified: ${verifiedCount}/${rows.length}`,
     '',
-    violations.length ? `## VIOLATIONS\n\n${violations.map(v => `- ${v}`).join('\n')}\n` : '## VIOLATIONS\n\n_none_\n',
-    '## Invariants',
+    violations.length
+      ? `## VIOLATIONS (${violations.length})\n\n${violations.map(v => `- ${v}`).join('\n')}\n`
+      : '## VIOLATIONS\n\n_none_\n',
+    '## Manifest',
     '',
     '```yaml',
     yamlBlock || '# manifest missing',
     '```',
     '',
-    report ? report : '_Report section not found in agent output._',
+    report || '_Report section not found in agent output._',
     '',
-    evidence ? evidence : '_Evidence Log section not found in agent output._',
+    evidenceSec || '_Evidence Log section not found in agent output._',
     '',
     '## Bootstrap content hash',
     '',
-    `sha256: ${crypto.createHash('sha256').update(bootstrap, 'utf8').digest('hex')}`,
+    `sha256: ${crypto.createHash('sha256').update(bootstrap || '', 'utf8').digest('hex')}`,
+    `wordcount: ${countWords(bootstrap)}`,
     '',
   ].join('\n');
 
-  try {
-    fs.writeFileSync(sessionPath, sessionBody);
-  } catch (e) {
-    process.stderr.write(`[verify-evidence-log] write session fail: ${e.message}\n`);
-  }
+  try { fs.writeFileSync(sessionPath, sessionBody); }
+  catch (e) { process.stderr.write(`[verify-evidence-log] write session fail: ${e.message}\n`); }
 
-  const indexLine = `| ${stamp} | ${sessionFile} | ${inv?.bootstrap_claims ?? '?'} | ${inv?.evidence_rows ?? '?'} | ${inv?.coverage ?? '?'} | ${inv?.trigger_match ?? '?'} | ${violations.length || 0} |\n`;
-  appendFileSafe(INDEX_FILE, indexLine);
+  // index row (atomic-ish append)
+  const indexLine = `| ${stamp} | ${sessionFile} | ${inv?.bootstrap_claims ?? '?'} | ${inv?.evidence_rows ?? '?'} | ${verifiedCount}/${rows.length} | ${inv?.coverage ?? '?'} | ${inv?.trigger_match ?? '?'} | ${violations.length} |`;
+  atomicAppend(INDEX_FILE, indexLine);
 
   if (violations.length) {
-    const errLine = `\n### ${stamp} — VIOLATIONS detected\n\nfile: \`docs/errors/sessions/${sessionFile}\`\n\n${violations.map(v => `- ${v}`).join('\n')}\n`;
-    appendFileSafe(ERRORS_LOG, errLine);
+    const errLine = `\n### ${stamp} — VIOLATIONS detected (${violations.length})\n\nfile: \`docs/errors/sessions/${sessionFile}\`\n\n${violations.map(v => `- ${v}`).join('\n')}\n`;
+    atomicAppend(ERRORS_LOG, errLine);
     process.stderr.write(`[verify-evidence-log] ${violations.length} violation(s); see ${sessionFile}\n`);
   }
 
