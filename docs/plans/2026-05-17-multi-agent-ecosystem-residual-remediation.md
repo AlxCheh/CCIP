@@ -1,8 +1,19 @@
 # Multi-Agent Ecosystem Audit — Residual Remediation Plan
 
+> **Status:** Tier 1 — **COMPLETED 2026-05-17** (4/4 tasks, 4 commits, audit-suite 17/17 на каждом step). Tier 2 (6 sub-plans) — pending separate sessions.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Закрыть оставшиеся findings из `docs/audits/multi-agent-ecosystem-2026-05-07.md` после Zero-Drift Compliance §10 (4 inline tasks) и зафиксировать roadmap из 6 sub-планов, требующих отдельных сессий планирования.
+
+## Execution log (Tier 1)
+
+| Task | Commit | Closes | Notes |
+|---|---|---|---|
+| 1. Hook paths portable | [`7cabaec`](#) | F-002 | `.claude/settings.json` → relative `node .claude/runtime/*.js`; ALLOWLIST entry удалена |
+| 2. ccip-security §State Contract | [`443471b`](#) | F-016 (residual) | Секция была отсутствующей; добавлен канонический блок per CLAUDE.md §15 |
+| 3. ADR-015 codification | [`a80364b`](#) | F-015 / F-017 / X-8 / RT-C-004 | Phantom paths уже исправлены коммитом `859484a` ранее; ADR-015 = SoT codification. Bonus: `adr-frontmatter.schema.json` получил optional `related[]` |
+| 4. Residual spot-checks | [`1cfc5d8`](#) | F-014 / X-4 / X-7 | F-014/X-4: ccip-claude-md-auditor.md уже clean (0 matches). X-7: ADR-013 ref добавлен в `ccip-backend-core.md` |
 
 **Architecture:** Двухуровневая. **Tier 1** — 4 узких inline-таска (≤ 1 dev-day), все file-only, каждый закрывает конкретный finding или X-риск. **Tier 2** — 6 sub-plan stubs со scope/goal/findings-closed, но БЕЗ task-decomposition (требуют отдельной brainstorming + writing-plans сессии). **Tier 3** — closed/cosmetic, фиксируются справочно. Husky audit-suite (17/17) + CI (nightly-audit.yml, portable-clone.yml, weekly-orphan-scan.yml) защищают от регрессии.
 
@@ -19,7 +30,7 @@
 | ID | Описание | Статус | Доказательство |
 |---|---|---|---|
 | F-001 | security-reviewer RBAC `supervisor`/`contractor` | **CLOSED** | `grep -E "supervisor\|contractor" .claude/agents/security-reviewer.md` → 0 matches |
-| F-002 | settings.json абсолютный путь `W:/Claude/CCIP/...` | **OPEN (Tier 1, Task 1)** | `grep "W:/" .claude/settings.json` → 3 hits (PostToolUse×2, Stop×1). T-25 закрыл prevention (portable-clone CI), но canonicalization самого файла отложена |
+| F-002 | settings.json абсолютный путь `W:/Claude/CCIP/...` | **CLOSED 2026-05-17** (commit `7cabaec`) | 3 hooks переписаны на `node .claude/runtime/*.js`; ALLOWLIST entry удалена из `tools/audit/path-canonical.js` |
 | F-003 | `(§15)` cross-reference в 10 агентах при отсутствии §15 | **CLOSED** | `CLAUDE.md` содержит §15 State Contract (lifecycle, contract, sanitizeHandoff, validation) |
 | F-004 | session-state.json uninitialised | **CLOSED by design** | Red Team §6 R-001: файл исключён из flow; `post-agent-hook.js:139-142` имеет guard `if (!state.session_id) skip` |
 
@@ -41,10 +52,10 @@
 |---|---|---|---|
 | F-012 | hook parser markdown-only, ignores top-level JSON | **CLOSED by design** | Red Team §6 R-001: planner JSON output вне flow. `post-agent-hook.js:86` markdown extraction — единственный contract; `## State Update` блок обязателен per CLAUDE.md §15 |
 | F-013 | non-atomic write в `post-agent-hook.js:30` | **CLOSED** | `post-agent-hook.js:30-46`: tmp → fsync → renameSync + cleanup на failure |
-| F-014 | ccip-claude-md-auditor git paths `CCIP/...` | **needs spot-check** (likely CLOSED — see Task 4) | Auditor скрипт проходит nightly-audit.yml; но agent.md content проверить |
-| F-015 | `apps/api/src/modules/dispute-sla/` зарезервирован vs реальный `dispute/` | **OPEN (Tier 1, Task 3)** | `ls apps/api/src/modules/dispute*` → обе директории есть; `dispute/dispute.manifest.md` существует, `dispute-sla/` пустая. Memory M-05b: dispute-sla reserved для SLA worker (per Red Team C-004 resolution) — нужно обновить delivery docs |
-| F-016 | ccip-security frontmatter без `model:` и §State Contract | **PARTIAL** (Task 2) | `head -20 ccip-security.md`: `model: claude-sonnet-4-6` ✓, tools полные ✓; §State Contract секцию проверить (STATE-CONTRACT audit check проходит 17/17 → секция есть, но verify контент) |
-| F-017 | SLA-worker phantom path `apps/api/src/sla-scheduler/` | **OPEN (Tier 1, Task 3 — bundled с F-015)** | Red Team C-004 status: "open"; delivery docs ссылаются на несуществующий `sla-scheduler/` |
+| F-014 | ccip-claude-md-auditor git paths `CCIP/...` | **CLOSED 2026-05-17** (commit `1cfc5d8`, no-edit confirm) | Spot-check: 0 matches на `CCIP/` или `W:/` patterns — agent.md уже clean. CHANGELOG-only запись фиксирует verification |
+| F-015 | `apps/api/src/modules/dispute-sla/` зарезервирован vs реальный `dispute/` | **CLOSED 2026-05-17** (commits `859484a` paths + `a80364b` ADR-015) | Phantom paths были исправлены `859484a` до старта этой сессии; ADR-015 кодифицирует canonical path как SoT |
+| F-016 | ccip-security frontmatter без `model:` и §State Contract | **CLOSED 2026-05-17** (commit `443471b`) | Секция §State Contract отсутствовала (frontmatter уже OK); добавлен канонический блок per CLAUDE.md §15 |
+| F-017 | SLA-worker phantom path `apps/api/src/sla-scheduler/` | **CLOSED 2026-05-17** (commits `859484a` + `a80364b`) | bundled с F-015; см. ADR-015 |
 | F-018 | atomic write для observations в flush-state.js | **CLOSED** | `grep -E "fsync\|renameSync\|tmp" .claude/runtime/flush-state.js` → tmp + fsync + renameSync + cleanup confirmed |
 
 ### 0.4 MEDIUM / LOW status
@@ -66,11 +77,11 @@
 | X-1 | State race на параллельных Agent calls | **PARTIAL — atomic write OK, write-lock нет** (Tier 2, Sub-plan F) |
 | X-2 | Prompt injection через handoff в errors_log | **CLOSED** (PATH-CANON + sanitizeHandoff() per state-protocol.md) |
 | X-3 | Hook silent crash на non-Win | **CLOSED** (portable ROOT + portable-clone.yml CI) |
-| X-4 | Auditor git path CWD assumption | **CLOSED indirectly** (passes nightly-audit on linux-latest runner; verify в Task 4 spot-check) |
+| X-4 | Auditor git path CWD assumption | **CLOSED 2026-05-17** (commit `1cfc5d8`, spot-check confirmed 0 matches) |
 | X-5 | Auditor self-modify race | **THEORETICAL OPEN** (LLM-based guard, не machine; Tier 3 — будущая harder guard) |
 | X-6 | Cross-tenant DAG leak | **DEFERRED (Tier 2, Sub-plan E)** — зависит от RLS fuzz |
-| X-7 | ADR-013 PDF reports orphan | **OPEN (Tier 1, Task 4 — spot-check)** |
-| X-8 | dispute-sla memory drift | **OPEN (Tier 1, Task 3 — bundled с F-015)** |
+| X-7 | ADR-013 PDF reports orphan | **CLOSED 2026-05-17** (commit `1cfc5d8`) — ADR-013 reference добавлен в `ccip-backend-core.md` |
+| X-8 | dispute-sla memory drift | **CLOSED 2026-05-17** (commit `a80364b`) — ADR-015 codifies decision вне memory M-05b |
 | X-9 | Frontend dual-tree | **CLOSED** |
 | X-10 | `.agents` namespace collision | **CLOSED** |
 | X-11 | ADR-005 SLA worker config не enforced | **DEFERRED (Tier 2, Sub-plan C)** — depends on K8s scaffold |
@@ -79,11 +90,15 @@
 ### 0.6 Сводка
 
 ```
-Total findings (F + X):     39
-CLOSED via §10 / by design: 27
-OPEN — Tier 1 (this plan):   4 (F-002, F-015/017/X-8, F-016, F-014/X-4/X-7 spot-check)
-DEFERRED — Tier 2 sub-plans: 6
-Cosmetic / Tier 3:           2
+Total findings (F + X):              39
+CLOSED via §10 / by design:          27
+CLOSED — Tier 1 (this plan, 2026-05-17): 8 findings via 4 commits
+  • F-002          → 7cabaec
+  • F-016          → 443471b
+  • F-015/F-017/X-8 → a80364b (+ pre-existing 859484a)
+  • F-014/X-4/X-7  → 1cfc5d8
+DEFERRED — Tier 2 sub-plans:         6
+Cosmetic / Tier 3:                   2
 ```
 
 ---
@@ -118,7 +133,7 @@ Cosmetic / Tier 3:           2
 
 ---
 
-### Task 1: Canonicalize hook paths в `.claude/settings.json` (F-002)
+### Task 1: Canonicalize hook paths в `.claude/settings.json` (F-002) — **[CLOSED 2026-05-17 — commit `7cabaec`]**
 
 **Files:**
 - Modify: `.claude/settings.json` (lines 9, 13, 23)
@@ -128,13 +143,13 @@ Cosmetic / Tier 3:           2
 
 **Approach:** Claude Code hooks выполняются с CWD = project root (где находится `.claude/`). Заменить абсолютные пути на относительные `node .claude/runtime/<script>.js`. После замены — удалить запись `.claude/settings.json` из ALLOWLIST в `path-canonical.js` (но проверить что нет других абсолютных путей в файле).
 
-- [ ] **Step 1.1: Прочитать текущий `.claude/settings.json` и подтвердить отсутствие других абсолютных путей**
+- [x] **Step 1.1: Прочитать текущий `.claude/settings.json` и подтвердить отсутствие других абсолютных путей**
 
 Run: `node -e "const j=require('fs').readFileSync('.claude/settings.json','utf8'); console.log(j); if(/W:|C:\\\\|/home\\//.test(j.replace(/node W:\\/[^\"]+/g,''))) console.error('OTHER ABS PATHS PRESENT')"`
 
 Expected: вывод файла; никаких "OTHER ABS PATHS" warning. Если есть — escalate user (вне scope task).
 
-- [ ] **Step 1.2: Заменить 3 hook commands на относительные пути**
+- [x] **Step 1.2: Заменить 3 hook commands на относительные пути**
 
 Edit `.claude/settings.json`:
 
@@ -173,7 +188,7 @@ Edit `.claude/settings.json`:
 }
 ```
 
-- [ ] **Step 1.3: Запустить smoke-проверку — hook fires в текущей сессии**
+- [x] **Step 1.3: Запустить smoke-проверку — hook fires в текущей сессии**
 
 Это сложно проверить unit-тестом, поэтому опираемся на следующий Agent call. После commit (Step 1.6) → следующее `Agent` invocation должно обновить `.claude/runtime/session-state.json` (timestamp `started_at` или `observations` length).
 
@@ -181,7 +196,7 @@ Smoke до commit: `node .claude/runtime/post-agent-hook.js < /dev/null` → д�
 
 PowerShell вариант: `'{}' | node .claude/runtime/post-agent-hook.js` → exit code 0.
 
-- [ ] **Step 1.4: Удалить запись из ALLOWLIST в `tools/audit/path-canonical.js`**
+- [x] **Step 1.4: Удалить запись из ALLOWLIST в `tools/audit/path-canonical.js`**
 
 После замены `.claude/settings.json` больше не содержит абсолютных путей → ALLOWLIST entry устарела.
 
@@ -199,7 +214,7 @@ const ALLOWLIST = [
 ];
 ```
 
-- [ ] **Step 1.5: Прогнать audit-suite — должен пройти**
+- [x] **Step 1.5: Прогнать audit-suite — должен пройти**
 
 Run: `pnpm audit-suite`
 
@@ -207,7 +222,7 @@ Expected: `=== Summary: 17/17 passed ===`. PATH-CANON OK значит ни `.cla
 
 Если PATH-CANON FAIL — diagnose: какой файл flagged? Возможно потеряли другой entry из ALLOWLIST. Roll back step 1.4 и обсудить.
 
-- [ ] **Step 1.6: Update CHANGELOG.md**
+- [x] **Step 1.6: Update CHANGELOG.md**
 
 В `## [Unreleased]` → `### Fixed`:
 
@@ -215,7 +230,7 @@ Expected: `=== Summary: 17/17 passed ===`. PATH-CANON OK значит ни `.cla
 - `.claude/settings.json` hooks теперь используют относительные пути (`node .claude/runtime/*.js`) вместо абсолютного `W:/Claude/CCIP/...` — closes F-002. ALLOWLIST entry удалена из `tools/audit/path-canonical.js`.
 ```
 
-- [ ] **Step 1.7: Commit**
+- [x] **Step 1.7: Commit**
 
 ```bash
 git add .claude/settings.json tools/audit/path-canonical.js CHANGELOG.md
@@ -226,7 +241,7 @@ Expected: Husky audit-suite 17/17, commit succeeds.
 
 ---
 
-### Task 2: Verify §State Contract в `ccip-security.md` (F-016)
+### Task 2: Verify §State Contract в `ccip-security.md` (F-016) — **[CLOSED 2026-05-17 — commit `443471b`]**
 
 **Files:**
 - Read-only: `.claude/agents/ccip-security.md`
@@ -235,13 +250,13 @@ Expected: Husky audit-suite 17/17, commit succeeds.
 
 **Context:** F-016 указывал на отсутствие `model:` поля и `## State Contract` секции. Frontmatter уже содержит `model: claude-sonnet-4-6`. STATE-CONTRACT audit check (часть 17/17) проходит → секция должна быть. Этот task — verification + добавление если выявлено отсутствие.
 
-- [ ] **Step 2.1: Прочитать ccip-security.md полностью + проверить наличие `## State Contract`**
+- [x] **Step 2.1: Прочитать ccip-security.md полностью + проверить наличие `## State Contract`**
 
 Run: `grep -c "^## State Contract" .claude/agents/ccip-security.md`
 
 Expected: `1` (one occurrence). Если `0` — переход к Step 2.2 (добавить). Если `≥1` — переход к Step 2.4 (close task, no changes needed).
 
-- [ ] **Step 2.2 (conditional): Добавить §State Contract в конец файла**
+- [x] **Step 2.2 (conditional): Добавить §State Contract в конец файла**
 
 Если Step 2.1 вернул `0`, добавить в конец `ccip-security.md`:
 
@@ -264,19 +279,19 @@ Expected: `1` (one occurrence). Если `0` — переход к Step 2.2 (д�
 
 Note: вложенный fence escape (` ``` ` внутри ` ```` `) — обязателен per Markdown rendering.
 
-- [ ] **Step 2.3 (conditional): Verify audit-suite still passes**
+- [x] **Step 2.3 (conditional): Verify audit-suite still passes**
 
 Run: `pnpm audit-suite`
 Expected: 17/17 passed. STATE-CONTRACT и AGENT-FM specifically — OK.
 
-- [ ] **Step 2.4: Update CHANGELOG (only if Step 2.2 fired)**
+- [x] **Step 2.4: Update CHANGELOG (only if Step 2.2 fired)**
 
 В `## [Unreleased]` → `### Fixed`:
 ```markdown
 - `.claude/agents/ccip-security.md` теперь содержит §State Contract секцию per CLAUDE.md §15 — closes F-016 (residual gap не покрытый STATE-CONTRACT audit check).
 ```
 
-- [ ] **Step 2.5: Commit (only if Step 2.2 fired)**
+- [x] **Step 2.5: Commit (only if Step 2.2 fired)**
 
 ```bash
 git add .claude/agents/ccip-security.md CHANGELOG.md
@@ -287,7 +302,9 @@ git commit -m "docs(agents): ccip-security §State Contract section — closes F
 
 ---
 
-### Task 3: Canonicalize SLA worker path в delivery docs (F-015 + F-017 + X-8 + Red Team C-004)
+### Task 3: Canonicalize SLA worker path в delivery docs (F-015 + F-017 + X-8 + Red Team C-004) — **[CLOSED 2026-05-17 — commit `a80364b`]**
+
+> **Note (post-execution):** Steps 3.1–3.5 оказались NO-OP — phantom paths и `.keep` файл были исправлены коммитом `859484a` **до** старта этой сессии. Реальная работа свелась к Step 3.6 (создание ADR-015) + Steps 3.7–3.9 (audit, CHANGELOG, commit). Bonus: `docs/schemas/adr-frontmatter.schema.json` расширен optional `related[]` полем для поддержки cross-reference ADR.
 
 **Files:**
 - Modify: `docs/delivery_plan_v1_0.md` (~ line 291 GP, line 321 SLA scheduler)
@@ -303,7 +320,7 @@ git commit -m "docs(agents): ccip-security §State Contract section — closes F
 
 Red Team §6 C-004 status: "open, Owner: ccip-doc-writer (после ARCH-решения)". Memory M-05b закрепило решение: `dispute-sla/` зарезервирован. То есть ARCH-решение УЖЕ принято (через memory), осталось propagate в delivery docs.
 
-- [ ] **Step 3.1: Прочитать релевантные секции delivery docs**
+- [x] **Step 3.1: Прочитать релевантные секции delivery docs**
 
 Run:
 ```bash
@@ -312,24 +329,24 @@ grep -nE "sla-scheduler|src/gp/" docs/delivery_plan_v1_0.md docs/delivery/phase-
 
 Expected: 4 hits (per audit F-017 evidence). Зафиксировать line numbers для аккуратной правки.
 
-- [ ] **Step 3.2: Прочитать `dispute.manifest.md` чтобы понять scope existing `dispute/`**
+- [x] **Step 3.2: Прочитать `dispute.manifest.md` чтобы понять scope existing `dispute/`**
 
 Run: `cat apps/api/src/modules/dispute/dispute.manifest.md`
 
 Цель: убедиться что `dispute/` и `dispute-sla/` — different scope (НЕ duplicate). Ожидаемо: `dispute/` = dispute handler, `dispute-sla/` = SLA worker (BullMQ job для просроченных disputes). Если manifest показывает overlap — escalate (требуется реальный ARCH-decision, не просто doc fix).
 
-- [ ] **Step 3.3: Заменить phantom paths в `delivery_plan_v1_0.md`**
+- [x] **Step 3.3: Заменить phantom paths в `delivery_plan_v1_0.md`**
 
 Edit `docs/delivery_plan_v1_0.md`:
 
 - Заменить `apps/api/src/gp/gp.module.ts` → `apps/api/src/modules/period/` (с пояснением "GP submission через gpToken-ветвь openPeriod, M-05a")
 - Заменить `apps/api/src/sla-scheduler/sla-scheduler.module.ts` → `apps/api/src/modules/dispute-sla/` (с пояснением "SLA worker, M-05b; зарезервирован per memory M-05b и Red Team §6 C-004 resolution")
 
-- [ ] **Step 3.4: Заменить phantom paths в `phase-4-7-backend-modules.md`**
+- [x] **Step 3.4: Заменить phantom paths в `phase-4-7-backend-modules.md`**
 
 Edit `docs/delivery/phase-4-7-backend-modules.md` — те же замены что в Step 3.3.
 
-- [ ] **Step 3.5: Verify `dispute-sla/` directory tracked**
+- [x] **Step 3.5: Verify `dispute-sla/` directory tracked**
 
 Run: `git ls-files apps/api/src/modules/dispute-sla/ | head -1`
 
@@ -340,7 +357,7 @@ echo "# Reserved для SLA worker per memory M-05b и delivery_plan_v1_0.md M-0
 
 Если уже tracked — пропустить.
 
-- [ ] **Step 3.6 (conditional): Решить, нужен ли formal ADR-015**
+- [x] **Step 3.6 (conditional): Решить, нужен ли formal ADR-015**
 
 Decision criteria:
 - **Да, нужен ADR-015**, если: (a) memory M-05b — единственный источник решения о canonical path, (b) future onboarding должен видеть это в `docs/decisions/`, (c) есть архитектурные нюансы (BullMQ vs in-process scheduling, replicas:1 per ADR-005).
@@ -391,14 +408,14 @@ Memory M-05b (2026-05-XX) зафиксировала: `apps/api/src/modules/disp
 
 И обновить `docs/decisions/index.md`: добавить строку про ADR-015.
 
-- [ ] **Step 3.7: Verify audit-suite passes**
+- [x] **Step 3.7: Verify audit-suite passes**
 
 Run: `pnpm audit-suite`
 Expected: 17/17. DEAD-REF specifically — больше нет ссылок на phantom paths.
 
 Если ADR-015 создан: ADR-ANCHOR и ORPHAN-ADR checks должны учесть его (вероятно уже учитывают через glob `ADR-*.md`).
 
-- [ ] **Step 3.8: Update CHANGELOG**
+- [x] **Step 3.8: Update CHANGELOG**
 
 В `## [Unreleased]` → `### Changed`:
 ```markdown
@@ -407,7 +424,7 @@ Expected: 17/17. DEAD-REF specifically — больше нет ссылок на
 
 (Если ADR-015 не создавался — убрать упоминание из CHANGELOG.)
 
-- [ ] **Step 3.9: Commit**
+- [x] **Step 3.9: Commit**
 
 ```bash
 git add docs/delivery_plan_v1_0.md docs/delivery/phase-4-7-backend-modules.md CHANGELOG.md
@@ -418,7 +435,9 @@ git commit -m "fix(delivery): canonical SLA worker path — closes F-015 F-017 R
 
 ---
 
-### Task 4: Spot-checks для F-014, X-4, X-7 (auditor paths + ADR-013 orphan)
+### Task 4: Spot-checks для F-014, X-4, X-7 (auditor paths + ADR-013 orphan) — **[CLOSED 2026-05-17 — commit `1cfc5d8`]**
+
+> **Note (post-execution):** F-014/X-4 spot-check: 0 matches (auditor agent.md уже clean). X-7: ADR-013 был orphan на уровне agent routing — reference добавлен в `.claude/agents/ccip-backend-core.md` (description + ключевые ADR).
 
 **Files:**
 - Read-only: `.claude/agents/ccip-claude-md-auditor.md`, all `.claude/agents/*.md`
@@ -430,7 +449,7 @@ git commit -m "fix(delivery): canonical SLA worker path — closes F-015 F-017 R
 - **X-4**: тот же risk что F-014 — нужно подтверждение через CI (nightly-audit runs на ubuntu-latest, поэтому `CCIP/...` paths упали бы → если CI green, значит OK).
 - **X-7**: ADR-013 (PDF reports) — никто не цитирует. Нужно либо подцепить из соответствующего модуля, либо отметить Deprecated.
 
-- [ ] **Step 4.1: Проверить ccip-claude-md-auditor paths (F-014 / X-4)**
+- [x] **Step 4.1: Проверить ccip-claude-md-auditor paths (F-014 / X-4)**
 
 Run: `grep -nE "CCIP/|W:/" .claude/agents/ccip-claude-md-auditor.md`
 
@@ -440,7 +459,7 @@ Expected: 0 matches (paths должны быть относительными). 
 
 И добавить explicit guard в начале agent.md: "Все git команды выполняются от project root (где `.git/`); paths относительные".
 
-- [ ] **Step 4.2: Проверить ADR-013 orphan status (X-7)**
+- [x] **Step 4.2: Проверить ADR-013 orphan status (X-7)**
 
 Run: `grep -rE "ADR-013" .claude/agents/ docs/decisions/index.md 2>/dev/null | head -10`
 
@@ -449,7 +468,7 @@ Expected behavior:
 - Если 0 hits, но есть в `docs/decisions/index.md` — orphan **PARTIAL**, переход к Step 4.3.
 - Если 0 hits везде — критично, escalate (возможно ADR-013 надо deprecate).
 
-- [ ] **Step 4.3 (conditional): Прикрепить ADR-013 к owning agent**
+- [x] **Step 4.3 (conditional): Прикрепить ADR-013 к owning agent**
 
 ADR-013 (PDF reports) логически принадлежит ccip-backend-core (генерация) или ccip-backend-aux (delivery). Прочитать `docs/decisions/ADR-013-*.md` чтобы определить owner.
 
@@ -460,12 +479,12 @@ Add reference в frontmatter `impl_anchors:` или в body соответств
 - **PDF reports (ADR-013):** генерация PDF отчётов по периодам — endpoint `/admin/periods/:id/report.pdf`, использует Puppeteer (см. ADR-013 §Контракт).
 ```
 
-- [ ] **Step 4.4: Verify audit-suite passes**
+- [x] **Step 4.4: Verify audit-suite passes**
 
 Run: `pnpm audit-suite`
 Expected: 17/17, особенно ORPHAN-ADR check.
 
-- [ ] **Step 4.5: Update CHANGELOG (если были изменения)**
+- [x] **Step 4.5: Update CHANGELOG (если были изменения)**
 
 В `## [Unreleased]` → `### Fixed` (collapse в одну запись если несколько spot-checks fired):
 ```markdown
@@ -473,7 +492,7 @@ Expected: 17/17, особенно ORPHAN-ADR check.
 - ADR-013 (PDF reports) подключён к ccip-<agent>.md — closes X-7.
 ```
 
-- [ ] **Step 4.6: Commit (если были изменения)**
+- [x] **Step 4.6: Commit (если были изменения)**
 
 ```bash
 git add .claude/agents/ccip-claude-md-auditor.md .claude/agents/ccip-<agent>.md CHANGELOG.md
@@ -702,20 +721,16 @@ CI после push (если применимо): nightly-audit.yml + portable-c
 
 ## 8. Execution Handoff
 
-Plan complete и saved to `docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md`.
+**Tier 1** — **COMPLETED 2026-05-17** через subagent-driven execution. Финальный routing:
+- Task 1 → ccip-devops → commit `7cabaec`
+- Task 2 → ccip-security → commit `443471b`
+- Task 3 → ccip-architect (ADR-015) → commit `a80364b` (phantom paths уже закрыты `859484a`)
+- Task 4 → ccip-claude-md-auditor → commit `1cfc5d8`
 
-**Tier 1** (4 tasks) — готов к execution. Два варианта:
-
-**1. Subagent-Driven (recommended для multi-domain tasks)** — fresh ccip-* subagent per task, review между tasks, fast iteration. Routing:
-- Task 1 → ccip-devops (settings.json, ALLOWLIST)
-- Task 2 → ccip-security (own frontmatter)
-- Task 3 → ccip-doc-writer (delivery docs) + optional ccip-architect (ADR-015 decision)
-- Task 4 → ccip-claude-md-auditor (self-spot-check) или general-purpose
-
-**2. Inline Execution** — последовательно в текущей сессии через `superpowers:executing-plans`. Подходит если хочется держать context в одном месте.
+Husky audit-suite прошёл 17/17 на каждом из 4 коммитов. Регрессий нет.
 
 **Tier 2** sub-plans (A–F) — каждый требует **отдельной** brainstorming + writing-plans сессии. Рекомендуемый порядок приоритизации:
 - **Перед M-13 pilot (mandatory):** A (§11 correctness) + B (§12 ops) + C (K8s scaffold) + E (RLS fuzz)
 - **Не блокирует M-13 pilot:** D (Mobile — post-pilot per delivery plan) + F (concurrent hook lock — quality-of-life)
 
-**Which approach for Tier 1?**
+**Next action:** выбрать sub-plan для следующей сессии (brainstorming + writing-plans).
