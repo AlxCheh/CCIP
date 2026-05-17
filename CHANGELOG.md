@@ -18,6 +18,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 closes T-22
 
+### Fixed
+
+- `.claude/settings.json` hooks теперь используют относительные пути (`node .claude/runtime/*.js`) вместо абсолютного `W:/Claude/CCIP/...` — closes F-002. ALLOWLIST entry удалена из `tools/audit/path-canonical.js`.
+
 ### Fixed — Zero-Drift Compliance §10 remediation (REM-2026-05-12-A)
 
 Closes findings from `docs/audits/multi-agent-ecosystem-2026-05-07.md`:

@@ -14,9 +14,8 @@ const FORBIDDEN = [
   { pat: /\bCCIP\/(docs|apps|packages|\.claude|infra|tools)\//g, why: 'CCIP/ prefix; use relative path' },
 ];
 
-// Allowlist файлов, где упоминания W:/... легитимны (например, settings.json hooks).
+// Allowlist файлов, где упоминания W:/... легитимны (например, test fixtures или plan docs).
 const ALLOWLIST = [
-  '.claude/settings.json',     // hook commands могут быть absolute (но это §10.3 цель → пометить TODO)
   'docs/plans/2026-05-12-zero-drift-compliance-section10.md', // plan doc — contains literal examples
   'tools/audit/__fixtures__/path-bad.md',                     // test fixture — intentionally bad
   'docs/audits/multi-agent-ecosystem-2026-05-07.md',          // audit report — documents found violations

@@ -6,11 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node W:/Claude/CCIP/.claude/runtime/post-agent-hook.js"
+            "command": "node .claude/runtime/post-agent-hook.js"
           },
           {
             "type": "command",
-            "command": "node W:/Claude/CCIP/.claude/runtime/verify-evidence-log.js"
+            "command": "node .claude/runtime/verify-evidence-log.js"
           }
         ]
       }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node W:/Claude/CCIP/.claude/runtime/flush-state.js"
+            "command": "node .claude/runtime/flush-state.js"
           }
         ]
       }
