@@ -436,3 +436,10 @@ file: `docs/errors/sessions/2026-05-16T19-15-17-191Z-7f167aa.md`
 
 - FIREWALL_WORDCOUNT: 354 > 300
 - L2_EVIDENCE_ROW_5: quote_too_long(101B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
+
+### 2026-05-16T20-28-46-000Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-05-16T20-28-46-000Z-8da044c.md`
+
+- L2_EVIDENCE_ROW_1: quote_too_long(122B) [source=repo:docs/refactor/session-optimizer-skill-scope.md]
+- L2_EVIDENCE_ROW_2: source_file_missing [source=state-memory:memory/zero_drift_section10_state.md]
