@@ -22,6 +22,7 @@ const ALLOWLIST = [
   'docs/audits/multi-agent-ecosystem-2026-05-07.md',          // audit report — documents found violations
   '.claude/agents/ccip-session-optimizer.md',                 // describes bad patterns as anti-examples
   '.claude/agents/consistency-checker.md',                    // table labels, not executable paths
+  'docs/refactor/session-optimizer-skill-scope.md',          // planning doc — project-relative labels, not executable paths
 ];
 
 const args = process.argv.slice(2);
