@@ -27,6 +27,14 @@
     "superseded_by": {
       "type": "string",
       "pattern": "^ADR-\\d{3}$"
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^ADR-\\d{3}$"
+      },
+      "description": "Список связанных ADR (cross-reference, не supersedes)"
     }
   },
   "additionalProperties": false

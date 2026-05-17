@@ -26,6 +26,7 @@
 ### Infrastructure / Workers
 - [ADR-005-sla-scheduler-reliability.md](ADR-005-sla-scheduler-reliability.md) — надёжность SLA-воркера и BullMQ
 - [ADR-010-audit-log-partitioning.md](ADR-010-audit-log-partitioning.md) — партиционирование audit log
+- [ADR-015-sla-worker-canonical-path.md](ADR-015-sla-worker-canonical-path.md) — canonical path для SLA worker (M-05b)
 
 ### Data / Versioning
 - [ADR-006-boq-versioning.md](ADR-006-boq-versioning.md) — версионирование BOQ

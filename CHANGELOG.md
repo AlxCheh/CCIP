@@ -48,6 +48,10 @@ Closes findings from `docs/audits/multi-agent-ecosystem-2026-05-07.md`:
 - `pen-test-smoke.js` (T-23 §10.5); `allowlist-literal.js` (T-21 §10.5).
 - `adr-immutability.js` (T-28 §10.6); this CHANGELOG (T-29 §10.6).
 
+### Added — ADR-015 SLA worker canonical path (2026-05-17)
+
+- `docs/decisions/ADR-015-sla-worker-canonical-path.md` — кодифицирует canonical path `apps/api/src/modules/dispute-sla/` для SLA worker (M-05b); закрывает Red Team C-004 как ADR-уровень decision record (phantom paths уже исправлены коммитом 859484a).
+
 ### Fixed — Residual remediation F-016 (2026-05-17)
 
 - `.claude/agents/ccip-security.md` теперь содержит §State Contract секцию per CLAUDE.md §15 — closes F-016 (residual gap не покрытый STATE-CONTRACT audit check).
