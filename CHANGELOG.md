@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- `audit_log` partitioning через `pg_partman` v5 + `pg_cron` (ADR-010, §10.5 T-22):
+  - custom postgres image `infra/docker/postgres/Dockerfile` (postgres:16-bookworm + PGDG partman/cron + build-time version assertions)
+  - migration `0002_audit_log_partman` с pre-flight guard, monthly partitions, premake=3, daily `run_maintenance_proc`
+  - integration test `packages/database/test/audit-log-rotation.test.ts` (6 cases)
+  - CI job `db-integration` для запуска rotation regression на каждом PR
+  - `docs/governance/db-setup.md` — one-time dev re-init step
+
+### Changed
+- `infra/docker/docker-compose.yml`: postgres service использует local build вместо `postgres:16-alpine`
+
+closes T-22
+
 ### Fixed — Zero-Drift Compliance §10 remediation (REM-2026-05-12-A)
 
 Closes findings from `docs/audits/multi-agent-ecosystem-2026-05-07.md`:
