@@ -110,3 +110,55 @@ jobs:
         run: pnpm turbo test
         env:
           CI: true
+
+  db-integration:
+    name: DB integration (pg_partman rotation)
+    runs-on: ubuntu-latest
+    needs: audit
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ccip-postgres image
+        run: docker build -t ccip-postgres-test ./infra/docker/postgres
+
+      - name: Start postgres container
+        run: |
+          docker run -d --name pg \
+            -e POSTGRES_DB=ccip_test \
+            -e POSTGRES_USER=ccip_owner \
+            -e POSTGRES_PASSWORD=ccip_test_pass \
+            -p 5432:5432 \
+            --health-cmd="pg_isready -U ccip_owner -d ccip_test" \
+            --health-interval=5s --health-timeout=5s --health-retries=20 \
+            ccip-postgres-test
+
+      - name: Wait for postgres healthy
+        run: |
+          for i in $(seq 1 30); do
+            s=$(docker inspect --format='{{.State.Health.Status}}' pg)
+            [ "$s" = "healthy" ] && exit 0
+            sleep 2
+          done
+          docker logs pg
+          exit 1
+
+      - uses: pnpm/action-setup@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply Prisma migrations
+        run: pnpm --filter @ccip/database migrate:deploy
+        env:
+          DATABASE_URL: postgresql://ccip_owner:ccip_test_pass@localhost:5432/ccip_test
+
+      - name: Run @ccip/database integration tests
+        run: pnpm --filter @ccip/database test
+        env:
+          DATABASE_URL: postgresql://ccip_owner:ccip_test_pass@localhost:5432/ccip_test
+
+      - name: Postgres logs (on failure)
+        if: failure()
+        run: docker logs pg
