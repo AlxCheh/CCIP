@@ -443,3 +443,19 @@ file: `docs/errors/sessions/2026-05-16T20-28-46-000Z-8da044c.md`
 
 - L2_EVIDENCE_ROW_1: quote_too_long(122B) [source=repo:docs/refactor/session-optimizer-skill-scope.md]
 - L2_EVIDENCE_ROW_2: source_file_missing [source=state-memory:memory/zero_drift_section10_state.md]
+
+### 2026-05-17T07-32-21-925Z — VIOLATIONS detected (11)
+
+file: `docs/errors/sessions/2026-05-17T07-32-21-925Z-f2b8288.md`
+
+- FIREWALL_SELF_ATTEST: "verified" найдена в bootstrap
+- FIREWALL_WORDCOUNT: 672 > 300
+- L2_EVIDENCE_ROW_1: quote_not_in_source [source=git:f2b8288300be9a32c6c03ba95a5ed88a71cc7a43:.github/workflows/ci.yml]
+- L2_EVIDENCE_ROW_4: quote_too_long(106B) [source=repo:docs/plans/2026-05-15-auditlog-partman-implementation.md]
+- L2_EVIDENCE_ROW_5: quote_too_long(112B) [source=repo:docs/plans/2026-05-15-auditlog-partman-implementation.md]
+- L2_EVIDENCE_ROW_6: quote_too_long(88B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+- L2_EVIDENCE_ROW_8: quote_too_long(96B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+- L2_EVIDENCE_ROW_10: quote_not_in_source [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
+- L2_EVIDENCE_ROW_11: quote_too_long(132B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
+- L2_EVIDENCE_ROW_12: quote_too_long(139B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\feedback_no_prompt_markers.md]
+- L2_EVIDENCE_ROW_13: quote_too_long(193B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\audit_cross_doc_allowlist.md]
