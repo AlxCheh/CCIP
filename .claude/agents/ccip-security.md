@@ -46,3 +46,18 @@ CCIP хранит верифицированные данные о выполн�
 3. DB REVOKE — проверять через integration тест, не доверять только application-level guard.
 4. GpToken — scope должен быть минимально необходимым.
 5. Перед пилотом — обязательный security review отчёт.
+
+## State Contract
+
+В конце вывода обязательно блок (per CLAUDE.md §15):
+
+````markdown
+## State Update
+```json
+{
+  "summary": "≤ 3 предложения о сделанном — какие findings выявлены, какой severity",
+  "artifacts": ["ADR-NNN.md", "apps/api/src/path/file.ts"],
+  "handoff_notes": "Что нужно знать следующему агенту: severity:critical → BLOCK; required ACK перед merge"
+}
+```
+````
