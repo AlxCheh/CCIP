@@ -12,6 +12,7 @@ const PATH_PAT = /(?:^|[\s\(\[`>])((?:\.claude|docs|apps|packages|infra|tools)\/
 // По дизайну содержат "плохие" ссылки — не валидируем их.
 const AUDIT_DOC_ALLOWLIST = [
   'docs/audits/multi-agent-ecosystem-2026-05-07.md',
+  'docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md', // plan doc — references future files (ADR-015, sub-plan scaffolds)
 ];
 
 function stripCodeBlocks(md) {
