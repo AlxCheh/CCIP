@@ -15,6 +15,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - **DisputeSLA (модуль D):** логика расхождений, SLA-таймеры, BullMQ SLA worker (ADR-005), escalation
 - **Analytics Engine (модуль E):** getCumulativeFactsBatch < 100 ms, Materialized Views (ADR-004, ADR-011), два прогноза (линейный + взвешенный)
 - **Init A / ZeroReport B:** инициализация объекта, нулевой отчёт
+- **PDF Reports (ADR-013):** асинхронная генерация PDF-отчётов через BullMQ worker (Puppeteer + S3), интеграция с `closePeriod`
 - Transactional Outbox pattern, идемпотентность всех операций
 - BullMQ workers: обработка очередей, retry-стратегии
 
@@ -25,6 +26,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - ADR-006: BoQ versioning через effective_from / snapshot
 - ADR-007: period immutability — только INSERT в `period_work_items`, UPDATE запрещён на уровне DB REVOKE
 - ADR-011: analytics precomputation через MV
+- ADR-013: PDF reports — Puppeteer + S3 + BullMQ async generation, retry ×2 с exponential backoff
 
 ## Источники контекста
 - `docs/algorithm_v1_3.md` — алгоритм расчётов, формулы weight_coef, decay_factor

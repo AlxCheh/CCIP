@@ -55,3 +55,8 @@ Closes findings from `docs/audits/multi-agent-ecosystem-2026-05-07.md`:
 ### Fixed — Residual remediation F-016 (2026-05-17)
 
 - `.claude/agents/ccip-security.md` теперь содержит §State Contract секцию per CLAUDE.md §15 — closes F-016 (residual gap не покрытый STATE-CONTRACT audit check).
+
+### Fixed — Residual spot-checks F-014 / X-4 / X-7 (2026-05-17)
+
+- **F-014 / X-4** — `.claude/agents/ccip-claude-md-auditor.md` проверена на наличие legacy `CCIP/` или `W:/` paths в git команд; все paths уже относительные. No regression.
+- **X-7** — ADR-013 (PDF reports) был orphan на уровне agent routing. Теперь подключён к `.claude/agents/ccip-backend-core.md` (зона ответственности + ключевые ADR список). `[ORPHAN-ADR]` audit check: 17/17 passed.
