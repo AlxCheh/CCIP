@@ -1,0 +1,14 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": "\\.integration\\.spec\\.ts$",
+  "testTimeout": 30000,
+  "globalSetup": "<rootDir>/setup/global-setup.ts",
+  "globalTeardown": "<rootDir>/setup/global-teardown.ts",
+  "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+  "moduleNameMapper": {
+    "^@ccip/database(.*)$": "<rootDir>/../../../../packages/database/src$1",
+    "^@ccip/shared(.*)$": "<rootDir>/../../../../packages/shared/src$1"
+  }
+}
