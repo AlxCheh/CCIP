@@ -1,6 +1,6 @@
 ---
 adr: ADR-010
-status: Принято rev 2
+status: Принято rev 3
 impl_anchors:
   - apps/api/src/common/audit/
   - packages/database/prisma/schema.prisma
@@ -9,7 +9,7 @@ impl_anchors:
 
 # ADR-010 — Audit Log: партиционирование и append-only гарантии
 
-**Статус:** Принято rev 2
+**Статус:** Принято rev 3
 **Закрытый риск:** R-10
 
 ## Решение
