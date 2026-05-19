@@ -503,7 +503,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "W:\\Claude\\CCIP\\packages\\database\\src\\generated\\client",
+      "value": "D:\\Claude\\CCIP\\packages\\database\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -517,7 +517,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "W:\\Claude\\CCIP\\packages\\database\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\Claude\\CCIP\\packages\\database\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {

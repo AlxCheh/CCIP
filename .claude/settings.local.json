@@ -1,5 +1,4 @@
 {
-  "disabledMcpjsonServers": ["context7"],
   "permissions": {
     "allow": [
       "Bash(git status)",
@@ -41,5 +40,8 @@
       "Bash(node tools/audit/section-anchors.js --target)",
       "Bash(node tools/audit/dead-refs.js --target)"
     ]
-  }
+  },
+  "disabledMcpjsonServers": [
+    "context7"
+  ]
 }
