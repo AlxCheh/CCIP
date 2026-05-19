@@ -475,3 +475,14 @@ file: `docs/errors/sessions/2026-05-17T20-14-50-549Z-72282cc.md`
 - L2_EVIDENCE_ROW_9: git_show_fail(f0292f0e5336eb053f37258e71e729c4880029d1:.) [source=git:f0292f0e5336eb053f37258e71e729c4880029d1:.]
 - L2_EVIDENCE_ROW_10: git_show_fail(25f0e68cd497e13f2305f5c63bf454a1ed86a647:.) [source=git:25f0e68cd497e13f2305f5c63bf454a1ed86a647:.]
 - L2_EVIDENCE_ROW_13: quote_too_long(179B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+
+### 2026-05-19T18-16-58-641Z — VIOLATIONS detected (6)
+
+file: `docs/errors/sessions/2026-05-19T18-16-58-641Z-70d7b88.md`
+
+- FIREWALL_SELF_ATTEST: "verified" найдена в bootstrap
+- FIREWALL_WORDCOUNT: 437 > 300
+- L2_EVIDENCE_ROW_1: git_show_fail(70d7b88:--) [source=git:70d7b88:--]
+- L2_EVIDENCE_ROW_2: git_show_fail(abc70ac:--) [source=git:abc70ac:--]
+- L2_EVIDENCE_ROW_3: git_show_fail(ce3cef8:--) [source=git:ce3cef8:--]
+- L2_EVIDENCE_ROW_4: quote_too_long(92B) [source=repo:packages/database/prisma/migrations/20260519075741_pg_partman_audit_log/migration.sql]
