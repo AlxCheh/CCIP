@@ -459,3 +459,19 @@ file: `docs/errors/sessions/2026-05-17T07-32-21-925Z-f2b8288.md`
 - L2_EVIDENCE_ROW_11: quote_too_long(132B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
 - L2_EVIDENCE_ROW_12: quote_too_long(139B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\feedback_no_prompt_markers.md]
 - L2_EVIDENCE_ROW_13: quote_too_long(193B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\audit_cross_doc_allowlist.md]
+
+### 2026-05-17T20-14-50-549Z — VIOLATIONS detected (11)
+
+file: `docs/errors/sessions/2026-05-17T20-14-50-549Z-72282cc.md`
+
+- FIREWALL_WORDCOUNT: 579 > 300
+- L2_EVIDENCE_ROW_2: quote_too_long(119B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+- L2_EVIDENCE_ROW_3: quote_too_long(114B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+- L2_EVIDENCE_ROW_4: quote_too_long(145B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+- L2_EVIDENCE_ROW_5: quote_too_long(128B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
+- L2_EVIDENCE_ROW_6: git_show_fail(72282cc4cb1bb137f8c16a6aa4b0d75479226c39:.) [source=git:72282cc4cb1bb137f8c16a6aa4b0d75479226c39:.]
+- L2_EVIDENCE_ROW_7: git_show_fail(50c731b55e0cd74245581d513738d73ec780bad8:.) [source=git:50c731b55e0cd74245581d513738d73ec780bad8:.]
+- L2_EVIDENCE_ROW_8: git_show_fail(5f0b4c79f9ed9ab1c128f1c6917a6d264e22fee2:.) [source=git:5f0b4c79f9ed9ab1c128f1c6917a6d264e22fee2:.]
+- L2_EVIDENCE_ROW_9: git_show_fail(f0292f0e5336eb053f37258e71e729c4880029d1:.) [source=git:f0292f0e5336eb053f37258e71e729c4880029d1:.]
+- L2_EVIDENCE_ROW_10: git_show_fail(25f0e68cd497e13f2305f5c63bf454a1ed86a647:.) [source=git:25f0e68cd497e13f2305f5c63bf454a1ed86a647:.]
+- L2_EVIDENCE_ROW_13: quote_too_long(179B) [source=repo:docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md]
