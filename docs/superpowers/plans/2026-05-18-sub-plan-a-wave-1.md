@@ -233,6 +233,7 @@ export async function writeCoverageMatrix(_args: WriteCoverageMatrixArgs): Promi
 import type { PrismaClient } from '@ccip/database';
 
 // FK-aware order: leaves first, roots last. Preserve config/migrations/partman tables.
+// Physical names match Prisma @@map directives (NOT model PascalCase).
 const TENANT_TABLES = [
   'audit_log',
   'period_facts',
@@ -240,8 +241,8 @@ const TENANT_TABLES = [
   'boq_items',
   'boq_versions',
   'zero_reports',
-  'documents',
-  'construction_objects',
+  'l2_documents',       // model L2Document — Prisma accessor: prisma.l2Document
+  'objects',            // model ConstructionObject — Prisma accessor: prisma.constructionObject
   'refresh_tokens',
   'users',
   'organizations',
@@ -260,9 +261,14 @@ export async function truncateAll(prisma: PrismaClient): Promise<void> {
 Run:
 ```
 grep -h '^model ' packages/database/prisma/schema.prisma | awk '{print $2}'
+grep -nE "@@map" packages/database/prisma/schema.prisma
 ```
 
-Cross-reference: каждое имя должно совпадать с DB table name (Prisma `@@map` или snake_case default). Если различия — добавить корректное physical name в массив.
+Cross-reference: каждое имя должно совпадать с **physical** DB table name (через `@@map` или snake_case default). **Известные расхождения** (зафиксированы в plan):
+- `ConstructionObject` → table `objects` (НЕ `construction_objects`)
+- `L2Document` → table `l2_documents` (НЕ `documents`); Prisma accessor: `prisma.l2Document`
+
+Если найдены **новые** расхождения — обновить массив и зафиксировать в commit message.
 
 ---
 
