@@ -18,8 +18,13 @@ volumes:
 services:
 
   # ── PostgreSQL 16 ────────────────────────────────────────────────────────────
+  # Image built from infra/docker/postgres/Dockerfile — postgres:16-bookworm
+  # + pg_partman 5.x + pg_cron 1.4+ (required by T-22 audit_log partitioning
+  # and Sub-plan A integration suite).
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: ./postgres
+    image: ccip-postgres:local
     container_name: ccip_postgres
     restart: unless-stopped
     environment:
@@ -41,7 +46,7 @@ services:
 
   # ── PgBouncer (ADR-001: pool_mode=session) ────────────────────────────────────
   pgbouncer:
-    image: edoburu/pgbouncer:1.23.1
+    image: edoburu/pgbouncer:v1.23.1-p3
     container_name: ccip_pgbouncer
     restart: unless-stopped
     environment:
