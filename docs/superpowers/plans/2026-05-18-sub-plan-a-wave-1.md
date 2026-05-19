@@ -389,14 +389,14 @@ export async function makeOrg(
 export interface UserFixture {
   id: number;
   email: string;
-  role: 'director' | 'sc' | 'admin' | 'gp';
+  role: 'director' | 'stroycontrol' | 'admin' | 'engineer';
   organizationId: string;
 }
 
 export async function makeUser(
   prisma: PrismaClient,
   org: OrgFixture,
-  role: UserFixture['role'] = 'sc',
+  role: UserFixture['role'] = 'stroycontrol',
   overrides: Partial<{ email: string; password: string }> = {},
 ): Promise<UserFixture> {
   const email = overrides.email ?? `${role}-${randomUUID().slice(0, 6)}@test.local`;
@@ -477,7 +477,8 @@ export async function makeBoQ(
     const item = await prisma.boqItem.create({
       data: {
         boqVersionId: version.id,
-        workName: `Work ${i + 1}`,
+        name: `Work ${i + 1}`,
+        workCode: `WC-${version.id}-${i + 1}`,    // required, unique per boqVersion
         unit: 'm3',
         contractValue: new Prisma.Decimal(values[i].toFixed(2)),
         planVolume: new Prisma.Decimal('100.00'),
@@ -805,7 +806,7 @@ describe('ADR-002 — period concurrency (advisory lock)', () => {
         await truncateAll(prisma);
         const org = await makeOrg(prisma);
         const director = await makeUser(prisma, org, 'director');
-        const sc = await makeUser(prisma, org, 'sc');
+        const sc = await makeUser(prisma, org, 'stroycontrol');
         const obj = await makeObject(prisma, org);
         await makeBoQ(prisma, obj, { count: 3 });
         await makeApprovedZeroReport(prisma, obj, director);
@@ -829,7 +830,7 @@ describe('ADR-002 — period concurrency (advisory lock)', () => {
   it('OpenPeriod blocked when ZeroReport not approved → ZERO_REPORT_NOT_APPROVED', async () => {
     await truncateAll(prisma);
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const obj = await makeObject(prisma, org);
     await makeBoQ(prisma, obj, { count: 3 });
     // no zero report
@@ -896,7 +897,7 @@ describe('ADR-007 — period immutability after close', () => {
 
   it('Closed period rejects upsertPeriodFact', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const dir = await makeUser(prisma, org, 'director');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
@@ -910,7 +911,7 @@ describe('ADR-007 — period immutability after close', () => {
 
   it('Re-closing already-closed period is rejected', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const dir = await makeUser(prisma, org, 'director');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
@@ -1013,13 +1014,13 @@ describe('A-block — weight_coef trigger correctness', () => {
     // Service-level check — TODO: invoke BoqService.createVersion с массивом из 2 одинаковых имён.
     const version = await prisma.boqVersion.create({ data: { objectId: obj.id, versionNumber: 1, isActive: true } });
     await prisma.boqItem.create({
-      data: { boqVersionId: version.id, workName: 'Concrete', unit: 'm3', contractValue: new Prisma.Decimal('100'), planVolume: new Prisma.Decimal('10'), workLineageId: '00000000-0000-0000-0000-000000000001' },
+      data: { boqVersionId: version.id, name: 'Concrete', workCode: `WC-${version.id}-1`, unit: 'm3', contractValue: new Prisma.Decimal('100'), planVolume: new Prisma.Decimal('10'), workLineageId: '00000000-0000-0000-0000-000000000001' },
     });
     await expect(
       prisma.boqItem.create({
-        data: { boqVersionId: version.id, workName: 'Concrete', unit: 'm3', contractValue: new Prisma.Decimal('200'), planVolume: new Prisma.Decimal('20'), workLineageId: '00000000-0000-0000-0000-000000000002' },
+        data: { boqVersionId: version.id, name: 'Concrete', workCode: `WC-${version.id}-2`, unit: 'm3', contractValue: new Prisma.Decimal('200'), planVolume: new Prisma.Decimal('20'), workLineageId: '00000000-0000-0000-0000-000000000002' },
       }),
-    ).rejects.toThrow();  // expects UNIQUE constraint on (boq_version_id, work_name) если есть
+    ).rejects.toThrow();  // expects UNIQUE constraint on (boq_version_id, name) if present; or accepts duplicates (then test asserts BoqService.validateNoDuplicates)
     // Если constraint отсутствует — переписать на BoqService.validateNoDuplicates() ассерт.
   });
 
@@ -1102,7 +1103,7 @@ describe('B-block — ZeroReport correctness', () => {
   // @algorithm: B-01
   it('B-01: source hierarchy — execution-doc accepted if field-measure impossible', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
     const zr = await svc.create(obj.id, sc.id);
@@ -1115,7 +1116,7 @@ describe('B-block — ZeroReport correctness', () => {
   // @algorithm: B-02
   it('B-02: tolerance exceeded → flag "requires verification", note required, zero-report not blocked', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
     const zr = await svc.create(obj.id, sc.id);
@@ -1129,7 +1130,7 @@ describe('B-block — ZeroReport correctness', () => {
   // @algorithm: B-03
   it('B-03: cross-verification — director approval blocked if one of 3 docs missing for high-weight item', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const dir = await makeUser(prisma, org, 'director');
     const obj = await makeObject(prisma, org);
     // High weight item (15%): contractValues такие что один итем имеет weight ~0.15
@@ -1144,7 +1145,7 @@ describe('B-block — ZeroReport correctness', () => {
   // @algorithm: B-05
   it('B-05: first period creation blocked if zero-report not approved', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const obj = await makeObject(prisma, org);
     await makeBoQ(prisma, obj, { count: 3 });
     const zr = await svc.create(obj.id, sc.id);
@@ -1162,7 +1163,7 @@ describe('B-block — ZeroReport correctness', () => {
   it('B-06: correction case A (delta < 10%) — admin edits, downstream periods recalc, audit log entry', async () => {
     // M-04 не implement correction flow; verify schema поддерживает: zero_report_items.actualVolume editable by admin
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const admin = await makeUser(prisma, org, 'admin');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
@@ -1179,7 +1180,7 @@ describe('B-block — ZeroReport correctness', () => {
   // @algorithm: B-07
   it('B-07: correction case B (delta > 10%) — blocks until director decision', async () => {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const admin = await makeUser(prisma, org, 'admin');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
@@ -1242,7 +1243,7 @@ describe('C-block — PeriodEngine correctness (subset; C-05/06/08 → W2)', () 
 
   async function bootstrap() {
     const org = await makeOrg(prisma);
-    const sc = await makeUser(prisma, org, 'sc');
+    const sc = await makeUser(prisma, org, 'stroycontrol');
     const dir = await makeUser(prisma, org, 'director');
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
@@ -1765,7 +1766,7 @@ Gaps: none.
 
 ### 3. Type consistency
 
-- `UserFixture.role`: `'director' | 'sc' | 'admin' | 'gp'` — consistent across factories.ts и login-as.ts.
+- `UserFixture.role`: `'director' | 'stroycontrol' | 'admin' | 'engineer'` — matches actual `UserRole` enum (corrected during Phase 2 execution; plan originally said `sc`/`gp`).
 - `ObjectFixture.id`: `number` — consistent.
 - `BoqFixture.items[].weightCoef`: `Prisma.Decimal` — consistent.
 - `PeriodService` methods used: `openPeriod`, `submitGp`, `upsertPeriodFact`, `closePeriod`. Matches actual signatures из `apps/api/src/modules/period/period.service.ts`.
