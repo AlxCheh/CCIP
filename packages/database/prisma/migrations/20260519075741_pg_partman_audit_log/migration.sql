@@ -4,7 +4,7 @@
 --
 -- ROLLBACK PLAN:
 --   SELECT cron.unschedule('partman-maint');
---   SELECT partman.undo_partition(p_parent_table := 'public.audit_log', p_keep_table := true, p_interval := 'monthly');
+--   SELECT partman.undo_partition(p_parent_table := 'public.audit_log', p_keep_table := true);
 --   DROP EXTENSION IF EXISTS pg_partman CASCADE;
 --   DROP EXTENSION IF EXISTS pg_cron CASCADE;
 --   -- WARNING: undo_partition moves rows back to parent; verify audit_log_default before drop.
@@ -38,7 +38,7 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT partman.create_parent(
     p_parent_table  := 'public.audit_log',
     p_control       := 'performed_at',
-    p_interval      := '1 month',   -- pg_partman 5.x: 'monthly' removed; use PG interval syntax
+    p_interval      := '1 month',   -- pg_partman 5.x: requires standard PG interval literal (short aliases removed)
     p_type          := 'range',
     p_premake       := 3,
     p_default_table := false

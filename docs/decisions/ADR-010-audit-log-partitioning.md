@@ -37,7 +37,7 @@ CREATE INDEX idx_audit_log_record ON audit_log (table_name, record_id);
 CREATE TABLE audit_log_default PARTITION OF audit_log DEFAULT;
 ```
 
-**pg_partman:** `create_parent(p_parent_table='public.audit_log', p_control='performed_at', p_type='range', p_interval='monthly', p_premake=3)`. Maintenance: `CALL partman.run_maintenance_proc()` по расписанию (pg_cron).
+**pg_partman:** `create_parent(p_parent_table='public.audit_log', p_control='performed_at', p_type='range', p_interval='1 month', p_premake=3)`. Maintenance: `CALL partman.run_maintenance_proc()` по расписанию (pg_cron).
 
 **Health check `GET /admin/health/audit-log`:** проверяет `COUNT(*) FROM audit_log_default` (должно быть 0), `partman.part_config.last_run`, партиции на следующие 3 месяца. `isHealthy = defaultRowCount==0 AND upcomingPartitions.length>=2`.
 
