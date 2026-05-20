@@ -89,18 +89,24 @@ export class PeriodService {
         });
 
         return period;
-      });
+      }, { timeout: 10_000 });
     } catch (e: unknown) {
-      // PostgreSQL lock timeout error code: 55P03
-      if (
-        e instanceof Error &&
-        'code' in e &&
-        (e as { code: string }).code === '55P03'
-      ) {
+      // PostgreSQL lock_timeout error code: 55P03. Prisma 5 may surface it as:
+      //   (a) PG driver error with top-level `code: '55P03'`
+      //   (b) PrismaClientKnownRequestError P2010 with `meta.code: '55P03'`
+      //   (c) wrapped error whose message contains "55P03"
+      if (e instanceof Error && this.isLockTimeoutError(e)) {
         throw new ConflictException('PERIOD_LOCK_TIMEOUT');
       }
       throw e;
     }
+  }
+
+  private isLockTimeoutError(e: Error): boolean {
+    const anyErr = e as { code?: unknown; meta?: { code?: unknown } };
+    if (anyErr.code === '55P03') return true;
+    if (anyErr.meta && anyErr.meta.code === '55P03') return true;
+    return e.message.includes('55P03');
   }
 
   // ─── findById ────────────────────────────────────────────────────────────────
