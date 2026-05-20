@@ -8,6 +8,7 @@ networks:
 
 volumes:
   postgres_data:
+  postgres_test_data:
   redis_data:
   minio_data:
 
@@ -38,6 +39,34 @@ services:
       - ccip
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ccip_owner} -d ${POSTGRES_DB:-ccip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── PostgreSQL 16 (integration test target) ─────────────────────────────────
+  # Same image as `postgres`, but POSTGRES_DB=ccip_test so 00-cron-database.sh
+  # binds cron.database_name='ccip_test' → migration 0002_audit_log_partman can
+  # CREATE EXTENSION pg_cron inside ccip_test (pg_cron is per-database singleton).
+  # Activated only with `--profile test`; idle by default.
+  postgres_test:
+    profiles: ["test"]
+    build:
+      context: ./postgres
+    image: ccip-postgres:local
+    container_name: ccip_postgres_test
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ccip_test
+      POSTGRES_USER: ${POSTGRES_USER:-ccip_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ccip_dev_pass}
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_TEST_PORT:-5434}:5432"
+    networks:
+      - ccip
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ccip_owner} -d ccip_test"]
       interval: 5s
       timeout: 5s
       retries: 10

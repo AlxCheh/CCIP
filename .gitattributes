@@ -1,0 +1,7 @@
+# Force LF for shell scripts — they execute inside Linux containers and
+# break on shebang parsing if checked out with CRLF on Windows.
+*.sh text eol=lf
+Dockerfile text eol=lf
+
+# Other text files: use platform-native line endings (auto).
+* text=auto
