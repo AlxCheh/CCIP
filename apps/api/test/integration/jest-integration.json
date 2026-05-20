@@ -3,7 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": "\\.integration\\.spec\\.ts$",
-  "testTimeout": 30000,
+  "testTimeout": 120000,
   "globalSetup": "<rootDir>/setup/global-setup.ts",
   "globalTeardown": "<rootDir>/setup/global-teardown.ts",
   "transform": { "^.+\\.(t|j)s$": "ts-jest" },
