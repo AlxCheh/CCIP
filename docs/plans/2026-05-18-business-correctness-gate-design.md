@@ -302,7 +302,7 @@ W1+W2+W3 закрыты (W4 = post-pilot acceptable если зафиксиро�
 ## 12. Document outputs
 
 После W1..W4:
-- `docs/superpowers/specs/2026-05-18-business-correctness-gate-design.md` — этот файл.
+- `docs/plans/2026-05-18-business-correctness-gate-design.md` — этот файл.
 - `docs/plans/2026-05-XX-sub-plan-a-wave-1.md` — writing-plans output для W1 (next session).
 - `docs/plans/2026-05-XX-sub-plan-a-wave-2.md` — W2 (после M-05b).
 - `docs/plans/2026-05-XX-sub-plan-a-wave-3.md` — W3 (после M-05c).
