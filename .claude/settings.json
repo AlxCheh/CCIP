@@ -26,6 +26,48 @@
       }
     ]
   },
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(git diff)",
+      "Bash(git diff --cached)",
+      "Bash(git log)",
+      "Bash(git show)",
+      "Bash(git add tools/audit)",
+      "Bash(git add docs)",
+      "Bash(git add .claude)",
+      "Bash(git add packages)",
+      "Bash(git add apps)",
+      "Bash(git add CLAUDE.md)",
+      "Bash(git add CHANGELOG.md)",
+      "Bash(git add package.json)",
+      "Bash(git add pnpm-lock.yaml)",
+      "Bash(git commit -m)",
+      "Bash(pnpm audit-suite)",
+      "Bash(pnpm test:audit)",
+      "Bash(node --test tools/audit/__tests__)",
+      "Bash(node tools/audit/audit-suite.js)",
+      "Bash(node tools/audit/path-canonical.js)",
+      "Bash(node tools/audit/section-anchors.js)",
+      "Bash(node tools/audit/dead-refs.js)",
+      "Bash(node tools/audit/agent-name-presence.js)",
+      "Bash(node tools/audit/state-contract-section.js)",
+      "Bash(node tools/audit/agent-frontmatter.js)",
+      "Bash(node tools/audit/session-state.js)",
+      "Bash(node tools/audit/adr-anchors.js)",
+      "Bash(node tools/audit/rbac-vs-schema.js)",
+      "Bash(node tools/audit/orphan-adrs.js)",
+      "Bash(node tools/audit/orphan-dirs.js)",
+      "Bash(node tools/audit/delivery-paths.js)",
+      "Bash(node tools/audit/memory-fs-sync.js)",
+      "Bash(node tools/audit/allowlist-literal.js)",
+      "Bash(node tools/audit/pen-test-smoke.js)",
+      "Bash(node tools/audit/adr-immutability.js)",
+      "Bash(node tools/audit/changelog-presence.js)",
+      "Bash(node tools/audit/section-anchors.js --target)",
+      "Bash(node tools/audit/dead-refs.js --target)"
+    ]
+  },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   }

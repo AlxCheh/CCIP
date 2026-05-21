@@ -1,0 +1,13 @@
+{
+  "_comment_1": "Шаблон для .claude/settings.local.json (gitignored). Скопируйте в .claude/settings.local.json и подгоните под себя.",
+  "_comment_2": "Использование: cp docs/onboarding/settings.local.template.json .claude/settings.local.json — затем удалите все _comment_* и _doc_* ключи перед запуском Claude Code (они валидны как additional properties, но засоряют конфиг).",
+  "_comment_3": "Файл .claude/settings.local.json находится в .gitignore — не коммитится, личный для каждого разработчика.",
+
+  "_doc_enabledPlugins": "Personal-override для плагинов: true = брать skills из marketplace; false = считать что у вас локальная копия в ~/.claude/skills/ (см. docs/onboarding/skills-local-copy.md если такой документ существует).",
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+
+  "_doc_disabledMcpjsonServers": "Список MCP-серверов из .mcp.json, которые лично вам не нужны. Например, context7 — внешний docs-провайдер; если его не использовать — добавьте сюда.",
+  "disabledMcpjsonServers": []
+}

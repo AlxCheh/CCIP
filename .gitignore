@@ -43,3 +43,6 @@ infra/docker/data/
 # Session optimizer runtime artifacts (PostToolUse hook output, regenerated per session)
 docs/errors/sessions/
 .claude/runtime/optimizer.lock
+
+# Personal Claude Code overrides (template: docs/onboarding/settings.local.template.json)
+.claude/settings.local.json
