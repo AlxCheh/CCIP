@@ -52,8 +52,8 @@ DEFAULT → direct agent of primary intent
 | security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
-| ccip-claude-md-auditor      | расписание (см. settings.json)         |
-| ccip-navigator-optimizer    | изменения CLAUDE.md §3–§6 или index.md  |
+| ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
+| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md §3–§6 или docs/tasks/index.md |
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
 | consistency-checker         | по запросу при cross-doc анализе       |
 | general-purpose             | fallback при DEGRADED specialist       |
