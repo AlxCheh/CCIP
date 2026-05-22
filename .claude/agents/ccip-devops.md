@@ -2,6 +2,7 @@
 name: ccip-devops
 description: "DevOps / SRE Engineer для CCIP. Использовать для: Docker Compose, Kubernetes манифестов, CI/CD pipelines, конфигурации SLA Worker (replicas:1, Recreate), Redis с AOF, PgBouncer session mode, observability (Prometheus/Grafana/OpenTelemetry), бэкапов, runbooks, алертов."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Docker/K8s/CI-CD/observability. Body: критичные конфиги (SLA worker replicas:1 Recreate, PgBouncer session) + ADR-001/005."
 model: claude-sonnet-4-6
 ---
 

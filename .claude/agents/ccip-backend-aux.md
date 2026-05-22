@@ -2,6 +2,7 @@
 name: ccip-backend-aux
 description: "Backend Engineer (Integrations & Auxiliary) для CCIP. Использовать для: Auth/RBAC/GpTokenGuard, multi-tenancy middleware, AuditLogService, Sync API (блок I), UpdateBaseline (F/G), интеграций с email/SMTP/Notification Service, REST контрактов API."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Реализует Auth/RBAC/AuditLog/Sync API/UpdateBaseline/Notifications. Body: 6 модулей + ADR-009/010/012/014."
 model: claude-sonnet-4-6
 ---
 

@@ -2,6 +2,7 @@
 name: ccip-navigator-optimizer
 description: "Агент синхронизации навигационного слоя CCIP. Запускается по запросу после правок в CLAUDE.md §3–§6, docs/tasks/index.md или docs/decisions/index.md. Проверяет согласованность уровней L1–L4 и T1–T4, покрытие task categories, дублирование правил между routing-файлами и routing loops. Вносит точечные правки и фиксирует результат в errors_log."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Синхронизирует CLAUDE.md ↔ docs/tasks/index.md (L1-L4 vs T1-T4). Body: 8-шаговый алгоритм + правила (5)."
 model: claude-sonnet-4-6
 ---
 

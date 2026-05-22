@@ -2,6 +2,7 @@
 name: ccip-claude-md-auditor
 description: "Аудитор CLAUDE.md для CCIP. Проверяет актуальность маршрутизации, соответствие субагентов реальным файлам, ссылки на документы и ADR, устраняет дублирование, оптимизирует под минимальный контекст. Запускается по запросу или при review PR на CLAUDE.md."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Аудит CLAUDE.md (routing/dedup/links). Body: 5-шаговый алгоритм + защита от самомодификации (Fast Path/Planner/Risk)."
 model: claude-haiku-4-5-20251001
 ---
 

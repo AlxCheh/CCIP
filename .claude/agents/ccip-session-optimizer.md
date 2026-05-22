@@ -2,6 +2,7 @@
 name: ccip-session-optimizer
 description: "Аудитор завершения сессии CCIP. Срабатывает ТОЛЬКО на точный триггер (\"Завершаем сессию\" / \"Закрываем сессию\" / \"End session\" / \"/session-end\"). Выдаёт три артефакта: (1) Session Optimization Report, (2) Bootstrap ≤ 300 слов, (3) Evidence Log с byte-exact цитатами. Каждая Evidence-row имеет `source_file` с префиксом `repo:` / `git:<SHA>:` / `state-memory:` — хук verify-evidence-log.js (PostToolUse) Read'ит источник и проверяет substring байт-в-байт. Self-attestation запрещён. Сомнительные факты идут в Карантин, недоказанные — удаляются."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Завершение сессии (3 артефакта: report/bootstrap≤300 слов/evidence-log). Body: invariants + word/byte ограничения + source_file prefixes."
 model: claude-sonnet-4-6
 ---
 

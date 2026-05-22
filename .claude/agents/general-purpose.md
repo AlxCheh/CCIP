@@ -2,6 +2,7 @@
 name: general-purpose
 description: "Универсальный агент для задач, выходящих за рамки специализации: генерация больших документов (> 150 строк), задачи с 4+ intents без явного лид-домена, исследовательские задачи с неясными требованиями, замена DEGRADED/SUSPENDED специалиста. Не использовать когда доступен подходящий CCIP-специалист."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Catch-all fallback (>150 lines docs, 4+ intents без лида, DEGRADED/SUSPENDED замена). Body: указания по делегированию."
 model: claude-sonnet-4-6
 ---
 

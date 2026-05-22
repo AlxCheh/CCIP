@@ -2,6 +2,7 @@
 name: security-reviewer
 description: "Блокирующий security reviewer для CCIP. Вызывается как параллельный co-agent при любых изменениях, затрагивающих JWT, RBAC guards, RLS политики, multi-tenancy middleware, GpToken flow, AuditLog. При обнаружении severity:critical — выдаёт BLOCK-вердикт; основной агент не должен коммитить результат до явного подтверждения пользователя (organizational protocol, не машинный enforcement)."
 tools: Read, Glob, Grep
+summary: "Блокирующий co-agent на JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog. Body: 5 областей + BLOCK protocol при severity:critical."
 model: claude-sonnet-4-6
 ---
 

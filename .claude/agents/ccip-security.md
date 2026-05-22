@@ -2,6 +2,7 @@
 name: ccip-security
 description: "Security Engineer для CCIP. Использовать для: аудита RBAC и multi-tenancy (ADR-012), security review Auth/AuditLog/Sync модулей, проверки immutability на уровне БД, управления секретами, анализа угроз, OWASP-проверок, подготовки к pen-test перед пилотом."
 tools: Read, Write, Edit, Glob, Grep, Bash
+summary: "Аудит RBAC/multi-tenancy (ADR-009/012)/auth/AuditLog/Sync. Body: 5 областей + pre-pilot pen-test."
 model: claude-sonnet-4-6
 ---
 
