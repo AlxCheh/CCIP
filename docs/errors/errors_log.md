@@ -459,3 +459,7 @@ file: `docs/errors/sessions/2026-05-17T07-32-21-925Z-f2b8288.md`
 - L2_EVIDENCE_ROW_11: quote_too_long(132B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\zero_drift_section10_state.md]
 - L2_EVIDENCE_ROW_12: quote_too_long(139B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\feedback_no_prompt_markers.md]
 - L2_EVIDENCE_ROW_13: quote_too_long(193B) [source=state-memory:C:\Users\user\.claude\projects\W--Claude-CCIP\memory\audit_cross_doc_allowlist.md]
+
+### REMEDIATION-2026-05-20-F001 — adr-loading-guide.md phantom catalog
+
+File `docs/decisions/adr-loading-guide.md` rewritten — 22 phantom ADR slugs removed (e.g. ADR-010-jwt-access-refresh, ADR-020-period-lifecycle, ADR-040-snapshot-consistency). Now references only real ADR-001..ADR-015. Audit guard: `tools/audit/adr-mention-existence.js` + `__tests__/adr-mention-existence.test.js`.
