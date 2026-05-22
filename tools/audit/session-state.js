@@ -10,8 +10,12 @@ const { fail, ok } = require('./_lib/report');
 const root = gitRoot();
 const schema = JSON.parse(fs.readFileSync(
   path.join(root, 'docs/schemas/session-state.schema.json'), 'utf-8'));
+const intentsSchema = JSON.parse(fs.readFileSync(
+  path.join(root, 'docs/schemas/intents.json'), 'utf-8'));
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 addFormats(ajv);
+// Register intents.json under its $id AND under the relative path used by $ref.
+ajv.addSchema(intentsSchema, 'intents.json');
 const validate = ajv.compile(schema);
 
 const stateFile = path.join(root, '.claude/runtime/session-state.json');

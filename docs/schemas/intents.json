@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/intents.json",
+  "title": "CCIP Intent Vocabulary",
+  "description": "Single source of truth for intent labels used in routing. См. CLAUDE.md Intent → Agent table.",
+  "type": "string",
+  "enum": [
+    "ARCH",
+    "SCHEMA",
+    "BACKEND",
+    "AUX",
+    "FRONTEND",
+    "DEVOPS",
+    "QA",
+    "MOBILE",
+    "SECURITY",
+    "DOC"
+  ]
+}

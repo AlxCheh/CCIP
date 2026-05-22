@@ -7,7 +7,7 @@
   "properties": {
     "session_id":   { "type": "string" },
     "task":         { "type": "string" },
-    "intents":      { "type": "array", "items": { "type": "string" } },
+    "intents":      { "type": "array", "items": { "$ref": "intents.json" } },
     "risk":         { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
     "confidence":   { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
     "routing":      { "type": "string", "enum": ["direct", "planner", "multi-agent"] },

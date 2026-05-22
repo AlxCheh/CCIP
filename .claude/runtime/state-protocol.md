@@ -31,7 +31,7 @@ Session Start
 |---|---|---|
 | `session_id` | string | `YYYY-MM-DD-HHMM` |
 | `task` | string | Краткое описание задачи (1-2 предложения) |
-| `intents` | string[] | Из Intent → Agent table CLAUDE.md: ARCH, SCHEMA, BACKEND_CORE, ... |
+| `intents` | string[] | Из Intent → Agent table CLAUDE.md: ARCH, SCHEMA, BACKEND, AUX, FRONTEND, DEVOPS, QA, MOBILE, SECURITY, DOC; канонический enum — `docs/schemas/intents.json` |
 | `risk` | string | `LOW` \| `MEDIUM` \| `HIGH` (см. Risk Rules CLAUDE.md) |
 | `confidence` | string | `HIGH` \| `MEDIUM` \| `LOW` (см. Fast Path / Planner CLAUDE.md) |
 | `routing` | string | `direct` \| `planner` \| `multi-agent` |

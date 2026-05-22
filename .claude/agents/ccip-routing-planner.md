@@ -45,7 +45,7 @@ IF intents >= 3 OR risk == HIGH → planner
 {
   "task": "<краткое описание задачи>",
   "complexity": "moderate | complex",
-  "intents": ["ARCH", "BACKEND_CORE", "SCHEMA"],
+  "intents": ["ARCH", "BACKEND", "SCHEMA"],
   "confidence": "LOW",
   "steps": [
     {
