@@ -25,15 +25,33 @@ function run() {
   const sessionId = state.session_id || 'unknown';
   const task = state.task || '';
 
-  // Validate that each observation was written by an agent actually in the DAG.
+  // Validate observation.agent against (1) DAG agents if DAG non-empty (warn-only — co-agents
+  // like security-reviewer legitimately write outside DAG); (2) real .claude/agents/<name>.md
+  // files always (hard-skip — phantom agents must never appear in feedback-loop).
   const dagAgents = new Set((state.dag || []).map(s => s.agent));
+  let realAgents = new Set();
+  try {
+    realAgents = new Set(
+      fs.readdirSync(path.join(ROOT, '.claude/agents'))
+        .filter(f => f.endsWith('.md'))
+        .map(f => f.replace(/\.md$/, ''))
+    );
+  } catch {}
+
   const lines = observations.map(obs => {
-    if (dagAgents.size > 0 && obs.agent && !dagAgents.has(obs.agent)) {
-      process.stderr.write(`[flush-state] ⚠ observation from unknown agent "${obs.agent}" — skipped\n`);
+    if (!obs.agent) {
+      process.stderr.write('[flush-state] ⚠ observation without agent — skipped\n');
       return null;
     }
+    if (realAgents.size > 0 && !realAgents.has(obs.agent)) {
+      process.stderr.write(`[flush-state] ✗ phantom agent "${obs.agent}" — skipped (not in .claude/agents/)\n`);
+      return null;
+    }
+    if (dagAgents.size > 0 && !dagAgents.has(obs.agent)) {
+      process.stderr.write(`[flush-state] ⚠ observation from non-DAG agent "${obs.agent}" — kept (co-agent semantics) but flagged\n`);
+    }
     return JSON.stringify({
-      agent:          obs.agent          || '',
+      agent:          obs.agent,
       session:        obs.session        || sessionId.slice(0, 10),
       written_at:     obs.written_at     || new Date().toISOString(),
       dag_step:       obs.dag_step       ?? null,
