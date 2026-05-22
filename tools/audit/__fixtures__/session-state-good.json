@@ -1,0 +1,14 @@
+{
+  "session_id": "2026-05-20-1430",
+  "task": "remediation",
+  "intents": ["DOC"],
+  "risk": "LOW",
+  "confidence": "HIGH",
+  "routing": "direct",
+  "dag": [],
+  "current_step": 0,
+  "agent_outputs": {},
+  "status": "init",
+  "started_at": "",
+  "observations": []
+}

@@ -1,14 +1,1 @@
-{
-  "session_id": "",
-  "task": "",
-  "intents": [],
-  "risk": "LOW",
-  "confidence": "HIGH",
-  "routing": "direct",
-  "dag": [],
-  "current_step": 0,
-  "agent_outputs": {},
-  "status": "init",
-  "started_at": "",
-  "observations": []
-}
+{"session_id":"","task":"","intents":[],"risk":"LOW","confidence":"HIGH","routing":"direct","dag":[],"current_step":0,"agent_outputs":{},"status":"init","started_at":"","observations":[]}
