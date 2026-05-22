@@ -168,6 +168,12 @@ function run(raw) {
   const tokens  = estimateTokens(text);
   const parsed  = extractStructured(text);
 
+  // Outcome detection: agent-emitted "outcome" wins, else tool error → failed, else success.
+  let outcome = 'success';
+  const oMatch = text.match(/"outcome"\s*:\s*"(failed|rerouted|partial|success)"/);
+  if (oMatch) outcome = oMatch[1];
+  if (payload.tool_response?.is_error === true) outcome = 'failed';
+
   // ── agent_outputs ──────────────────────────────────────────────────────────
   if (!state.agent_outputs) state.agent_outputs = {};
   state.agent_outputs[agent] = {
@@ -180,9 +186,12 @@ function run(raw) {
   if (!state.observations) state.observations = [];
   state.observations.push({
     agent,
-    outcome:        'success',   // hook has no way to detect failure — agent sets this if rerouted
+    session:        state.session_id || '',
+    written_at:     new Date().toISOString(),
+    dag_step:       state.current_step ?? null,
+    outcome,
     context_tokens: tokens,
-    reason:         '',
+    reason:         outcome === 'success' ? '' : (parsed?.handoff_notes?.slice(0, 200) || ''),
   });
 
   // ── DAG step advance ───────────────────────────────────────────────────────
