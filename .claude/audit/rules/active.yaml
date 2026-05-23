@@ -1,0 +1,21 @@
+# active.yaml — рабочий (live) набор правил token-efficiency-auditor.
+# Мутируется обучением (hit_count, precision, promote/deprecate). Откат — baseline.yaml.
+# Стартовый состав: правила, доказуемые из session-state.json (без raw transcript).
+# Исключены R-007, R-009, R-012 (requires_transcript_access: true → quarantine.yaml).
+# Полные определения см. baseline.yaml. См. ADR-016.
+
+version: 1
+synced_from_baseline: 2026-05-23
+active:
+  - { id: R-001, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-002, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-003, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-004, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-005, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-006, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-008, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-010, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-011, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-013, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-014, status: active, hit_count: 0, precision: null, sessions_observed: 0 }
+  - { id: R-015, status: active, hit_count: 0, precision: null, sessions_observed: 0 }

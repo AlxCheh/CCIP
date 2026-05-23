@@ -55,6 +55,7 @@ DEFAULT → direct agent of primary intent
 | ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
 | ccip-navigator-optimizer    | по запросу после правок CLAUDE.md §3–§6 или docs/tasks/index.md |
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
+| token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
 | general-purpose             | fallback при DEGRADED specialist       |
 
