@@ -61,7 +61,7 @@ invariants:
 5. **L5 Rule eval** — прогон `active.yaml` (+ shadow-прогон `quarantine.yaml`) по сегментам; собери findings с `token_cost` и `severity`.
 6. **L6 Self-critique #1** — отбрось findings: noise (< 50 токенов), удаляющие critical context, конфликтующие с quality baseline.
 7. **L5b Propose** — кластеры bloat ≥ 5, не покрытые правилами → новое правило в quarantine. **L6 Self-critique #2** — симулируй новое правило на последних 5 сессиях из `history.jsonl`; если навредило бы качеству или 0 hits — reject.
-8. **L7 Emit** — отчёт в `reports/<session-id>.md`, evidence в `evidence/<session-id>.json`, append в `metrics/history.jsonl`, atomic patch `rules/*.yaml`.
+8. **L7 Emit** — отчёт в `reports/<session-id>.md`, evidence в `evidence/<session-id>.json`. Запись сессии в `history.jsonl`/`rolling-30.json` — **только** детерминированным скриптом (см. «Запись сессии (T-02)»), не freehand. Правила `rules/*.yaml` напрямую **не патчить** (см. Rule lifecycle).
 
 ## Rule lifecycle
 
@@ -71,9 +71,20 @@ proposed → quarantine(3 сессии) → active ──┐
             rejected                  deprecated
 ```
 
-- Промоушен `quarantine → active`: `ΔT ≥ +5%` AND `ΔQ ≥ 0` AND `precision ≥ 0.7` (одновременно).
-- Auto-deprecate: `hit_count == 0` за 20 сессий ИЛИ `precision < 0.4`.
-- Правило, хоть раз удалившее critical context → `deprecated` без права восстановления.
+- **Propose-confirm (решение по качеству).** Счётчики/метрики (`hit_count`, `precision`, `sessions_in_quarantine`) — авто. А promote/deprecate **не применяются автоматически**: они пишутся как предложение в `metrics/rules-delta.yaml` и применяются только командой `/token-rules-apply` с подтверждением. Система не меняет своё поведение без человека.
+- Критерии попадания в delta: промоушен `quarantine → active` — `ΔT ≥ +5%` AND `ΔQ ≥ 0` AND `precision ≥ 0.7` (одновременно); deprecate — `hit_count == 0` за 20 сессий ИЛИ `precision < 0.4`.
+- Правило, хоть раз удалившее critical context → предложение в `deprecated` без права восстановления.
+- **Статус:** propose-confirm и `rules-delta` — Phase B (ещё не реализовано). На текущем runtime аудитор фиксирует кандидатов на promote/deprecate **в отчёте**, файлы правил не трогает.
+
+## Запись сессии (T-02, Phase A)
+
+На T-02 (session-end) после классификации вызови детерминированный recorder. Он точно считает `T_total`, обеспечивает идемпотентность по `session_key`, дописывает `history.jsonl`, пересчитывает `rolling-30.json` и сам пропускает тривиальные сессии (`< 500` токенов или без `agent_outputs`):
+
+```bash
+node tools/audit/token-session-record.js --estimates '{"T_useful":<int>,"IDC":<float>,"R_dup":<float>,"E_resp":<float>}'
+```
+
+Передавай только реально оценённые estimated-поля (остальные → `null`). Точную математику и NDJSON вручную не делай — это работа скрипта (гарантия качества). Возможные статусы: `recorded` / `idempotent-skip` / `trivial-skip`.
 
 ## Формат отчёта (`reports/<session-id>.md`)
 

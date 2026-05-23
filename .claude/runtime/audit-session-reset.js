@@ -26,6 +26,14 @@ function currentSessionId() {
   } catch { return ''; }
 }
 
+/** Readable, sortable, low-collision session key: ISO timestamp + 4 hex.
+ *  Example: 2026-05-23T14:02:11Z-a3f9. Used by T-02 for history idempotency. */
+function genSessionKey() {
+  const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const hex = Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+  return `${ts}-${hex}`;
+}
+
 function writeState(state) {
   const tmp = TSTATE + '.tmp.' + process.pid;
   const fd = fs.openSync(tmp, 'w');
@@ -51,6 +59,7 @@ process.stdin.on('end', () => {
   try {
     writeState({
       session_id: currentSessionId(),
+      session_key: genSessionKey(),   // always fresh — no reuse across sessions (idempotency)
       total_calls: 0,
       turn_index: 0,
       tool_calls_this_turn: 0,

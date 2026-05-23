@@ -22,9 +22,16 @@ const SSTATE = path.join(ROOT, '.claude/runtime/session-state.json');
 
 const T09_EVERY = 20;
 
+function genSessionKey() {
+  const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const hex = Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+  return `${ts}-${hex}`;
+}
+
 function defaultState(sid) {
   return {
     session_id: sid || '',
+    session_key: genSessionKey(),
     total_calls: 0,
     turn_index: 0,
     tool_calls_this_turn: 0,
@@ -75,7 +82,7 @@ process.stdin.on('end', () => {
 function run() {
   const sid = currentSessionId();
   let st = readJSON(TSTATE) || defaultState(sid);
-  if (st.session_id !== sid) st = defaultState(sid);
+  if (!st.session_key) st.session_key = genSessionKey();   // SessionStart owns resets
 
   st.turn_index = (st.turn_index || 0) + 1;
   st.tool_calls_this_turn = 0;          // reset per-turn counter (T-07)

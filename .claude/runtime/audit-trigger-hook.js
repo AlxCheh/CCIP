@@ -33,9 +33,16 @@ const FAILURE_WINDOW = 5;   // ...за последние 5 вызовов Agent
 const COOLDOWN_CALLS = 30;  // не повторять один триггер чаще, чем раз в N tool-calls
 const MAX_READ_KEYS  = 400; // верхняя граница read_counts; при превышении — prune синглтонов
 
+function genSessionKey() {
+  const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const hex = Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+  return `${ts}-${hex}`;
+}
+
 function defaultState(sid) {
   return {
     session_id: sid || '',
+    session_key: genSessionKey(),
     total_calls: 0,
     turn_index: 0,
     tool_calls_this_turn: 0,
@@ -110,7 +117,10 @@ function run(raw) {
 
   const sid = currentSessionId();
   let st = readJSON(TSTATE) || defaultState(sid);
-  if (st.session_id !== sid) st = defaultState(sid);   // new session → reset
+  // Session resets are owned by the SessionStart hook (audit-session-reset.js),
+  // which also stamps session_key. Don't reset here — that would wipe session_key
+  // mid-session. Preserve an existing key; only mint one if somehow absent.
+  if (!st.session_key) st.session_key = genSessionKey();
 
   const ti = payload.tool_input || {};
   const isAuditorCall = tool === 'Agent' && ti.subagent_type === AUDITOR;
