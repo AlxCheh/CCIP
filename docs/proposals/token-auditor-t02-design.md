@@ -71,7 +71,7 @@ session_key = <ISO-8601 timestamp при старте> + "-" + <4 hex>   # пр�
 |---|---|---|
 | G1 | `baseline.yaml` **никогда** не пишется | запрет в коде + SHA-256 lockfile (`baseline.lock`, генерируется однократно при bootstrap, не обновляется авто); `audit-rules.js` сверяет хеш файла с lock-значением — **работает без `git`** (detached/shallow/CI-safe) |
 | G2 | Все записи атомарны | tmp + fsync + rename (как `post-agent-hook.js`) |
-| G3 | Перед записью — валидация по схеме; при провале abort, старое сохраняется | `rules.schema.json` + проверка в аудиторе. **`rules-delta.yaml` тоже валидируется по схеме перед записью**; провал → abort + лог `delta_schema_validation_failed`. `/token-rules-apply` повторно валидирует delta при применении |
+| G3 | Перед записью — структурная валидация; при провале abort, старое сохраняется | `audit-rules.js` (inline-проверки: ID-формат `^R-\d{3}$`, наличие `status`, membership в baseline). **`rules-delta.yaml` валидируется семантически в `token-rules-apply.js` перед применением** (дубли `rule.id`, отсутствие правила в baseline); провал → abort + non-zero exit. Реализовано без отдельного JSON-Schema файла — см. примечание к §6 |
 | G4 | Правило не может быть одновременно в `active` и `quarantine` | `audit-rules.js` |
 | G5 | `requires_transcript_access: true` → промоушен запрещён | проверка флага перед promote |
 | G6 | Quality-gate `ΔE_resp < −0.05` при `ΔT<0` → **НЕ авто-откат** (`E_resp` estimated, риск ложных срабатываний). Только предложение в `rules-delta.yaml` с `reason: estimated_quality_degradation`; применение — через `/token-rules-apply` | сравнение с предыдущей строкой history |
@@ -88,16 +88,24 @@ session_key = <ISO-8601 timestamp при старте> + "-" + <4 hex>   # пр�
 | **Авто (безопасно)** | `hit_count`, `precision`, `sessions_in_quarantine`, append `history.jsonl`, пересчёт `rolling-30` | аудитор пишет сразу (не меняет активное поведение) |
 | **Propose-confirm (меняет поведение)** | promote `quarantine→active`, deprecate `active→deprecated` | аудитор пишет **предложение** в `metrics/rules-delta.yaml` + причину/метрики; **НЕ** применяет к `active.yaml`/`quarantine.yaml` |
 
-Применение `rules-delta` — отдельный явный шаг: команда `/token-rules-apply` (или ручное подтверждение оркестратором), которая валидирует delta по `rules.schema.json`, применяет атомарно, логирует в `rules-changelog.jsonl` и очищает delta. Так система **предлагает** изменения поведения, но никогда не меняет себя без человека. G8/G9 остаются критериями **попадания в delta**, а не авто-применения.
+Применение `rules-delta` — отдельный явный шаг: команда `/token-rules-apply` (или ручное подтверждение оркестратором), которая семантически валидирует delta (дубли `rule.id`, существование в baseline), применяет атомарно, логирует в `rules-changelog.jsonl` и очищает delta. Так система **предлагает** изменения поведения, но никогда не меняет себя без человека. G8/G9 остаются критериями **попадания в delta**, а не авто-применения.
 
 ## 6. Новая quality-инфраструктура (CI ловит порчу от self-learning)
 
 | Артефакт | Роль |
 |---|---|
-| `docs/schemas/rules.schema.json` | Схема для `active/quarantine/deprecated/baseline.yaml` |
-| `tools/audit/audit-rules.js` | Валидатор: схема + G1/G3/G4/G5 + «каждый rule.id существует в baseline» |
+| `tools/audit/audit-rules.js` | Валидатор rule-файлов: G1 (baseline-immutability через `baseline.lock`), ID-формат, наличие `status`, G4 (disjoint working sets), membership + completeness относительно baseline |
+| `tools/audit/token-rules-apply.js` | Семантическая валидация `rules-delta.yaml` при применении (G3): дубли `rule.id`, существование в baseline |
 | wiring в `tools/audit/audit-suite.js` | Порча rule-файлов от мутаций ловится в CI / pre-commit |
 | `tools/audit/__tests__/audit-rules.test.js` | Тесты валидатора |
+
+> **Примечание (реализация vs дизайн):** изначально планировался отдельный
+> `docs/schemas/rules.schema.json` как JSON-Schema для rule-файлов. При реализации
+> Фазы B схема **не создавалась** — её роль покрыта детерминированными inline-проверками
+> в `audit-rules.js` (структура + G1/G4/membership/completeness) и семантической
+> валидацией delta в `token-rules-apply.js` (G3). Отдельный JSON-Schema поверх
+> bespoke-валидатора был бы избыточен и создал бы второй источник истины. Цель G3
+> («валидация перед записью, abort при провале») достигнута без него.
 
 Без этого слоя self-mutation — чёрный ящик. С ним каждая мутация проверяема детерминированно (тот же принцип, что у `session-state.js`).
 
@@ -131,7 +139,7 @@ session_key = <ISO-8601 timestamp при старте> + "-" + <4 hex>   # пр�
 ## 10. Фазы (по возрастанию риска)
 
 - **Фаза A — data backbone (низкий риск):** `session_key` штамп в `SessionStart` + append `history.jsonl` + пересчёт `rolling-30` + идемпотентность. Метрики накапливаются, поведение правил НЕ трогается.
-- **Фаза B — self-learning (высокий риск, максимум проверки):** `rules.schema.json` + `audit-rules.js` + lifecycle-мутации с G1–G9 + `rules-changelog.jsonl` + тесты.
+- **Фаза B — self-learning (высокий риск, максимум проверки):** `audit-rules.js` (inline-валидация rule-файлов) + lifecycle-мутации с G1–G9 + `rules-changelog.jsonl` + тесты. (Отдельный `rules.schema.json` не создавался — см. §6.)
 - **Фаза C — trigger ergonomics:** детектор фразы (`UserPromptSubmit`) + правки `state-protocol.md`.
 
 > Рекомендация по качеству: A и B мержить **раздельно**. A безопасна и сразу полезна (история/тренд). B — только после полного тест-покрытия и `audit-rules.js` в CI, т.к. меняет поведение системы между сессиями.
