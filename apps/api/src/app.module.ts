@@ -1,7 +1,8 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AuthModule } from './common/guards/auth.module';
 import { AuditLogModule } from './common/audit/audit-log.module';
@@ -16,11 +17,23 @@ import { BoqModule } from './modules/boq/boq.module';
 import { SystemConfigModule } from './modules/system-config/system-config.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ZeroReportModule } from './modules/zero-report/zero-report.module';
+import { DisputeModule } from './modules/dispute/dispute.module';
+import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ limit: 100, ttl: 60_000 }]),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (config: ConfigService) => ({
+        redis: {
+          host: config.get<string>('REDIS_HOST', 'localhost'),
+          port: config.get<number>('REDIS_PORT', 6379),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     PrismaModule,
     AuthModule,
     AuditLogModule,
@@ -32,6 +45,8 @@ import { ZeroReportModule } from './modules/zero-report/zero-report.module';
     SystemConfigModule,
     DocumentsModule,
     ZeroReportModule,
+    DisputeModule,
+    DisputeSlaModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
