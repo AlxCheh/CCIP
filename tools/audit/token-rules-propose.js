@@ -124,7 +124,9 @@ function main() {
   console.log(JSON.stringify({ status: 'proposed', promote: p.promote.length, deprecate: p.deprecate.length, file: '.claude/audit/rules/rules-delta.json' }));
 }
 
-try { main(); }
-catch (e) { console.error('[propose] FAIL: ' + e.message); process.exit(1); }
+if (require.main === module) {
+  try { main(); }
+  catch (e) { console.error('[propose] FAIL: ' + e.message); process.exit(1); }
+}
 
 module.exports = { computeProposals };

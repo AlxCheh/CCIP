@@ -86,6 +86,18 @@ node tools/audit/token-session-record.js --estimates '{"T_useful":<int>,"IDC":<f
 
 Передавай только реально оценённые estimated-поля (остальные → `null`). Точную математику и NDJSON вручную не делай — это работа скрипта (гарантия качества). Возможные статусы: `recorded` / `idempotent-skip` / `trivial-skip`.
 
+Затем обнови счётчики правил (AUTO-часть propose-confirm) и сгенерируй предложения:
+
+```bash
+# 1) счётчики по итогам сессии: hits = сколько раз правило сработало,
+#    tp/fp = подтверждённые/отклонённые self-critique findings
+node tools/audit/token-rules-count.js --session '{"R-001":{"hits":3,"tp":2,"fp":1}, ...}'
+# 2) кандидаты на promote/deprecate (G8/G9) → rules-delta.json (только предложение)
+node tools/audit/token-rules-propose.js
+```
+
+`count` обновляет `hit_count`/`tp`/`fp`/`precision`/`sessions_*` детерминированно. `propose` пишет `rules-delta.json`, но **ничего не применяет**. Применение активного поведения — только человеком через `/token-rules-apply` (propose-confirm). Не запускай apply сам.
+
 ## Формат отчёта (`reports/<session-id>.md`)
 
 Разделы строго: `Сводка` (метрики) → `Найденные проблемы` (таблица rule/severity/token_cost/сегмент, сорт по token_cost) → `Стоимость проблем` (total/recoverable/borderline) → `Исправления` (рекомендации, НЕ автоприменение) → `Обновления правил` (promoted/deprecated/new_quarantine) → `Прогноз` экономии → `Self-critique` (сколько findings отклонено и почему).

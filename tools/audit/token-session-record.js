@@ -188,5 +188,7 @@ function main() {
   console.log(JSON.stringify({ status: 'recorded', session_key: key, T_total: det.T_total, sessions_count: rolling.sessions_count }));
 }
 
-try { main(); }
-catch (e) { console.error('[record] FAIL: ' + e.message); process.exit(1); }
+if (require.main === module) {
+  try { main(); }
+  catch (e) { console.error('[record] FAIL: ' + e.message); process.exit(1); }
+}
