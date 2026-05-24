@@ -26,8 +26,8 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
     ThrottlerModule.forRoot([{ limit: 100, ttl: 60_000 }]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (config: ConfigService) => ({
-        redis: {
+      useFactory: (config: ConfigService) => ({
+        connection: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
         },
