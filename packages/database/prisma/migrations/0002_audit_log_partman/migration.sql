@@ -16,6 +16,9 @@ BEGIN
 END $$;
 
 -- ─── 1. Extensions ────────────────────────────────────────────────────────────
+-- pg_partman requires its target schema to exist first; WITH SCHEMA does not
+-- create it (PostgreSQL: "The named schema must already exist").
+CREATE SCHEMA IF NOT EXISTS partman;
 CREATE EXTENSION IF NOT EXISTS pg_partman WITH SCHEMA partman;
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
