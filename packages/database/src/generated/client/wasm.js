@@ -278,7 +278,8 @@ exports.Prisma.PeriodScalarFieldEnum = {
   zeroPeriodReason: 'zeroPeriodReason',
   reportUrl: 'reportUrl',
   reportGeneratedAt: 'reportGeneratedAt',
-  reportGenerationFailed: 'reportGenerationFailed'
+  reportGenerationFailed: 'reportGenerationFailed',
+  slaForceCloseAt: 'slaForceCloseAt'
 };
 
 exports.Prisma.PeriodFactScalarFieldEnum = {

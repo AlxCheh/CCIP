@@ -1,0 +1,1 @@
+ALTER TABLE "periods" ADD COLUMN IF NOT EXISTS "sla_force_close_at" TIMESTAMPTZ;
