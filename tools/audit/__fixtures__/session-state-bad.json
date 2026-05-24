@@ -1,0 +1,9 @@
+{
+  "session_id": "not-an-iso",
+  "task": "x",
+  "intents": ["BACKEND_CORE"],
+  "risk": "low",
+  "confidence": "HIGH",
+  "routing": "direct",
+  "status": "init"
+}

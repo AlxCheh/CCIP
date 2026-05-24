@@ -16,8 +16,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT    = path.resolve(__dirname, '../..');
-const STATE   = path.join(ROOT, '.claude/runtime/session-state.json');
+const ROOT        = path.resolve(__dirname, '../..');
+const STATE       = path.join(ROOT, '.claude/runtime/session-state.json');
+const AGENTS_DIR  = path.join(ROOT, '.claude/agents');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,15 +54,34 @@ function writeState(state) {
   }
 }
 
-/** Extract agent name from tool_input fields */
+/** Read the real set of agents from .claude/agents/. Re-read on every call so a
+ *  newly-added agent is picked up without restart. */
+function knownAgents() {
+  try {
+    return new Set(
+      fs.readdirSync(AGENTS_DIR)
+        .filter(f => f.endsWith('.md'))
+        .map(f => f.replace(/\.md$/, ''))
+    );
+  } catch { return new Set(); }
+}
+
+/** Extract agent name from tool_input fields. Strict: returns null for any
+ *  name not present as a file in .claude/agents/. */
 function resolveAgent(toolInput) {
   if (!toolInput) return null;
-  // Explicit subagent_type wins
-  if (toolInput.subagent_type) return toolInput.subagent_type;
-  // Scan description and prompt for known agent patterns
+  const agents = knownAgents();
+  // Explicit subagent_type wins — but must exist.
+  if (toolInput.subagent_type) {
+    return agents.has(toolInput.subagent_type) ? toolInput.subagent_type : null;
+  }
+  // Scan description and prompt for whole-word mentions of real agent names.
   const haystack = `${toolInput.description || ''} ${toolInput.prompt || ''}`;
-  const m = haystack.match(/\b(ccip-[\w-]+|general-purpose|security-reviewer|doc-optimizer|consistency-checker)\b/);
-  return m ? m[1] : null;
+  for (const name of agents) {
+    const re = new RegExp(`\\b${name}\\b`);
+    if (re.test(haystack)) return name;
+  }
+  return null;
 }
 
 /** Flatten Claude tool_response to a plain string */
@@ -148,6 +168,12 @@ function run(raw) {
   const tokens  = estimateTokens(text);
   const parsed  = extractStructured(text);
 
+  // Outcome detection: agent-emitted "outcome" wins, else tool error → failed, else success.
+  let outcome = 'success';
+  const oMatch = text.match(/"outcome"\s*:\s*"(failed|rerouted|partial|success)"/);
+  if (oMatch) outcome = oMatch[1];
+  if (payload.tool_response?.is_error === true) outcome = 'failed';
+
   // ── agent_outputs ──────────────────────────────────────────────────────────
   if (!state.agent_outputs) state.agent_outputs = {};
   state.agent_outputs[agent] = {
@@ -160,9 +186,12 @@ function run(raw) {
   if (!state.observations) state.observations = [];
   state.observations.push({
     agent,
-    outcome:        'success',   // hook has no way to detect failure — agent sets this if rerouted
+    session:        state.session_id || '',
+    written_at:     new Date().toISOString(),
+    dag_step:       state.current_step ?? null,
+    outcome,
     context_tokens: tokens,
-    reason:         '',
+    reason:         outcome === 'success' ? '' : (parsed?.handoff_notes?.slice(0, 200) || ''),
   });
 
   // ── DAG step advance ───────────────────────────────────────────────────────

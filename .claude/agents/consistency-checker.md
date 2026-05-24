@@ -2,6 +2,7 @@
 name: consistency-checker
 description: "Агент поиска противоречий между документами CCIP: architecture docs, ADR, Prisma schema, delivery docs. Использовать когда нужно найти расхождения между источниками, проверить что ADR соответствует схеме, что delivery docs согласованы с архитектурой. Только read-only анализ — не вносит правок."
 tools: Read, Glob, Grep
+summary: "Read-only поиск противоречий между docs, ADR, Prisma schema, delivery. Не вносит правки; возвращает текстовый отчёт."
 model: claude-haiku-4-5-20251001
 ---
 

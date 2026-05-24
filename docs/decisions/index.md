@@ -39,6 +39,9 @@
 ### Notifications
 - [ADR-014-push-notifications.md](ADR-014-push-notifications.md) — push-уведомления
 
+### Orchestration / Agent Runtime
+- [ADR-016-token-efficiency-auditor.md](ADR-016-token-efficiency-auditor.md) — token-efficiency auditor: read-only агент анализа bloat + self-learning rule lifecycle
+
 ---
 
 ## Правила загрузки

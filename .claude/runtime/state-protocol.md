@@ -31,7 +31,7 @@ Session Start
 |---|---|---|
 | `session_id` | string | `YYYY-MM-DD-HHMM` |
 | `task` | string | Краткое описание задачи (1-2 предложения) |
-| `intents` | string[] | Из Intent → Agent table CLAUDE.md: ARCH, SCHEMA, BACKEND_CORE, ... |
+| `intents` | string[] | Из Intent → Agent table CLAUDE.md: ARCH, SCHEMA, BACKEND, AUX, FRONTEND, DEVOPS, QA, MOBILE, SECURITY, DOC; канонический enum — `docs/schemas/intents.json` |
 | `risk` | string | `LOW` \| `MEDIUM` \| `HIGH` (см. Risk Rules CLAUDE.md) |
 | `confidence` | string | `HIGH` \| `MEDIUM` \| `LOW` (см. Fast Path / Planner CLAUDE.md) |
 | `routing` | string | `direct` \| `planner` \| `multi-agent` |
@@ -128,6 +128,26 @@ Your step: <dag[current_step].scope>
 - Если не пусто → добавляет в `feedback-loop.md §4`
 - Валидирует: `obs.agent` должен присутствовать в `dag[].agent`; иначе — пропуск с `stderr` предупреждением
 - Сбрасывает `observations[]` в state file через атомарный tmp→rename (исключает corrupt на crash)
+
+## Завершение сессии (T-02)
+
+На фразе «Завершаем сессию» / «Закрываем сессию» / «End session» / `/session-end`
+оркестратор запускает два вспомогательных агента **строго последовательно,
+отдельными turn'ами до фактического Stop** (ADR-016, дизайн §7):
+
+```
+1. ccip-session-optimizer   → Session Optimization Report + Bootstrap + Evidence Log
+2. token-efficiency-auditor → T-02: читает agent_outputs[ccip-session-optimizer],
+                              считает полносессионные метрики, дописывает history.jsonl,
+                              пересчитывает rolling-30, продвигает rule lifecycle
+```
+
+**Порядок обязателен:** аудитор читает артефакты optimizer'а как дополнительный
+input (`depends_on: [ccip-session-optimizer]`). Параллельный запуск создаёт race
+на `session-state.json` — см. ADR-016 «Отклонённые альтернативы». Это
+оркестрационная конвенция, а не машинный enforcement; детектор фразы в
+`audit-turn-hook.js` (`UserPromptSubmit`) лишь инъецирует напоминание о порядке,
+агентов не запускает.
 
 ## Запуск execute-dag.js
 

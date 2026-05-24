@@ -43,3 +43,11 @@ infra/docker/data/
 # Session optimizer runtime artifacts (PostToolUse hook output, regenerated per session)
 docs/errors/sessions/
 .claude/runtime/optimizer.lock
+
+# Token-efficiency-auditor runtime artifacts (ADR-016, Q3: смешанно).
+# Коммитим rules/ и metrics/history.jsonl (обучение между машинами); остальное — per-session шум.
+.claude/audit/trigger-state.json
+.claude/audit/reports/
+.claude/audit/evidence/
+.claude/audit/metrics/rolling-30.json
+.claude/audit/rules/rules-delta.json

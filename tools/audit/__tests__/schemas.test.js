@@ -38,6 +38,9 @@ test('session-state schema validates the empty skeleton', () => {
   const root = gitRoot();
   const schema = JSON.parse(fs.readFileSync(
     path.join(root, 'docs/schemas/session-state.schema.json'), 'utf-8'));
+  const intentsSchema = JSON.parse(fs.readFileSync(
+    path.join(root, 'docs/schemas/intents.json'), 'utf-8'));
+  ajv.addSchema(intentsSchema, 'intents.json');
   const validate = ajv.compile(schema);
   const state = JSON.parse(fs.readFileSync(
     path.join(root, '.claude/runtime/session-state.json'), 'utf-8'));

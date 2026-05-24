@@ -1,0 +1,174 @@
+# baseline.yaml — IMMUTABLE seed-набор правил token-efficiency-auditor.
+# НЕ редактировать вручную и НЕ удалять. Источник отката при катастрофе обучения.
+# Рабочие копии: active.yaml (live), quarantine.yaml (испытательный срок).
+# Schema: id, category, severity, match{type,pattern,in_segments}, detect, rationale, fix,
+#         introduced, hit_count, precision, requires_transcript_access(опц.).
+# См. ADR-016.
+
+version: 1
+introduced: 2026-05-23
+rules:
+  - id: R-001
+    category: redundant_io
+    severity: high
+    match: { type: heuristic, signal: "Read file >200 строк без limit/offset", in_segments: [tool_call] }
+    detect: "Read без limit/offset для файла > 200 строк."
+    rationale: "CLAUDE.md §16 запрещает full reads. Цена — full_size токенов на каждый вызов."
+    fix: "Read с limit/offset или Grep."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-002
+    category: redundant_io
+    severity: high
+    match: { type: heuristic, signal: "повторный Read того же (path,offset)", in_segments: [tool_call] }
+    detect: "Один и тот же (path, offset) прочитан повторно в одной сессии."
+    rationale: "Дублирует уже загруженный контекст; чистая потеря токенов."
+    fix: "Переиспользовать ранее прочитанное; кешировать в рамках сессии."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-003
+    category: verbose_padding
+    severity: low
+    match: { type: regex, pattern: "(?i)^(сейчас я|now i('| wi)ll|приступаю|let me)", in_segments: [assistant] }
+    detect: "Преамбула «Сейчас я …» длиннее одного предложения."
+    rationale: "Объявление намерения не несёт информации для пользователя."
+    fix: "Сразу к действию; одно короткое предложение максимум."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-004
+    category: verbose_padding
+    severity: low
+    match: { type: heuristic, signal: "финальное summary дублирует tool diff", in_segments: [assistant] }
+    detect: "Итоговое резюме повторяет содержимое уже показанного diff/вывода."
+    rationale: "Пользователь видит diff; пересказ — дубликат."
+    fix: "«Готово, см. diff» + только то, что не видно из изменений."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-005
+    category: repeated_info
+    severity: medium
+    match: { type: heuristic, signal: "один путь упомянут ≥4 раз в одном turn", in_segments: [assistant] }
+    detect: "Один и тот же путь/идентификатор повторён ≥ 4 раз в пределах turn."
+    rationale: "Повтор без новой информации раздувает вывод."
+    fix: "Назвать один раз, дальше — местоимение/ссылка."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-006
+    category: useless_clarification
+    severity: medium
+    match: { type: heuristic, signal: "уточнение, ответ на которое есть в системном промте", in_segments: [assistant] }
+    detect: "Запрос уточнения у пользователя при наличии ответа в системном контексте."
+    rationale: "Лишний round-trip; ответ уже доступен."
+    fix: "Проверить системный промт/контекст перед уточнением."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-007
+    category: suboptimal_cot
+    severity: medium
+    match: { type: ratio, signal: "tokens(cot)/tokens(answer) > 3", in_segments: [assistant] }
+    detect: "Chain-of-thought длиннее ответа более чем в 3 раза."
+    rationale: "Избыточное рассуждение в видимом выводе вместо thinking-блока."
+    fix: "Вынести reasoning в thinking; в ответе — результат."
+    requires_transcript_access: true
+    hit_count: 0
+    precision: null
+
+  - id: R-008
+    category: inefficient_prompt
+    severity: medium
+    match: { type: heuristic, signal: "user prompt >2000 токенов без структуры", in_segments: [user] }
+    detect: "Большой неструктурированный пользовательский промт."
+    rationale: "Неструктурированный ввод раздувает контекст и снижает точность."
+    fix: "Рекомендовать структурирование (списки, секции, явный scope)."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-009
+    category: context_bloat
+    severity: high
+    match: { type: heuristic, signal: "tool result целиком инъецирован в следующий промт", in_segments: [tool_result] }
+    detect: "Полный tool result перенесён в следующий промт без редукции."
+    rationale: "Дублирует данные между turns; растёт квадратично с длиной сессии."
+    fix: "Инъецировать дельту/хеш; полную версию — по запросу."
+    requires_transcript_access: true
+    hit_count: 0
+    precision: null
+
+  - id: R-010
+    category: over_explanation
+    severity: low
+    match: { type: heuristic, signal: "объяснение того, что видно из diff/кода", in_segments: [assistant] }
+    detect: "Объяснение очевидного из показанного diff/кода."
+    rationale: "Не добавляет знания; читатель видит код."
+    fix: "Объяснять только неочевидное (почему, не что)."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-011
+    category: redundant_tool_call
+    severity: medium
+    match: { type: heuristic, signal: "независимые Read'ы выполнены последовательно", in_segments: [tool_call] }
+    detect: "Параллелизируемые независимые tool calls выполнены последовательно."
+    rationale: "Лишние round-trips; те же токены, больше latency и overhead."
+    fix: "Батчить независимые вызовы в один turn."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-012
+    category: suboptimal_cot
+    severity: medium
+    match: { type: heuristic, signal: "thinking out loud без thinking-блока", in_segments: [assistant] }
+    detect: "Reasoning «вслух» в видимом ответе вместо thinking-блока."
+    rationale: "Видимый CoT тратит токены вывода без пользы для читателя."
+    fix: "Использовать thinking-блок для рассуждений."
+    requires_transcript_access: true
+    hit_count: 0
+    precision: null
+
+  - id: R-013
+    category: context_bloat
+    severity: medium
+    match: { type: heuristic, signal: "дублирование handoff_notes между co-agent'ами", in_segments: [agent_output] }
+    detect: "Co-agent копирует handoff_notes primary'я без нового содержания."
+    rationale: "Дублирует данные state contract между агентами."
+    fix: "Ссылаться на handoff primary'я, не пересказывать."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-014
+    category: verbose_padding
+    severity: low
+    match: { type: regex, pattern: "(?i)(отлично!|готово!|great!|perfect!|certainly)", in_segments: [assistant] }
+    detect: "Поздравительный/эмпатический шум."
+    rationale: "Социальные филлеры не несут информации."
+    fix: "Убрать; начинать с содержания."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-015
+    category: inefficient_prompt
+    severity: low
+    match: { type: regex, pattern: "(?i)(расскажи всё про|tell me everything about|all about)", in_segments: [user] }
+    detect: "Запрос без явного scope («расскажи всё про X»)."
+    rationale: "Неограниченный scope провоцирует раздутый ответ."
+    fix: "Уточнить scope перед развёрнутым ответом."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null

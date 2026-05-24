@@ -103,11 +103,13 @@ jobs:
       - name: Lint
         run: pnpm turbo lint
 
-      - name: Prisma migrate deploy
-        run: pnpm --filter @ccip/database run migrate:deploy
-
-      - name: Test
-        run: pnpm turbo test
+      # NB: migration 0002_audit_log_partman requires pg_partman + pg_cron, which
+      # the postgres:16-alpine service cannot preload. Schema migrations and the
+      # @ccip/database integration tests run exclusively in the db-integration job
+      # (custom ccip-postgres image). This job covers lint, typecheck and the
+      # fully-mocked apps/api unit tests, which need no live DB.
+      - name: Test (apps/api unit, mocked)
+        run: pnpm turbo test --filter=@ccip/api
         env:
           CI: true
 
@@ -148,6 +150,11 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+
+      # Committed client carries only the native (Windows dev) query engine;
+      # regenerate for the Linux runner so PrismaClient resolves at runtime.
+      - name: Generate Prisma client
+        run: pnpm --filter @ccip/database run db:generate
 
       - name: Apply Prisma migrations
         run: pnpm --filter @ccip/database migrate:deploy

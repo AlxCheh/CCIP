@@ -23,6 +23,11 @@
     "model": {
       "type": "string",
       "enum": ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-4-5-20251001"]
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Опциональный operational TL;DR (≤200 chars). Отличается от description: описывает что агент ЧИТАЕТ/ПИШЕТ + размер body. Reader с limit:10 видит summary и решает, нужен ли body."
     }
   },
   "additionalProperties": false

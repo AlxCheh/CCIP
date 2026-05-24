@@ -20,6 +20,7 @@ const PHASES = {
     'session-state.js',
     'adr-anchors.js',
     'rbac-vs-schema.js',
+    'audit-rules.js',
   ],
   '§10.5 Security posture': [
     'allowlist-literal.js',

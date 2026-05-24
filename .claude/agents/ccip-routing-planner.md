@@ -2,6 +2,7 @@
 name: ccip-routing-planner
 description: "Orchestration Planner для CCIP. Использовать для: декомпозиции сложных задач (3+ intents или LOW confidence), построения execution DAG, назначения агентов с ролями и зависимостями. НЕ использовать для однодоменных задач — они маршрутизируются напрямую через §7.0–7.4."
 tools: Read, Write, Edit, Glob, Grep
+summary: "Декомпозирует сложные задачи (3+ intents/HIGH risk) → execution DAG. Read-only по сути; JSON-output. Body: алгоритм 5 шагов + format."
 model: claude-sonnet-4-6
 ---
 
@@ -45,7 +46,7 @@ IF intents >= 3 OR risk == HIGH → planner
 {
   "task": "<краткое описание задачи>",
   "complexity": "moderate | complex",
-  "intents": ["ARCH", "BACKEND_CORE", "SCHEMA"],
+  "intents": ["ARCH", "BACKEND", "SCHEMA"],
   "confidence": "LOW",
   "steps": [
     {

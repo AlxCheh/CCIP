@@ -5,18 +5,69 @@
   "type": "object",
   "required": ["session_id", "task", "intents", "risk", "confidence", "routing", "status"],
   "properties": {
-    "session_id":   { "type": "string" },
-    "task":         { "type": "string" },
-    "intents":      { "type": "array", "items": { "type": "string" } },
-    "risk":         { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
-    "confidence":   { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
-    "routing":      { "type": "string", "enum": ["direct", "planner", "multi-agent"] },
-    "dag":          { "type": "array" },
+    "session_id": {
+      "type": "string",
+      "anyOf": [
+        { "pattern": "^$" },
+        { "pattern": "^\\d{4}-\\d{2}-\\d{2}-\\d{4}$" }
+      ]
+    },
+    "task":       { "type": "string" },
+    "intents":    { "type": "array", "items": { "$ref": "intents.json" } },
+    "risk":       { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+    "confidence": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"] },
+    "routing":    { "type": "string", "enum": ["direct", "planner", "multi-agent"] },
+    "dag": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "agent", "status"],
+        "properties": {
+          "step":       { "type": "integer", "minimum": 1 },
+          "type":       { "type": "string", "enum": ["sequential", "parallel"] },
+          "agent":      { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "role":       { "type": "string" },
+          "scope":      { "type": "string" },
+          "status":     { "type": "string", "enum": ["pending", "running", "done", "failed"] },
+          "depends_on": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+          "retries":    { "type": "integer", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    },
     "current_step": { "type": "integer", "minimum": 0 },
-    "agent_outputs":{ "type": "object" },
-    "status":       { "type": "string", "enum": ["init", "planning", "executing", "done", "blocked"] },
-    "started_at":   { "type": "string" },
-    "observations": { "type": "array" }
+    "agent_outputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["summary", "artifacts", "handoff_notes"],
+        "properties": {
+          "summary":       { "type": "string" },
+          "artifacts":     { "type": "array", "items": { "type": "string" } },
+          "handoff_notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "status":     { "type": "string", "enum": ["init", "planning", "executing", "done", "blocked"] },
+    "started_at": { "type": "string" },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["agent", "outcome", "context_tokens"],
+        "properties": {
+          "agent":          { "type": "string" },
+          "session":        { "type": "string" },
+          "written_at":     { "type": "string" },
+          "dag_step":       { "type": ["integer", "null"] },
+          "outcome":        { "type": "string", "enum": ["success", "rerouted", "partial", "failed"] },
+          "context_tokens": { "type": "integer", "minimum": 0 },
+          "reason":         { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
   },
   "additionalProperties": false
 }

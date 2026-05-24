@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/trigger-state.json",
+  "title": "Token-Efficiency Auditor Trigger State",
+  "description": "Runtime-state детектора триггеров T-06/07/08/09/10. Отдельный файл (session-state.schema закрыта). См. ADR-016 + docs/proposals/token-auditor-hooks-design.md.",
+  "type": "object",
+  "required": ["session_id", "session_key", "total_calls", "turn_index", "tool_calls_this_turn", "read_counts", "agent_failures_window", "audit_in_progress", "pending_audit", "cooldowns"],
+  "properties": {
+    "session_id":           { "type": "string" },
+    "session_key":          { "type": "string", "description": "ISO-timestamp + 4 hex; стабилен в пределах сессии, ключ идемпотентности history (T-02)" },
+    "total_calls":          { "type": "integer", "minimum": 0 },
+    "turn_index":           { "type": "integer", "minimum": 0 },
+    "tool_calls_this_turn": { "type": "integer", "minimum": 0 },
+    "read_counts":          { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "agent_failures_window": { "type": "array", "items": { "type": "string", "enum": ["success", "rerouted", "partial", "failed"] } },
+    "audit_in_progress":    { "type": "boolean" },
+    "pending_audit": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["trigger", "reason", "ts"],
+        "properties": {
+          "trigger": { "type": "string", "pattern": "^T-\\d{2}$" },
+          "reason":  { "type": "string" },
+          "ts":      { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cooldowns": { "type": "object", "additionalProperties": { "type": "integer" } }
+  },
+  "additionalProperties": false
+}

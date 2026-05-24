@@ -52,9 +52,10 @@ DEFAULT → direct agent of primary intent
 | security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
-| ccip-claude-md-auditor      | расписание (см. settings.json)         |
-| ccip-navigator-optimizer    | изменения CLAUDE.md §3–§6 или index.md  |
+| ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
+| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md §3–§6 или docs/tasks/index.md |
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
+| token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
 | general-purpose             | fallback при DEGRADED specialist       |
 
@@ -160,3 +161,36 @@ IF output ≠ expected criteria → name the deviation before retrying
 ### Валидация
 - `node tools/audit/session-state.js` — runtime файл матчит схему.
 - `node tools/audit/state-contract-section.js` — этот раздел не сломан.
+
+## §16 Reading Discipline
+
+Правила экономии токенов при чтении файлов. Цель — снизить per-session token cost на 30-50% без потери точности.
+
+### Базовое правило
+> Никогда не читать файл полностью, если задача — точечная правка или поиск конкретной информации.
+
+### По типу файла
+
+| Файл | Default read | Когда читать полностью |
+|---|---|---|
+| `.claude/agents/*.md` | `limit:10` (frontmatter + `summary:`) | Только при правке body |
+| `.claude/runtime/*.md` (state-protocol) | `offset+limit` по §-якорю | При структурной правке протокола |
+| `docs/decisions/ADR-*.md` | `limit:30` (status+context) | При изменении самого решения |
+| `docs/decisions/index.md` | `limit:50` | Никогда — это lookup table |
+| `docs/architecture/*.md` | `offset+limit` по разделу | Запрещено целиком (см. CLAUDE.md `Constraints`) |
+| `docs/plans/*.md` | `offset+limit` по Task N | При обзоре цельного плана |
+| `docs/schemas/*.json` | Полностью | Всегда — компактные |
+| `tools/audit/*.js` | Полностью | Малые (< 100 строк), нормально |
+| `tools/audit/_lib/*.js` | Полностью | Утилитарные, малые |
+| `tools/audit/__tests__/*.test.js` | Полностью | При создании похожего теста — pattern reference |
+
+### Frontmatter contract для агентов
+- `name`, `description`, `tools`, `model` — обязательные
+- `summary` (опц.) — operational TL;DR ≤200 chars; отличается от description: что агент ЧИТАЕТ/ПИШЕТ, размер body, ключевые ADR-якоря
+- Reader с `limit:10` видит frontmatter+summary → может маршрутизировать БЕЗ чтения body
+
+### Антипаттерны (запрещено)
+- Чтение `.claude/agents/X.md` целиком ради routing-решения (хватит `limit:10`)
+- Повторное чтение того же файла без offset изменений
+- Чтение архитектурных документов целиком (`docs/architecture/*.md`)
+- Read для проверки существования файла → использовать Glob или Bash `ls`
