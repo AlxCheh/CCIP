@@ -59,7 +59,7 @@ export class DisputeFlagService {
         referenceId: BigInt(boqItemId),
         message:
           `Флаг: ${type2Count} спорных расхождений за последние ${mWindow} периодов. ` +
-          `Накопленная дельта: ${cumulativeDelta._sum.scVolume ?? 0}`,
+          `Накопленная дельта: ${cumulativeDelta._sum.scVolume?.toString() ?? '0'}`,
       })),
     });
   }
