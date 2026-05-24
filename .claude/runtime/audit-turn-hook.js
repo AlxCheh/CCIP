@@ -3,8 +3,10 @@
  * UserPromptSubmit hook — token-efficiency-auditor turn boundary.
  *
  * Fires on each user prompt. Increments turn_index, resets the per-turn
- * tool-call counter (so T-07 measures per-turn, not per-session), and on
- * every 20th turn emits a periodic-checkpoint nudge (T-09).
+ * tool-call counter (so T-07 measures per-turn, not per-session), and:
+ *   T-09: every 20th turn emits a periodic-checkpoint nudge.
+ *   T-02: detects session-end phrases and emits the ccip-session-optimizer
+ *         → token-efficiency-auditor chaining reminder (ADR-016, Phase C).
  *
  * Note (C5): context compaction does not emit UserPromptSubmit, so turn_index
  * is approximate. T-09 is periodic-by-design, so drift is acceptable (Q4).
@@ -21,6 +23,8 @@ const TSTATE = path.join(ROOT, '.claude/audit/trigger-state.json');
 const SSTATE = path.join(ROOT, '.claude/runtime/session-state.json');
 
 const T09_EVERY = 20;
+
+const SESSION_END_RE = /завершаем сессию|закрываем сессию|end session|\/session-end/i;
 
 function genSessionKey() {
   const ts = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
@@ -70,16 +74,26 @@ function currentSessionId() {
   return (s && s.session_id) || '';
 }
 
+function extractPromptText(raw) {
+  if (!raw) return '';
+  try {
+    const p = JSON.parse(raw);
+    if (typeof p.prompt === 'string') return p.prompt;
+  } catch { /* treat as plain text */ }
+  return raw;
+}
+
 let raw = '';
 process.stdin.setEncoding('utf-8');
 process.stdin.on('data', c => { raw += c; });
 process.stdin.on('end', () => {
-  try { run(); }
+  try { run(raw); }
   catch (e) { process.stderr.write(`[audit-turn-hook] FAIL: ${e.message}\n`); }
   process.exit(0);
 });
 
-function run() {
+function run(rawInput) {
+  const promptText = extractPromptText(rawInput || '');
   const sid = currentSessionId();
   let st = readJSON(TSTATE) || defaultState(sid);
   if (!st.session_key) st.session_key = genSessionKey();   // SessionStart owns resets
@@ -87,21 +101,36 @@ function run() {
   st.turn_index = (st.turn_index || 0) + 1;
   st.tool_calls_this_turn = 0;          // reset per-turn counter (T-07)
 
-  let nudge = '';
+  const nudges = [];
+
+  // T-02: session-end phrase → remind orchestrator to chain session-optimizer + auditor
+  if (SESSION_END_RE.test(promptText)) {
+    st.pending_audit.push({
+      trigger: 'T-02',
+      reason: 'session-end phrase detected',
+      ts: new Date().toISOString(),
+    });
+    nudges.push(
+      '⚡ T-02 (session-end): (1) ccip-session-optimizer → (2) token-efficiency-auditor' +
+      ' (recorder→count→propose). Порядок зафиксирован (ADR-016, T-02 depends_on ccip-session-optimizer).'
+    );
+  }
+
+  // T-09: periodic checkpoint every 20 turns
   if (st.turn_index > 0 && st.turn_index % T09_EVERY === 0) {
     st.pending_audit.push({
       trigger: 'T-09',
       reason: `периодический чекпойнт (turn ${st.turn_index})`,
       ts: new Date().toISOString(),
     });
-    nudge = `⚡ Token-audit trigger T-09: периодический чекпойнт (turn ${st.turn_index}). Рассмотри запуск /token-audit.`;
+    nudges.push(`⚡ Token-audit trigger T-09: периодический чекпойнт (turn ${st.turn_index}). Рассмотри запуск /token-audit.`);
   }
 
   writeState(st);
 
-  if (nudge) {
+  if (nudges.length) {
     process.stdout.write(JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: nudge },
+      hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: nudges.join('\n') },
     }));
   }
 }

@@ -111,7 +111,7 @@ scope: hook-wiring триггеров T-02..T-10 для token-efficiency-auditor
 
 - **Фаза 1 — ✅ DONE (2026-05-23):** `trigger-state.json` + `docs/schemas/trigger-state.schema.json` + `audit-trigger-hook.js` (PostToolUse `*`: счётчики + T-06/T-07/T-08/T-10) + `settings.json` wiring + guard для self-trigger (auditor-call очищает `pending_audit`) + `.gitignore`. Покрыто 17 standalone-тестами хука.
 - **Фаза 2 — ✅ DONE (2026-05-23):** `audit-turn-hook.js` (UserPromptSubmit: T-09 каждые 20 turns + сброс per-turn счётчика для T-07).
-- **Фаза 3 — отложена (низкая ценность):** `flush-state.js` T-02 nudge на session-end. Полезнее запускать аудитора как явное действие оркестратора на завершении сессии (по образцу `ccip-session-optimizer`), а не nudge в момент, когда сессия уже закрывается.
+- **Фаза C — ✅ DONE (2026-05-24):** детектор фразы T-02 внутри `audit-turn-hook.js`: SESSION_END_RE (case-insensitive) по 4 фразам → pending_audit[T-02] + nudge «(1) ccip-session-optimizer → (2) token-efficiency-auditor». T-02 и T-09 могут сработать одновременно (nudges.join). 9 тестов в `__tests__/audit-turn-hook.test.js`.
 - **Отложено (заблокировано):** T-03/04/05 — до появления token-window API в hook payload.
 
 > **Деталь реализации vs дизайн:** guard `audit_in_progress` упрощён — `post-agent-hook.js` НЕ модифицировался (снижение риска для критичного хука). Вместо этого `audit-trigger-hook.js` сам распознаёт Agent-вызов `token-efficiency-auditor` и очищает `pending_audit`. Subagent-internal tool-calls не доходят до parent PostToolUse, поэтому полный in-progress флаг не требуется.
