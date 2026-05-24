@@ -17,7 +17,6 @@ import { BoqModule } from './modules/boq/boq.module';
 import { SystemConfigModule } from './modules/system-config/system-config.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ZeroReportModule } from './modules/zero-report/zero-report.module';
-import { DisputeModule } from './modules/dispute/dispute.module';
 import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
 
 @Module({
@@ -27,7 +26,7 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        connection: {
+        redis: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
         },
@@ -45,7 +44,6 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
     SystemConfigModule,
     DocumentsModule,
     ZeroReportModule,
-    DisputeModule,
     DisputeSlaModule,
   ],
   providers: [
