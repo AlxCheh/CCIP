@@ -1,18 +1,12 @@
 import { PrismaClient } from '../src/generated/client';
 
 const prisma = new PrismaClient();
+// The "Default Organization" seeded by migration 0001 (id ...0001). It owns the
+// system_config seed rows via an ON DELETE RESTRICT FK, so the test must neither
+// create nor delete it — only borrow its id for FK-valid audit_log probe inserts.
 const FIXTURE_ORG_ID = '00000000-0000-0000-0000-000000000001';
 
-beforeAll(async () => {
-  // Required NOT NULL fields without defaults in Organization: id, name, slug.
-  await prisma.$executeRawUnsafe(`
-    INSERT INTO organizations (id, name, slug)
-    VALUES ('${FIXTURE_ORG_ID}', 'partman-rotation-test', 'partman-rotation-test')
-    ON CONFLICT (id) DO NOTHING`);
-});
-
 afterAll(async () => {
-  await prisma.$executeRawUnsafe(`DELETE FROM organizations WHERE id = '${FIXTURE_ORG_ID}'`);
   await prisma.$disconnect();
 });
 
