@@ -53,4 +53,41 @@ describe('AuditLog partitioning (ADR-010, §10.5 T-22)', () => {
     expect(rows[0].schedule).toBe('0 3 * * *');
     expect(rows[0].active).toBe(true);
   });
+
+  test('rotation: dropping a non-current partition does not affect data in current partition', async () => {
+    await prisma.$executeRawUnsafe(`CALL partman.run_maintenance_proc()`);
+
+    const probeRecordId = BigInt(Date.now());
+    try {
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO audit_log (table_name, record_id, action, performed_at, organization_id)
+        VALUES ('partition_probe', ${probeRecordId}, 'insert', NOW(), '${FIXTURE_ORG_ID}'::uuid)`);
+
+      // Pick the partition with the largest upper bound (furthest in the future).
+      // pg_get_expr on relpartbound returns strings like:
+      //   FOR VALUES FROM ('2026-06-01 00:00:00+00') TO ('2026-07-01 00:00:00+00')
+      //   DEFAULT
+      // String-sort by the rendered bound is chronologically correct for monthly partitions
+      // (TO ('YYYY-MM-DD ...') sorts lexicographically == chronologically).
+      const targets = await prisma.$queryRaw<Array<{ partition_name: string }>>`
+        SELECT c.relname AS partition_name
+        FROM pg_inherits i
+        JOIN pg_class c ON c.oid = i.inhrelid
+        WHERE i.inhparent = 'public.audit_log'::regclass
+          AND pg_get_expr(c.relpartbound, c.oid) NOT LIKE '%DEFAULT%'
+        ORDER BY pg_get_expr(c.relpartbound, c.oid) DESC
+        LIMIT 1`;
+      expect(targets.length).toBeGreaterThan(0);
+
+      await prisma.$executeRawUnsafe(`DROP TABLE "${targets[0].partition_name}"`);
+
+      const survivors = await prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*)::bigint AS count FROM audit_log
+        WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`;
+      expect(Number(survivors[0].count)).toBe(1);
+    } finally {
+      await prisma.$executeRawUnsafe(`
+        DELETE FROM audit_log WHERE table_name = 'partition_probe' AND record_id = ${probeRecordId}`);
+    }
+  });
 });
