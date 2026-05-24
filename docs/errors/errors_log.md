@@ -463,3 +463,22 @@ file: `docs/errors/sessions/2026-05-17T07-32-21-925Z-f2b8288.md`
 ### REMEDIATION-2026-05-20-F001 — adr-loading-guide.md phantom catalog
 
 File `docs/decisions/adr-loading-guide.md` rewritten — 22 phantom ADR slugs removed (e.g. ADR-010-jwt-access-refresh, ADR-020-period-lifecycle, ADR-040-snapshot-consistency). Now references only real ADR-001..ADR-015. Audit guard: `tools/audit/adr-mention-existence.js` + `__tests__/adr-mention-existence.test.js`.
+
+### 2026-05-22T18-24-47-543Z — VIOLATIONS detected (4)
+
+file: `docs/errors/sessions/2026-05-22T18-24-47-543Z-4c96985.md`
+
+- FIREWALL_SELF_ATTEST: "confirmed" найдена в bootstrap
+- FIREWALL_WORDCOUNT: 496 > 300
+- L2_EVIDENCE_ROW_1: git_show_fail(4c969858854ccf070bb6cb3124fbf3598b56d114:.git) [source=git:4c969858854ccf070bb6cb3124fbf3598b56d114:.git]
+- L2_EVIDENCE_ROW_6: quote_too_long(86B) [source=repo:CLAUDE.md]
+
+### 2026-05-24T13-47-26-315Z — VIOLATIONS detected (5)
+
+file: `docs/errors/sessions/2026-05-24T13-47-26-315Z-f86fdc9.md`
+
+- FIREWALL_WORDCOUNT: 319 > 300
+- L2_EVIDENCE_ROW_1: quote_too_long(116B) [source=repo:.claude/runtime/audit-turn-hook.js]
+- L2_EVIDENCE_ROW_3: quote_too_long(85B) [source=repo:.claude/runtime/audit-turn-hook.js]
+- L2_EVIDENCE_ROW_4: quote_too_long(111B) [source=repo:tools/audit/__tests__/audit-turn-hook.test.js]
+- L2_EVIDENCE_ROW_5: quote_not_in_source [source=git:f86fdc9a639480478cc6b2d09c5dff3f23eef452:.claude/runtime/audit-turn-hook.js]
