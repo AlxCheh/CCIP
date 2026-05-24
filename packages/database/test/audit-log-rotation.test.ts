@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/client';
 
 const prisma = new PrismaClient();
 const FIXTURE_ORG_ID = '00000000-0000-0000-0000-000000000001';
