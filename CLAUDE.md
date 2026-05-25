@@ -162,6 +162,9 @@ IF output ≠ expected criteria → name the deviation before retrying
 - `node tools/audit/session-state.js` — runtime файл матчит схему.
 - `node tools/audit/state-contract-section.js` — этот раздел не сломан.
 
+### Scope для inline-сессий (ADR-016)
+`observations[]` наполняются **только** на границе субагента (`post-agent-hook.js`); токены главного агента хукам недоступны. Сессии без субагентов (inline Read/Edit/Bash) — вне token-attribution: `/token-audit` на такой сессии даёт явный исход `inline-session` (recorder), а не немой `trivial-skip`. Контракт `observations[]` при этом не меняется. См. ADR-016 «Уточнение (2026-05-25)».
+
 ## §16 Reading Discipline
 
 Правила экономии токенов при чтении файлов. Цель — снизить per-session token cost на 30-50% без потери точности.

@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const cp = require('node:child_process');
 const { gitRoot } = require('../_lib/git-root');
+const { acquireSerialGuard } = require('../_lib/serial-guard');
+
+// Тесты мутируют общий реальный rule-set → serial-by-design (см. serial-guard.js).
+acquireSerialGuard('token-rules-apply.test.js');
 
 const root = gitRoot();
 const SCRIPT = path.join(root, 'tools/audit/token-rules-apply.js');

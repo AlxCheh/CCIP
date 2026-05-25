@@ -4,6 +4,11 @@ const path = require('node:path');
 const cp = require('node:child_process');
 const { gitRoot } = require('../_lib/git-root');
 const { computeProposals } = require('../token-rules-propose');
+const { acquireSerialGuard } = require('../_lib/serial-guard');
+
+// CLI-кейсы читают общий реальный rule-set (dry-run), который пишут соседние тесты →
+// serial-by-design (см. serial-guard.js).
+acquireSerialGuard('token-rules-propose.test.js');
 
 const root = gitRoot();
 const SCRIPT = path.join(root, 'tools/audit/token-rules-propose.js');
