@@ -55,7 +55,7 @@ invariants:
 ## Алгоритм (L1→L7)
 
 1. **L1 Trigger** — определи триггер; на T-02 сперва прочитай `agent_outputs[ccip-session-optimizer].artifacts`.
-2. **L2 Ingest** — прочитай `session-state.json`; разбей `agent_outputs[*]` + `observations[]` на сегменты.
+2. **L2 Ingest** — прочитай `session-state.json`; разбей `agent_outputs[*]` + `observations[]` на сегменты. Если `agent_outputs`/`observations` пусты, это **inline-сессия** (вся работа сделана главным агентом без субагентов): token-attribution невозможен (токены главного агента хукам недоступны). Не выдавай немой skip — сообщи явно `inline-session` и приведи качественные сигналы из `trigger-state.json` (повторные reads, tool-call bursts, сработавшие триггеры). См. ADR-016 «Уточнение (2026-05-25)».
 3. **L3 Classify** — пометь каждый сегмент: useful_detail / verbose_padding / repeated_info / useless_clarification / suboptimal_cot / inefficient_prompt / context_bloat / redundant_io / over_explanation.
 4. **L4 Metrics** — посчитай `T_total` (Σ `observations[].context_tokens`), `T_useful`, `IDC`, `R_dup`, `E_resp`, `ΔT_session` vs `rolling-30.json`. Estimated-метрики помечай явно.
 5. **L5 Rule eval** — прогон `active.yaml` (+ shadow-прогон `quarantine.yaml`) по сегментам; собери findings с `token_cost` и `severity`.
@@ -78,13 +78,13 @@ proposed → quarantine(3 сессии) → active ──┐
 
 ## Запись сессии (T-02, Phase A)
 
-На T-02 (session-end) после классификации вызови детерминированный recorder. Он точно считает `T_total`, обеспечивает идемпотентность по `session_key`, дописывает `history.jsonl`, пересчитывает `rolling-30.json` и сам пропускает тривиальные сессии (`< 500` токенов или без `agent_outputs`):
+На T-02 (session-end) после классификации вызови детерминированный recorder. Он точно считает `T_total`, обеспечивает идемпотентность по `session_key`, дописывает `history.jsonl`, пересчитывает `rolling-30.json`, пропускает тривиальные сессии (`< 500` токенов или без активности) и отдельно помечает inline-сессии (есть inline-активность в `trigger-state.json`, но нет субагентов):
 
 ```bash
 node tools/audit/token-session-record.js --estimates '{"T_useful":<int>,"IDC":<float>,"R_dup":<float>,"E_resp":<float>}'
 ```
 
-Передавай только реально оценённые estimated-поля (остальные → `null`). Точную математику и NDJSON вручную не делай — это работа скрипта (гарантия качества). Возможные статусы: `recorded` / `idempotent-skip` / `trivial-skip`.
+Передавай только реально оценённые estimated-поля (остальные → `null`). Точную математику и NDJSON вручную не делай — это работа скрипта (гарантия качества). Возможные статусы: `recorded` / `idempotent-skip` / `trivial-skip` / `inline-session`. На `inline-session` строка в `history.jsonl` не пишется (нет точного `T_total`); сообщи пользователю `scope: out-of-token-attribution` и сигналы из поля `signals`, без оценочных чисел токенов.
 
 Затем обнови счётчики правил (AUTO-часть propose-confirm) и сгенерируй предложения:
 

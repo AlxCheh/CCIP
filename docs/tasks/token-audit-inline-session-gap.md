@@ -3,8 +3,9 @@
 **ID:** TASK-2026-05-24-token-audit-inline-gap
 **Task Type:** Architecture Change (правит State Contract §15 + ADR-016)
 **Routing:** `ccip-architect` (lead) → T4; co-agent при реализации хука — `ccip-backend-aux`
-**Status:** deferred · ожидает ADR-решения
+**Status:** resolved · ADR-решение принято (направление B, 2026-05-25)
 **Raised:** 2026-05-24 (сессия audit-remediation, PR #2 merge `37babaa`)
+**Resolved:** 2026-05-25 — ADR-016 «Уточнение (2026-05-25)», ветка `docs/token-audit-inline-gap`
 
 ---
 
@@ -39,19 +40,29 @@
 - Не дублировать ли это с trigger-state (избежать двух источников истины).
 - Альтернатива: оставить как есть и явно задокументировать в ADR-016, что аудитор покрывает только мульти-агентные сессии (тогда `/token-audit` без субагентов должен отвечать понятным «вне scope», а не `trivial-skip`).
 
+## Решение (2026-05-25)
+
+Принято **направление B** (scope + явный исход), отклонено A (расширение хука + схемы). Полная мотивировка — ADR-016 «Уточнение (2026-05-25)».
+
+Реализация:
+- `tools/audit/token-session-record.js` — исход `inline-session` (`scope: out-of-token-attribution` + сигналы из `trigger-state.json`), отдельный счётчик `sessions_inline`. Контракт §15 и схема **не тронуты**.
+- `.claude/agents/token-efficiency-auditor.md` — L2 Ingest и список исходов recorder отражают inline-сессию.
+- `CLAUDE.md §15` — заметка «Scope для inline-сессий».
+- Тесты `token-session-record.test.js` — 2 новых кейса (inline-session с активностью; пустой trigger-state → trivial-skip). 11/11 зелёные.
+
 ## Definition of Ready (Architecture Change)
 
-- [ ] **ADR** — required: расширение/уточнение ADR-016 (scope аудитора + контракт §15). **Блокер до начала реализации.**
+- [x] **ADR** — ADR-016 «Уточнение (2026-05-25)»: scope аудитора подтверждён, §15 уточнён (без структурной правки).
 - [ ] **Phase** — n/a (инфраструктура AI-слоя, вне M-карты)
-- [ ] **Dependency** — `.claude/runtime/*` hooks, `docs/schemas/session-state.schema.json`
-- [ ] **AC** — см. ниже
+- [x] **Dependency** — затронуты `tools/audit/token-session-record.js`, проза агента, `CLAUDE.md §15`. Хуки и схема **не менялись** (следствие направления B).
+- [x] **AC** — см. ниже, все выполнены.
 
-## Acceptance Criteria (черновик, финализирует ccip-architect/PO)
+## Acceptance Criteria
 
-1. `/token-audit` на сессии без субагентов даёт **детерминированный понятный исход** (либо частичный отчёт по turn-level observations, либо явный «вне scope» — по решению ADR), **не** немой `trivial-skip`.
-2. Если выбран путь turn-level observations: `session-state.json` валиден по схеме после правки; `tools/audit/session-state.js` зелёный.
-3. estimated-метрики помечаются `estimated:true` (инвариант ADR-016 при отсутствии raw transcript).
-4. Регрессия не ломает мульти-агентный путь (`post-agent-hook.js` по-прежнему наполняет `agent_outputs`).
+1. [x] `/token-audit` на сессии без субагентов даёт **детерминированный понятный исход** — явный `inline-session` (вне token-attribution) вместо немого `trivial-skip`.
+2. [x] Путь turn-level observations **не выбран** → схема не трогалась; `session-state.schema.json` без изменений (n/a).
+3. [x] estimated-метрики не эмитятся для inline (только качественные сигналы) → инвариант ADR-016 соблюдён тривиально.
+4. [x] Регрессия не ломает мульти-агентный путь: `recorded`/`trivial-skip`/`idempotent-skip` без изменений, 9 старых тестов зелёные.
 
 ## Вне scope
 

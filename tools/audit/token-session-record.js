@@ -16,6 +16,11 @@
  * Skip-логика (Q4): нет agent_outputs ИЛИ T_total < MIN_TOKENS → строку не писать,
  * инкремент sessions_skipped в rolling-30.
  *
+ * Inline-session (ADR-016 amendment 2026-05-25): agents===0, но trigger-state.json
+ * показывает реальную inline-активность (tool-calls / повторные reads / сработавшие
+ * триггеры) → исход `inline-session` вне token-attribution + качественные сигналы;
+ * строка в history НЕ пишется (T_total не оцениваем), инкремент sessions_inline.
+ *
  * Все записи атомарны (tmp + fsync + rename). Fail-loud: ненулевой exit при ошибке
  * (это CLI-инструмент, не hook) — кроме «нечего записывать», что не ошибка.
  *
@@ -32,8 +37,9 @@ const TSTATE  = path.join(ROOT, '.claude/audit/trigger-state.json');
 const HISTORY = path.join(ROOT, '.claude/audit/metrics/history.jsonl');
 const ROLLING = path.join(ROOT, '.claude/audit/metrics/rolling-30.json');
 
-const MIN_TOKENS    = 500; // ниже порога — тривиальная сессия, не пишем (Q4)
-const ROLLING_N     = 30;
+const MIN_TOKENS       = 500; // ниже порога — тривиальная сессия, не пишем (Q4)
+const MIN_INLINE_CALLS = 5;   // inline-сессия «активна» от стольких tool-calls (ADR-016 amendment 2026-05-25)
+const ROLLING_N        = 30;
 
 // ── io helpers ────────────────────────────────────────────────────────────────
 
@@ -86,7 +92,30 @@ function computeDeterministic(sstate) {
   };
 }
 
-function recomputeRolling(rows, skippedTotal) {
+/**
+ * Inline-session signals (ADR-016 amendment 2026-05-25): сессия без субагентов
+ * (agents===0), но с реальной inline-активностью из trigger-state.json. Токены
+ * главного агента хукам недоступны → T_total НЕ оцениваем, возвращаем только
+ * качественные сигналы. null, если активности нет (тогда это настоящая trivial-сессия).
+ */
+function inlineSignals(tstate) {
+  if (!tstate || typeof tstate !== 'object') return null;
+  const toolCalls = Number(tstate.total_calls) || 0;
+  const rc = tstate.read_counts && typeof tstate.read_counts === 'object' ? tstate.read_counts : {};
+  const dupReads = Object.entries(rc)
+    .filter(([, v]) => (Number(v) || 0) >= 2)     // только повторные чтения — шум синглтонов отбрасываем
+    .map(([key, v]) => ({ key, count: Number(v) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const fired = Array.isArray(tstate.pending_audit)
+    ? [...new Set(tstate.pending_audit.map(p => p && p.trigger).filter(Boolean))]
+    : [];
+  const active = toolCalls >= MIN_INLINE_CALLS || dupReads.length > 0 || fired.length > 0;
+  if (!active) return null;
+  return { tool_calls: toolCalls, turns: Number(tstate.turn_index) || 0, dup_reads: dupReads, triggers_fired: fired };
+}
+
+function recomputeRolling(rows, skippedTotal, inlineTotal) {
   const window = rows.slice(-ROLLING_N);
   const n = window.length;
   const mean = (sel) => {
@@ -97,6 +126,7 @@ function recomputeRolling(rows, skippedTotal) {
     window: ROLLING_N,
     sessions_count: n,
     sessions_skipped: skippedTotal,
+    sessions_inline: inlineTotal,
     updated_at: new Date().toISOString(),
     aggregates: {
       T_total_mean: mean(r => r.T_total),
@@ -136,9 +166,6 @@ function main() {
   const key = sessionKey(tstate, sstate);
   const det = computeDeterministic(sstate);
 
-  // Skip-логика (Q4): тривиальная/пустая сессия — не пишем строку, считаем skipped.
-  const trivial = det.agents === 0 || det.T_total < MIN_TOKENS;
-
   const rows = readHistory();
   const last = rows[rows.length - 1];
 
@@ -150,9 +177,25 @@ function main() {
 
   const prevRolling = readJSON(ROLLING, { sessions_skipped: 0 });
   const prevSkipped = Number(prevRolling.sessions_skipped) || 0;
+  const prevInline  = Number(prevRolling.sessions_inline) || 0;
 
+  // Классификация (ADR-016 amendment 2026-05-25):
+  //  - agents===0 + реальная inline-активность → inline-session: вне token-attribution,
+  //    но с качественными сигналами из trigger-state; строку в history НЕ пишем
+  //    (нет точного T_total — токены главного агента хукам недоступны);
+  //  - agents===0 без активности ИЛИ agents>0 && T_total<MIN_TOKENS → trivial-skip;
+  //  - иначе → recorded.
+  const signals = det.agents === 0 ? inlineSignals(tstate) : null;
+  if (signals) {
+    const rolling = recomputeRolling(rows, prevSkipped, prevInline + 1);
+    if (!args.dryRun) atomicWrite(ROLLING, JSON.stringify(rolling, null, 2) + '\n');
+    console.log(JSON.stringify({ status: 'inline-session', session_key: key, scope: 'out-of-token-attribution', signals }));
+    return;
+  }
+
+  const trivial = det.agents === 0 || det.T_total < MIN_TOKENS;
   if (trivial) {
-    const rolling = recomputeRolling(rows, prevSkipped + 1);
+    const rolling = recomputeRolling(rows, prevSkipped + 1, prevInline);
     if (!args.dryRun) atomicWrite(ROLLING, JSON.stringify(rolling, null, 2) + '\n');
     console.log(JSON.stringify({ status: 'trivial-skip', session_key: key, T_total: det.T_total, agents: det.agents }));
     return;
@@ -175,7 +218,7 @@ function main() {
   };
 
   const newRows = rows.concat(row);
-  const rolling = recomputeRolling(newRows, prevSkipped);
+  const rolling = recomputeRolling(newRows, prevSkipped, prevInline);
 
   if (args.dryRun) {
     console.log(JSON.stringify({ status: 'dry-run', row, rolling }, null, 2));

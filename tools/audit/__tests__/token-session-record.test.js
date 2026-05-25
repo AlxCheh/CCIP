@@ -72,6 +72,42 @@ test('skips trivial session (no agent_outputs) and counts it', () => {
   } finally { restore(); }
 });
 
+test('reports inline-session when no agents but trigger-state shows activity', () => {
+  const restore = backup();
+  try {
+    setHist([]); setRolling({ sessions_skipped: 0 });
+    setS([], 0); // нет agent_outputs — но inline-работа была
+    fs.writeFileSync(TSTATE, JSON.stringify({
+      session_key: 'K-INLINE', total_calls: 42, turn_index: 9,
+      read_counts: { 'a.md:0': 3, 'b.md:0': 1 },
+      pending_audit: [{ trigger: 'T-07', reason: 'burst' }, { trigger: 'T-07', reason: 'burst2' }],
+    }));
+    const r = run();
+    assert.strictEqual(r.status, 0, r.err);
+    assert.match(r.out, /"status":"inline-session"/);
+    assert.match(r.out, /"scope":"out-of-token-attribution"/);
+    const out = JSON.parse(r.out);
+    assert.strictEqual(out.signals.tool_calls, 42);
+    assert.deepStrictEqual(out.signals.triggers_fired, ['T-07']); // dedup
+    assert.strictEqual(out.signals.dup_reads.length, 1);          // только count>=2
+    assert.strictEqual(out.signals.dup_reads[0].key, 'a.md:0');
+    assert.strictEqual(hist().length, 0);            // строку в history НЕ пишем
+    assert.strictEqual(rolling().sessions_inline, 1);
+    assert.strictEqual(rolling().sessions_skipped, 0); // НЕ считается skipped
+  } finally { restore(); }
+});
+
+test('inline session with empty trigger-state stays trivial-skip', () => {
+  const restore = backup();
+  try {
+    setHist([]); setRolling({ sessions_skipped: 0 });
+    setS([], 0); setT('K-EMPTY'); // trigger-state без активности
+    const r = run();
+    assert.match(r.out, /"status":"trivial-skip"/);
+    assert.strictEqual(rolling().sessions_skipped, 1);
+  } finally { restore(); }
+});
+
 test('skips trivial session below MIN_TOKENS', () => {
   const restore = backup();
   try {
