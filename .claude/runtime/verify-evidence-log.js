@@ -332,6 +332,11 @@ function main() {
     try { run(raw); }
     catch (e) {
       process.stderr.write(`[verify-evidence-log] FAIL: ${e.message}\n${e.stack || ''}\n`);
+      try {
+        const stamp = utcStamp();
+        atomicAppend(INDEX_FILE, `| ${stamp} | VERIFIER_ERROR | ? | ? | ? | ? | ? | 1 | ${e.message.slice(0, 120)} |`);
+        atomicAppend(ERRORS_LOG, `\n### ${stamp} — VERIFIER_ERROR\n\n- ${e.message}\n`);
+      } catch {}
     }
     process.exit(0);
   });
@@ -347,6 +352,8 @@ function run(raw) {
   if (payload.tool_name !== 'Agent') return;
   const subagent = payload.tool_input?.subagent_type;
   if (subagent !== 'ccip-session-optimizer') return;
+
+  if (process.env.OPT_FORCE_FAULT) throw new Error('forced fault (test only)');
 
   const text = responseText(payload.tool_response);
   if (!text || text.length < 50) {
