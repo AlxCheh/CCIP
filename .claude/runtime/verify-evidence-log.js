@@ -307,14 +307,20 @@ function bootstrapFirewall(bootstrap) {
 
 // ── main ─────────────────────────────────────────────────────────────────────
 
-let raw = '';
-process.stdin.setEncoding('utf-8');
-process.stdin.on('data', chunk => { raw += chunk; });
-process.stdin.on('end', () => {
-  try { run(raw); }
-  catch (e) { process.stderr.write(`[verify-evidence-log] FAIL: ${e.message}\n${e.stack || ''}\n`); }
-  process.exit(0);
-});
+function main() {
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', chunk => { raw += chunk; });
+  process.stdin.on('end', () => {
+    try { run(raw); }
+    catch (e) {
+      process.stderr.write(`[verify-evidence-log] FAIL: ${e.message}\n${e.stack || ''}\n`);
+    }
+    process.exit(0);
+  });
+}
+
+if (require.main === module) main();
 
 function run(raw) {
   let payload;
@@ -432,3 +438,8 @@ function run(raw) {
 
   try { if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE); } catch {}
 }
+
+module.exports = {
+  extractManifestBlock, parseManifest, parseValue, parseEvidenceRows,
+  verifyRowSource, bootstrapFirewall, run,
+};
