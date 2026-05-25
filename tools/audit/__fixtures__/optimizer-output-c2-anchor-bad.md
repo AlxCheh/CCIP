@@ -1,9 +1,9 @@
-## Session Optimization Report — 2026-05-16T00-00-00Z
+## Session Optimization Report — 2026-05-25T00-00-00Z
 
 ### Plan-file selection
 | Кандидат | Упоминания (turn #) | Выбран? |
 |---|---|---|
-| docs/plans/zero-drift.md | smoke fixture | YES |
+| (no plan; C-2 anchor-window regression test) | n/a | N/A |
 
 ### Нарушения (0)
 | # | Паттерн | Где | Стоимость (bucket) | Правка |
@@ -18,21 +18,15 @@ full
 
 ## Next-Session Bootstrap
 
-Phase smoke-test [sha:smoke01]
+C-2 anchor-window BAD fixture [sha:c2anchbd].
 
-### Задачи
-
-#### 1. T-99 smoke
-Plan reference: repo:CLAUDE.md
-No follow-up.
-
-<!-- bootstrap-integrity timestamp:2026-05-16T00-00-00Z generated-by:ccip-session-optimizer -->
+<!-- bootstrap-integrity timestamp:2026-05-25T00-00-00Z generated-by:ccip-session-optimizer -->
 
 ### Evidence Log
 
 | # | claim_in_bootstrap | source_file | anchor | exact_substring |
 |---|---|---|---|---|
-| 1 | claude.md constraints | repo:CLAUDE.md | ## Constraints | no full file reads |
+| 1 | quote outside anchor window | repo:CLAUDE.md | ## Context | no full file reads |
 
 ## §I Манифест инвариантов
 
@@ -46,6 +40,6 @@ invariants:
   preflight_calls: 1
   coverage: full
   trigger_match: 'exact:"End session"'
-  plan_files: ['docs/plans/zero-drift.md']
+  plan_files: []
   state_memory_files: []
 ```

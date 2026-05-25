@@ -224,7 +224,52 @@ function parseEvidenceRows(evidenceSection) {
   return rows;
 }
 
+// ── anchor window (C-2: provenance → entailment) ──────────────────────────────
+
+/**
+ * Slice the source content to the window addressed by `anchor`.
+ * If anchor matches a markdown heading → window = heading .. next heading of same-or-higher level.
+ * Else if anchor is a literal locator present in content → window = ±200 chars around it.
+ * Else → null (anchor not found).
+ */
+function anchorWindow(content, anchor) {
+  if (!anchor) return null;
+  const wanted = anchor.replace(/^#+\s*/, '').trim();
+  const lines = content.split(/\r?\n/);
+  let headingIdx = -1, level = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
+    if (m && (m[2].trim() === wanted || lines[i].trim() === anchor.trim())) {
+      headingIdx = i; level = m[1].length; break;
+    }
+  }
+  if (headingIdx !== -1) {
+    let end = lines.length;
+    for (let i = headingIdx + 1; i < lines.length; i++) {
+      const hm = lines[i].match(/^(#{1,6})\s/);
+      if (hm && hm[1].length <= level) { end = i; break; }
+    }
+    return lines.slice(headingIdx, end).join('\n');
+  }
+  const idx = content.indexOf(anchor);
+  if (idx === -1) return null;
+  return content.slice(Math.max(0, idx - 200), idx + anchor.length + 200);
+}
+
 // ── source verification ──────────────────────────────────────────────────────
+
+/**
+ * C-2: the quote must lie within the WINDOW addressed by the anchor, not just
+ * anywhere in the file. Empty / `n/a` / unresolvable anchors are rejected.
+ */
+function checkInWindow(content, row) {
+  if (!row.anchor || row.anchor.trim() === '' || /^n\/?a$/i.test(row.anchor.trim())) {
+    return { ok: false, reason: 'anchor_required' };
+  }
+  const win = anchorWindow(content, row.anchor);
+  if (win === null) return { ok: false, reason: 'anchor_not_found' };
+  return win.includes(row.quote) ? { ok: true } : { ok: false, reason: 'quote_not_in_anchor_window' };
+}
 
 function verifyRowSource(row) {
   const src = row.source_file;
@@ -265,7 +310,7 @@ function verifyRowSource(row) {
     } catch (e) {
       return { ok: false, reason: `git_show_fail(${sha}:${gitPath})` };
     }
-    return content.includes(row.quote) ? { ok: true } : { ok: false, reason: 'quote_not_in_source' };
+    return checkInWindow(content, row);
   }
 
   // repo: и state-memory: — resolve относительно ROOT; затем confinement.
@@ -277,9 +322,7 @@ function verifyRowSource(row) {
   try { content = fs.readFileSync(abs, 'utf-8'); }
   catch (e) { return { ok: false, reason: `source_read_fail(${e.code || 'unknown'})` }; }
 
-  return content.includes(row.quote)
-    ? { ok: true }
-    : { ok: false, reason: 'quote_not_in_source' };
+  return checkInWindow(content, row);
 }
 
 // ── bootstrap firewall ───────────────────────────────────────────────────────
@@ -470,5 +513,5 @@ function run(raw) {
 
 module.exports = {
   extractManifestBlock, parseManifest, parseValue, parseEvidenceRows,
-  verifyRowSource, bootstrapFirewall, run,
+  verifyRowSource, bootstrapFirewall, anchorWindow, run,
 };

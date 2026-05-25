@@ -139,6 +139,7 @@ Bootstrap прошлой сессии может быть seed для конте
 
 <!-- portable: core prohibitions — substring rule, prefix-allowlist, telephone-game guard, no orphan claims, no slug-inference, no full-plan reads -->
 - Процитировать строку, которой нет в UTF-8 контенте source_file (substring-check; длина ≤ 80B UTF-8). Хук Read'ит источник и `content.includes(quote)`-check'ит.
+- Evidence row с пустым / `n/a` / нерезолвящимся `anchor` ЗАПРЕЩЁН (C-2). `anchor` — heading-строка источника ИЛИ literal-локатор, реально присутствующий в файле; `exact_substring` обязан лежать в окне этого anchor'а, а не где угодно в файле. Reason: anchor_required / anchor_not_found / quote_not_in_anchor_window.
 - `source_file` без префикса `repo:` / `git:<SHA>:` / `state-memory:` — INVALID, row отклоняется.
 - Bootstrap прошлой сессии, user prompt, chat history как источник Evidence — запрещены.
 - Заявить bootstrap-факт без соответствующей строки в Артефакте 3.
@@ -261,7 +262,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 - `exact_substring` ДОЛЖЕН удовлетворять `bytes(quote) ⊂ bytes(source_file_content)`. Хук Read'ит source и substring-check'ит. Парафраз / нормализация whitespace / перевод = провал.
 - `exact_substring` с литеральным `|` ДОЛЖЕН эскейпить как `\|` (markdown-table breaker). Хук un-escape'ит `\|` → `|` перед substring-check. Длина считается в UTF-8 байтах через `Buffer.byteLength`, не code units.
 - `exact_substring` ДОЛЖЕН быть ≥ 12 байт UTF-8 И не состоять из одного low-signal слова (`done`/`pending`/`none`/...). Слишком короткая/общая цитата → row отклоняется (quote_too_short / quote_low_signal). Цитируй ID + контекст, не голый статус.
-- `anchor` — heading-строка или короткий локатор. Документация, не enforcement.
+- `anchor` — heading-строка источника или literal-локатор. **Enforced (C-2):** хук строит окно от anchor до следующего heading того же/высшего уровня (или ±200B вокруг literal-локатора) и проверяет `exact_substring` ВНУТРИ окна. Anchor обязателен; `n/a` запрещён.
 - Один row на конкретный claim. Агрегаты разбивай.
 - > 25 rows → bootstrap слишком амбициозный; сокращай bootstrap, не таблицу.
 - Если для claim нет источника, удовлетворяющего allowlist'у — claim **удаляется** из bootstrap. Не `[unverified]` тег, не «приблизительно». Удаляется.
