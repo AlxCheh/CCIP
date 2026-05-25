@@ -75,7 +75,7 @@ function responseText(toolResponse) {
 
 function gitShortHash() {
   try {
-    return execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
+    return execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 })
       .toString().trim();
   } catch { return 'nogit'; }
 }
@@ -300,7 +300,7 @@ function bootstrapFirewall(bootstrap) {
     let actual = null;
     try {
       actual = execSync('git rev-parse --abbrev-ref HEAD',
-        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString().trim();
     } catch {}
     if (actual && branchClaim[1] !== actual) {
       v.push(`FIREWALL_BRANCH_DRIFT: claimed=${branchClaim[1]} actual=${actual}`);
@@ -313,7 +313,7 @@ function bootstrapFirewall(bootstrap) {
   // git cat-file because the regex only admits [0-9a-f]{4,40}.
   for (const m of bootstrap.matchAll(/\[sha:([0-9a-f]{4,40})\]/gi)) {
     try {
-      execSync(`git cat-file -e ${m[1]}`, { cwd: ROOT, stdio: 'ignore' });
+      execSync(`git cat-file -e ${m[1]}`, { cwd: ROOT, stdio: 'ignore', timeout: 5000 });
     } catch {
       v.push(`FIREWALL_SHA_NOT_FOUND: ${m[1]}`);
     }
