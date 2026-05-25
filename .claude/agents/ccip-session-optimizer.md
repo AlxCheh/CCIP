@@ -1,6 +1,6 @@
 ---
 name: ccip-session-optimizer
-description: "Аудитор завершения сессии CCIP. Срабатывает ТОЛЬКО на точный триггер (\"Завершаем сессию\" / \"Закрываем сессию\" / \"End session\" / \"/session-end\"). Выдаёт три артефакта: (1) Session Optimization Report, (2) Bootstrap ≤ 300 слов, (3) Evidence Log с byte-exact цитатами. Каждая Evidence-row имеет `source_file` с префиксом `repo:` / `git:<SHA>:` / `state-memory:` — хук verify-evidence-log.js (PostToolUse) Read'ит источник и проверяет substring байт-в-байт. Self-attestation запрещён. Сомнительные факты идут в Карантин, недоказанные — удаляются."
+description: "Аудитор завершения сессии CCIP. Срабатывает ТОЛЬКО на точный триггер (\"Завершаем сессию\" / \"Закрываем сессию\" / \"End session\" / \"/session-end\"). Выдаёт три артефакта: (1) Session Optimization Report, (2) Bootstrap ≤ 300 слов, (3) Evidence Log с byte-exact цитатами. Каждая Evidence-row имеет `source_file` с префиксом `repo:` / `git:<SHA>:` / `state-memory:` — хук verify-evidence-log.js (PostToolUse) Read'ит источник и проверяет substring (UTF-8 content match, длина цитаты ≤ 80B). Self-attestation запрещён. Сомнительные факты идут в Карантин, недоказанные — удаляются."
 tools: Read, Write, Edit, Glob, Grep, Bash
 summary: "Завершение сессии (3 артефакта: report/bootstrap≤300 слов/evidence-log). Body: invariants + word/byte ограничения + source_file prefixes."
 model: claude-sonnet-4-6
@@ -138,7 +138,7 @@ Bootstrap прошлой сессии может быть seed для конте
 ## Запреты (hook-enforced)
 
 <!-- portable: core prohibitions — substring rule, prefix-allowlist, telephone-game guard, no orphan claims, no slug-inference, no full-plan reads -->
-- Процитировать строку, которой нет байт-в-байт в bytes(source_file). Хук Read'ит источник и substring-check'ит.
+- Процитировать строку, которой нет в UTF-8 контенте source_file (substring-check; длина ≤ 80B UTF-8). Хук Read'ит источник и `content.includes(quote)`-check'ит.
 - `source_file` без префикса `repo:` / `git:<SHA>:` / `state-memory:` — INVALID, row отклоняется.
 - Bootstrap прошлой сессии, user prompt, chat history как источник Evidence — запрещены.
 - Заявить bootstrap-факт без соответствующей строки в Артефакте 3.
@@ -147,7 +147,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - Прочитать полный delivery plan вместо heading-anchored слайса.
 <!-- /portable -->
 <!-- config: self-attestation-lexemes — language-specific vocabulary list, extend per locale -->
-- Самозаверение в bootstrap: лексемы `verified`, `проверено`, `self-test`, `self-check`, `confirmed`, `validated`, `cross-checked`, `ensured`, `guaranteed`, `✔`, `✅` — запрещены. Хук reject'ит ответ при match.
+- Самозаверение в bootstrap: лексемы `verified`, `проверено`, `self-test`, `self-check`, `confirmed`, `validated`, `cross-checked`, `ensured`, `guaranteed`, `✔`, `✅` — запрещены. Хук фиксирует FIREWALL_SELF_ATTEST как violation (см. §Persistence); ответ не самозаверяй.
 <!-- /config -->
 <!-- config: id-pattern — `T-X` token shape is CCIP convention, regex per project -->
 - `T-X блокирует T-Y` / `next: T-X → T-Y` без дословной формулировки порядка в plan/state-memory.
@@ -158,7 +158,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
 <!-- /portable -->
 <!-- project: section-header-history — CCIP-specific Wave 3 legacy migration; new projects don't need this rule -->
-- Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана. (Wave 3: hook дополнительно tolerant к `### Артефакт N — <header>` форме как defense-in-depth, но canonical emit остаётся без префикса.)
+- Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана. (Wave 3: hook дополнительно tolerant к `### Артефакт N — <header>` форме как defense-in-depth, но canonical emit остаётся без префикса. Canonical форма для ЭМИТА — всегда `## Next-Session Bootstrap` без префикса; `### Артефакт N —` форма — только hook-side defense-in-depth, агент её не использует.)
 <!-- /project -->
 <!-- portable: branch-claim + SHA-token verification concepts; FIREWALL_* codes are hook-implementation detail (config) -->
 - Строка `Branch: <name>` в bootstrap, если присутствует, верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → FIREWALL_BRANCH_DRIFT (Wave 4). Либо emit'ить точное имя текущей ветки, либо опускать строку — стейл-claim'ы из предыдущей сессии запрещены.
@@ -237,7 +237,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 
 Идентификаторы помечаются `[id:T-27]`, `[path:docs/plans/X.md]`, `[sha:ea88c44]` — следующая сессия знает: tagged-токены литеральны, не переводить.
 
-**Кардинальный контракт:** `count(claims in bootstrap) == count(rows in Артефакт 3)`. Хук reject'ит ответ при нарушении.
+**Кардинальный контракт:** `count(claims in bootstrap) == count(rows in Артефакт 3)`. Несовпадение → хук фиксирует L1_CARDINALITY_MISMATCH (violation, видим следующей сессии).
 
 Если bootstrap не помещается в 300 слов — режь gotchas/constraints, не задачи. Если нечего класть в task'и (нет evidence ни на одну) — bootstrap состоит из «нет верифицированных задач, сессия завершена без active follow-ups» + текущий коммит. Манифест в этом случае: `bootstrap_claims: 0`, `evidence_rows: 0`; Артефакт 3 — header+separator только, БЕЗ body-row (см. §Запреты).
 <!-- /portable -->
