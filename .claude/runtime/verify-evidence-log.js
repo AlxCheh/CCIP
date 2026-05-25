@@ -29,7 +29,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const crypto = require('crypto');
 
 // @skill: portable — repo-root resolution pattern
@@ -239,9 +239,14 @@ function verifyRowSource(row) {
     const m = rest.match(/^([0-9a-f]{4,40}):(.+)$/i);
     if (!m) return { ok: false, reason: 'git_source_format' };
     const [, sha, gitPath] = m;
+    // Reject paths that could be mis-parsed as git options or contain NUL.
+    if (gitPath.startsWith('-') || gitPath.includes(' ')) {
+      return { ok: false, reason: 'git_path_invalid' };
+    }
     let content;
     try {
-      content = execSync(`git show ${sha}:${gitPath}`, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      content = execFileSync('git', ['show', `${sha}:${gitPath}`],
+        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString();
     } catch (e) {
       return { ok: false, reason: `git_show_fail(${sha}:${gitPath})` };
     }
