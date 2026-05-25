@@ -52,6 +52,16 @@ const PREFLIGHT_CALL_LIMIT = 6;
 // @skill: config:source-prefix-vocabulary — each prefix needs a registered resolver (see verifyRowSource)
 const ALLOWED_SOURCE_PREFIXES = ['repo:', 'git:', 'state-memory:'];
 
+// @skill: config:memory-roots — state-memory may live outside the repo (e.g. ~/.claude/.../memory).
+// Repo/git sources are confined to ROOT; state-memory additionally to these roots.
+const MEMORY_ROOTS = (process.env.OPT_MEMORY_ROOTS || '')
+  .split(path.delimiter).filter(Boolean).map(p => path.resolve(p));
+
+function isUnder(child, parent) {
+  const rel = path.relative(parent, child);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function responseText(toolResponse) {
@@ -253,8 +263,10 @@ function verifyRowSource(row) {
     return content.includes(row.quote) ? { ok: true } : { ok: false, reason: 'quote_not_in_source' };
   }
 
-  // repo: и state-memory: — оба resolve относительно ROOT
+  // repo: и state-memory: — resolve относительно ROOT; затем confinement.
   const abs = path.isAbsolute(rest) ? rest : path.resolve(ROOT, rest);
+  const confined = isUnder(abs, ROOT) || (kind === 'state-memory' && MEMORY_ROOTS.some(r => isUnder(abs, r)));
+  if (!confined) return { ok: false, reason: 'path_escape' };
   if (!fs.existsSync(abs)) return { ok: false, reason: 'source_file_missing' };
   let content;
   try { content = fs.readFileSync(abs, 'utf-8'); }
