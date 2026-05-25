@@ -260,6 +260,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 - `source_file` ДОЛЖЕН иметь префикс `repo:` / `git:<SHA>:` / `state-memory:`. Без префикса — INVALID.
 - `exact_substring` ДОЛЖЕН удовлетворять `bytes(quote) ⊂ bytes(source_file_content)`. Хук Read'ит source и substring-check'ит. Парафраз / нормализация whitespace / перевод = провал.
 - `exact_substring` с литеральным `|` ДОЛЖЕН эскейпить как `\|` (markdown-table breaker). Хук un-escape'ит `\|` → `|` перед substring-check. Длина считается в UTF-8 байтах через `Buffer.byteLength`, не code units.
+- `exact_substring` ДОЛЖЕН быть ≥ 12 байт UTF-8 И не состоять из одного low-signal слова (`done`/`pending`/`none`/...). Слишком короткая/общая цитата → row отклоняется (quote_too_short / quote_low_signal). Цитируй ID + контекст, не голый статус.
 - `anchor` — heading-строка или короткий локатор. Документация, не enforcement.
 - Один row на конкретный claim. Агрегаты разбивай.
 - > 25 rows → bootstrap слишком амбициозный; сокращай bootstrap, не таблицу.

@@ -48,6 +48,9 @@ const BANNED_LEXEMES = /\b(verified|проверено|self[- ]?test|self[- ]?ch
 // @skill: config:budget-numbers — bootstrap word limit + pre-flight token/call caps; per-project tunable
 const BOOTSTRAP_WORD_LIMIT = 300;
 const PREFLIGHT_TOKEN_LIMIT = 3000;
+// @skill: config:min-quote-bytes — нижняя граница специфичности цитаты
+const MIN_QUOTE_BYTES = parseInt(process.env.OPT_MIN_QUOTE_BYTES || '12', 10);
+const LOW_SIGNAL_QUOTES = new Set(['done', 'pending', 'blocked', 'deferred', 'none', 'n/a', 'todo', 'wip', 'ok', 'yes', 'no']);
 const PREFLIGHT_CALL_LIMIT = 6;
 // @skill: config:source-prefix-vocabulary — each prefix needs a registered resolver (see verifyRowSource)
 const ALLOWED_SOURCE_PREFIXES = ['repo:', 'git:', 'state-memory:'];
@@ -239,6 +242,8 @@ function verifyRowSource(row) {
   // multi-byte chars and let Cyrillic-heavy quotes slip past (Wave 2 fix #3).
   const quoteBytes = Buffer.byteLength(row.quote, 'utf-8');
   if (quoteBytes > 80) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
+  if (quoteBytes < MIN_QUOTE_BYTES) return { ok: false, reason: `quote_too_short(${quoteBytes}B)` };
+  if (LOW_SIGNAL_QUOTES.has(row.quote.trim().toLowerCase())) return { ok: false, reason: 'quote_low_signal' };
 
   const colon = src.indexOf(':');
   const kind = src.slice(0, colon);

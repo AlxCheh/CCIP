@@ -33,7 +33,7 @@ All claims verified by hook.
 | # | claim_in_bootstrap | source_file | anchor | exact_substring |
 |---|---|---|---|---|
 | 1 | repo source ok | repo:CLAUDE.md | top heading | Simple > complex |
-| 2 | bad path | repo:nonexistent-file-xyz.md | none | irrelevant |
+| 2 | bad path | repo:nonexistent-file-xyz.md | none | irrelevant-quote-xyz |
 | 3 | no prefix | docs/plans/zero-drift.md | none | whatever |
 
 ## §I Манифест инвариантов
