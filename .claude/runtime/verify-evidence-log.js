@@ -324,7 +324,12 @@ function bootstrapFirewall(bootstrap) {
     v.push('FIREWALL_BOOTSTRAP_MISSING');
     return v;
   }
-  const lex = bootstrap.match(BANNED_LEXEMES);
+  // Self-attest ban applies to bootstrap PROSE only — not the appended Evidence
+  // Log table or the §I manifest (whose v2 key `verified:` would false-trip).
+  const prose = bootstrap
+    .split(/\n#{2,3}\s+Evidence Log\b/)[0]
+    .replace(/```yaml\s+manifest=invariants-v[12][\s\S]*?```/g, '');
+  const lex = prose.match(BANNED_LEXEMES);
   if (lex) v.push(`FIREWALL_SELF_ATTEST: "${lex[0]}" найдена в bootstrap`);
 
   const wc = countWords(bootstrap);
