@@ -161,14 +161,16 @@ Bootstrap прошлой сессии может быть seed для конте
 - Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
 <!-- /portable -->
 <!-- project: section-header-history — CCIP-specific Wave 3 legacy migration; new projects don't need this rule -->
-- Секция `## Bootstrap` / `## Bootstrap Evidence Log` (legacy v2). Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Хук более не fallback'ит на bare `Bootstrap` — секция не будет распознана. (Wave 3: hook дополнительно tolerant к `### Артефакт N — <header>` форме как defense-in-depth, но canonical emit остаётся без префикса. Canonical форма для ЭМИТА — всегда `## Next-Session Bootstrap` без префикса; `### Артефакт N —` форма — только hook-side defense-in-depth, агент её не использует.)
+- Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Bare `## Bootstrap` / legacy-формы не распознаются. Canonical эмит — всегда без префикса; `### Артефакт N —` форма только hook-side defense-in-depth, агент её не использует.
 <!-- /project -->
 <!-- portable: branch-claim + SHA-token verification concepts; FIREWALL_* codes are hook-implementation detail (config) -->
-- Строка `Branch: <name>` в bootstrap, если присутствует, верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → FIREWALL_BRANCH_DRIFT (Wave 4). Либо emit'ить точное имя текущей ветки, либо опускать строку — стейл-claim'ы из предыдущей сессии запрещены.
-- Токены `[sha:NNNNNNN]` в bootstrap (4–40 hex chars) верифицируются через `git cat-file -e <sha>`. Несуществующий объект → FIREWALL_SHA_NOT_FOUND: <sha> (Wave 5). Цитируй только реальные commits — фабрикация или копирование из прошлой сессии ловится.
+- Строка `Branch: <name>` в bootstrap, если присутствует, верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → FIREWALL_BRANCH_DRIFT. Либо emit'ить точное имя текущей ветки, либо опускать строку — стейл-claim'ы из предыдущей сессии запрещены.
+- Токены `[sha:NNNNNNN]` в bootstrap (4–40 hex chars) верифицируются через `git cat-file -e <sha>`. Несуществующий объект → FIREWALL_SHA_NOT_FOUND: <sha>. Цитируй только реальные commits — фабрикация или копирование из прошлой сессии ловится.
 <!-- /portable -->
 <!-- project: session-artifact-ban — `docs/errors/sessions/` is CCIP-specific archive path; principle (no hook-output as Evidence) is portable, path is not -->
-- Evidence row с `source_file: repo:docs/errors/sessions/...` ЗАПРЕЩЁН (Wave 7). Это hook-генерируемые session-артефакты — цитировать их = telephone-game, переносить bootstrap прошлой сессии в эту как «верифицированный» факт. Reason: `source_is_session_artifact`. Первичный источник всегда в repo / state-memory / git-history, не в hook-output.
+- Evidence row с `source_file: repo:docs/errors/sessions/...` ЗАПРЕЩЁН. Это hook-генерируемые session-артефакты — цитировать их = telephone-game, переносить bootstrap прошлой сессии в эту как «верифицированный» факт. Reason: `source_is_session_artifact`. Первичный источник всегда в repo / state-memory / git-history, не в hook-output.
+
+> Wave-история enforcement'а и полный список reason-кодов — `.claude/runtime/verify-evidence-log.CHANGELOG.md`.
 <!-- /project -->
 <!-- portable: no-placeholder-row rule for empty Evidence Log -->
 - Placeholder row в Evidence Log при 0 claims (`| — | n/a | n/a | n/a | n/a |` и т.п.). Каноническая форма пустого Evidence Log — только header+separator, без body-rows. Хук толерантно skip'ает placeholder, но spec — header+separator only.
