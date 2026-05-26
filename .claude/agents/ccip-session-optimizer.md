@@ -273,30 +273,33 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 <!-- config: sentinel string "manifest=invariants-v1", budget numbers, plan_files/state_memory_files keys -->
 ## §I — Манифест инвариантов (обязательный последний блок ответа)
 
-Открывается ` ```yaml manifest=invariants-v1 ` (sentinel обязателен — иначе хук не распознает блок и пометит `MANIFEST_MISSING`).
+Открывается ` ```yaml manifest=invariants-v2 ` (sentinel обязателен — иначе хук не распознает блок и пометит `MANIFEST_MISSING`). Sentinel `-v1` тоже принимается (backward-compat), но эмить нужно `-v2` — trust-split явно отделяет machine-verified поля от honor-system деклараций.
 
-```yaml manifest=invariants-v1
-invariants:
+```yaml manifest=invariants-v2
+verified:                       # машинно-проверяется хуком
   bootstrap_claims: <N>
-  evidence_rows: <N>           # ОБЯЗАНО == bootstrap_claims
-  unverified_rows: 0           # ОБЯЗАНО == 0
-  quarantined: <K>
-  preflight_tokens: <≤3000>
-  preflight_calls: <≤6>
-  coverage: full               # full | partial
+  evidence_rows: <N>            # ОБЯЗАНО == bootstrap_claims
+  unverified_rows: 0            # ОБЯЗАНО == 0
+verified_meta:
   trigger_match: 'exact:"<phrase>"'
   plan_files: ['<path>']
   state_memory_files: ['<path>']
+self_declared:                  # honor-system; хук НЕ верифицирует, помечает как self_declared
+  quarantined: <K>
+  preflight_tokens: <≤3000>
+  preflight_calls: <≤6>
+  coverage: full                # full | partial
 ```
 
 Hook проверяет:
-1. Sentinel `manifest=invariants-v1` присутствует.
+1. Sentinel `manifest=invariants-v[12]` присутствует.
 2. `bootstrap_claims == evidence_rows`.
 3. `unverified_rows == 0`.
 4. `preflight_tokens > 3000` допустим ТОЛЬКО при `coverage: partial`.
 5. Каждая Evidence row substring-check'ается против реального source_file.
 6. Bootstrap НЕ содержит запрещённых лексем (см. §Запреты).
 7. Распарсенное число evidence rows совпадает с задекларированным `evidence_rows`.
+8. Поля под `self_declared:` (preflight_tokens/calls, coverage, quarantined) НЕ верифицируются — фиксируются как декларация. Не выдавай их за проверенные.
 <!-- /portable -->
 
 <!-- project: violation persistence paths — `docs/errors/sessions/`, `errors_log.md`, `session-opt-index.md` are CCIP layout -->

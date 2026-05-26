@@ -116,9 +116,9 @@ function atomicAppend(filePath, line) {
 
 // ── extractors ───────────────────────────────────────────────────────────────
 
-/** Require explicit sentinel `manifest=invariants-v1` after ```yaml */
+/** Require explicit sentinel `manifest=invariants-v1` or `-v2` after ```yaml */
 function extractManifestBlock(text) {
-  const re = /```yaml\s+manifest=invariants-v1\s*\n([\s\S]*?)\n```/;
+  const re = /```yaml\s+manifest=invariants-v[12]\s*\n([\s\S]*?)\n```/;
   const m = text.match(re);
   return m ? m[1].trim() : null;
 }
@@ -159,6 +159,13 @@ function parseManifest(yamlText) {
   try { doc = yaml.load(yamlText); }
   catch { return null; }
   if (!doc || typeof doc !== 'object') return null;
+  // v2: trust-split — flatten verified + verified_meta + self_declared into one
+  // view, tagging which keys were self-declared (not machine-verified by the hook).
+  if (doc.verified && typeof doc.verified === 'object') {
+    const flat = { ...doc.verified, ...(doc.verified_meta || {}), ...(doc.self_declared || {}) };
+    flat._self_declared_keys = Object.keys(doc.self_declared || {});
+    return flat;
+  }
   // v1: flat or wrapped under `invariants:`.
   if (doc.invariants && typeof doc.invariants === 'object') return doc.invariants;
   return doc;
@@ -461,6 +468,9 @@ function run(raw) {
     violations.length
       ? `## VIOLATIONS (${violations.length})\n\n${violations.map(v => `- ${v}`).join('\n')}\n`
       : '## VIOLATIONS\n\n_none_\n',
+    inv && inv._self_declared_keys && inv._self_declared_keys.length
+      ? `_self_declared (NOT verified by hook): ${inv._self_declared_keys.join(', ')}_\n`
+      : '',
     '## Manifest',
     '',
     '```yaml',
