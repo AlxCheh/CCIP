@@ -159,16 +159,21 @@ function parseManifest(yamlText) {
   try { doc = yaml.load(yamlText); }
   catch { return null; }
   if (!doc || typeof doc !== 'object') return null;
-  // v2: trust-split — flatten verified + verified_meta + self_declared into one
-  // view, tagging which keys were self-declared (not machine-verified by the hook).
-  if (doc.verified && typeof doc.verified === 'object') {
-    const flat = { ...doc.verified, ...(doc.verified_meta || {}), ...(doc.self_declared || {}) };
-    flat._self_declared_keys = Object.keys(doc.self_declared || {});
+  // Unwrap an optional `invariants:` wrapper (v1 habit) FIRST, then apply the v2
+  // trust-split — so `invariants: { machine_checked: {...} }` also flattens (D2).
+  const root = (doc.invariants && typeof doc.invariants === 'object') ? doc.invariants : doc;
+  // v2 machine-checked group. `machine_checked` is canonical; `verified` accepted
+  // as legacy (the word `verified` collided with the self-attest banlist — D1).
+  const mv = (root.machine_checked && typeof root.machine_checked === 'object') ? root.machine_checked
+           : (root.verified && typeof root.verified === 'object') ? root.verified
+           : null;
+  if (mv) {
+    const flat = { ...mv, ...(root.meta || root.verified_meta || {}), ...(root.self_declared || {}) };
+    flat._self_declared_keys = Object.keys(root.self_declared || {});
     return flat;
   }
-  // v1: flat or wrapped under `invariants:`.
-  if (doc.invariants && typeof doc.invariants === 'object') return doc.invariants;
-  return doc;
+  // v1: flat, or unwrapped `invariants:` contents.
+  return root;
 }
 
 // ── evidence parser ──────────────────────────────────────────────────────────

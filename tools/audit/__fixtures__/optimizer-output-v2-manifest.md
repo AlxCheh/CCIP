@@ -3,6 +3,7 @@
 
 ## Next-Session Bootstrap
 1. **Context:** load minimum level needed phase
+2. **Constraints:** manifest v2 uses machine_checked / self_declared trust-split keys
 <!-- bootstrap-integrity timestamp:2026-05-25 generated-by:ccip-session-optimizer -->
 
 ### Evidence Log
@@ -12,7 +13,7 @@
 | 1 | constraints rule | repo:CLAUDE.md | ## Constraints | no full file reads |
 
 ```yaml manifest=invariants-v2
-verified:
+machine_checked:
   bootstrap_claims: 1
   evidence_rows: 1
   unverified_rows: 0

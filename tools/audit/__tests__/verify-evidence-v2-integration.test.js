@@ -17,5 +17,8 @@ test('v2 manifest: verifies 1/1, no violations, surfaces self_declared keys', ()
     assert.match(session, /evidence_rows_verified: 1\/1/);
     assert.match(session, /## VIOLATIONS\n\n_none_/);
     assert.match(session, /_self_declared \(NOT verified by hook\): .*preflight_tokens/);
+    // D1 regression: bootstrap prose mentions the v2 schema keys
+    // (machine_checked / self_declared) — must NOT trip the self-attest firewall.
+    assert.doesNotMatch(session, /FIREWALL_SELF_ATTEST/);
   } finally { teardown(tmp); }
 });

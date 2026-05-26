@@ -25,7 +25,7 @@
 | C-4 | PreToolUse single-flight gate (`optimizer-gate.js`) — реальный re-entrancy enforcement. | `optimizer-gate.js` |
 | C-5 | `VERIFIER_ERROR`-маяк в INDEX/ERRORS при внутренней ошибке (exit 0 сохраняется). | `main()` catch |
 | M-1 | Path-confinement repo/state-memory под ROOT (+`OPT_MEMORY_ROOTS`). `path_escape`. | `verifyRowSource` fs-ветка |
-| M-3/M-10 | Manifest v2 trust-split: `verified` (machine) vs `self_declared` (honor-system). | `parseManifest` |
+| M-3/M-10 | Manifest v2 trust-split: `machine_checked` (hook-verified) vs `self_declared` (honor-system). Ключ был `verified`, но он сам — banned self-attest лексема (D1), переименован; parseManifest принимает legacy `verified` и разворачивает `invariants:`-обёртку (D2). | `parseManifest` |
 | M-4 | Manifest через `js-yaml` (вместо hand-rolled flat-парсера). | `parseManifest` |
 | M-5 | Минимальная энтропия цитаты (`MIN_QUOTE_BYTES`=12 + low-signal stop-list). `quote_too_short` / `quote_low_signal`. | `verifyRowSource` |
 | M-6 | `timeout: 5000` на всех git-вызовах. | `gitShortHash`, `bootstrapFirewall`, `verifyRowSource` |

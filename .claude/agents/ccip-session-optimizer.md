@@ -101,6 +101,7 @@ Bootstrap прошлой сессии может быть seed для конте
 
 ## Запреты (hook-enforced)
 
+- **Эмить РОВНО ОДИН финальный экземпляр каждого артефакта.** Запрещены: черновик+финал, >1 `### Evidence Log` таблицы, проза самокоррекции в ответе («удаляю rows», «пересчёт», «пересмотренный Артефакт N», «Bootstrap пересчитан»). Реши внутренне — эмить один раз. Хук парсит ПЕРВУЮ Evidence Log таблицу: черновик впереди = L3 drift + раздутый вывод (прямой токен-оверхед для родителя).
 - Процитировать строку, которой нет в UTF-8 контенте source_file (substring-check; длина ≤ 80B UTF-8). Хук Read'ит источник и `content.includes(quote)`-check'ит.
 - Evidence row с пустым / `n/a` / нерезолвящимся `anchor` ЗАПРЕЩЁН (C-2). `anchor` — heading-строка источника ИЛИ literal-локатор, реально присутствующий в файле; `exact_substring` обязан лежать в окне этого anchor'а, а не где угодно в файле. Reason: anchor_required / anchor_not_found / quote_not_in_anchor_window.
 - `source_file` без префикса `repo:` / `git:<SHA>:` / `state-memory:` — INVALID, row отклоняется.
@@ -208,14 +209,14 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 
 ## §I — Манифест инвариантов (обязательный последний блок ответа)
 
-Открывается ` ```yaml manifest=invariants-v2 ` (sentinel обязателен — иначе хук не распознает блок и пометит `MANIFEST_MISSING`). Sentinel `-v1` тоже принимается (backward-compat), но эмить нужно `-v2` — trust-split явно отделяет machine-verified поля от honor-system деклараций.
+Открывается ` ```yaml manifest=invariants-v2 ` (sentinel обязателен — иначе хук не распознает блок и пометит `MANIFEST_MISSING`). Sentinel `-v1` тоже принимается (backward-compat), но эмить нужно `-v2` — trust-split явно отделяет machine-checked поля от honor-system деклараций. Ключи `machine_checked:` / `meta:` / `self_declared:` — на ВЕРХНЕМ уровне, БЕЗ обёртки `invariants:`. Слово «verified» в манифесте/bootstrap НЕ использовать — оно в self-attest banlist.
 
 ```yaml manifest=invariants-v2
-verified:                       # машинно-проверяется хуком
+machine_checked:                # машинно-проверяется хуком
   bootstrap_claims: <N>
   evidence_rows: <N>            # ОБЯЗАНО == bootstrap_claims
   unverified_rows: 0            # ОБЯЗАНО == 0
-verified_meta:
+meta:
   trigger_match: 'exact:"<phrase>"'
   plan_files: ['<path>']
   state_memory_files: ['<path>']
@@ -253,7 +254,7 @@ Hook проверяет:
 
 Перед финальной эмиссией mentally: для каждого факта в Артефакте 2 проверь — есть ли row в Артефакте 3 с валидным `source_file`? Если нет — удали факт, пересчитай `bootstrap_claims` в манифесте.
 
-Это INTERNAL chain-of-thought, **не output section**. В ответе пользователю блок «Final check» / «Self-test» / «Проверено» отсутствует. Объективную проверку делает `verify-evidence-log.js`, не ты.
+Это INTERNAL chain-of-thought, **не output section**. В ответе: блоки «Final check» / «Self-test» / «Проверено» отсутствуют; самокоррекция (удаление/пересчёт rows, «пересмотренный» дубль артефакта) делается ДО эмиссии — в ответ идёт ТОЛЬКО финал, один раз. Объективную проверку делает `verify-evidence-log.js`, не ты. Лишний черновик в ответе = токен-оверхед + L3 drift.
 
 ## Правила работы (короткие)
 
