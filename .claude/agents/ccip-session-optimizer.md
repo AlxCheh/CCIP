@@ -208,14 +208,14 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 
 ## §I — Манифест инвариантов (обязательный последний блок ответа)
 
-Открывается ` ```yaml manifest=invariants-v2 ` (sentinel обязателен — иначе хук не распознает блок и пометит `MANIFEST_MISSING`). Sentinel `-v1` тоже принимается (backward-compat), но эмить нужно `-v2` — trust-split явно отделяет machine-verified поля от honor-system деклараций.
+Открывается ` ```yaml manifest=invariants-v2 ` (sentinel обязателен — иначе хук не распознает блок и пометит `MANIFEST_MISSING`). Sentinel `-v1` тоже принимается (backward-compat), но эмить нужно `-v2` — trust-split явно отделяет machine-checked поля от honor-system деклараций. Ключи `machine_checked:` / `meta:` / `self_declared:` — на ВЕРХНЕМ уровне, БЕЗ обёртки `invariants:`. Слово «verified» в манифесте/bootstrap НЕ использовать — оно в self-attest banlist.
 
 ```yaml manifest=invariants-v2
-verified:                       # машинно-проверяется хуком
+machine_checked:                # машинно-проверяется хуком
   bootstrap_claims: <N>
   evidence_rows: <N>            # ОБЯЗАНО == bootstrap_claims
   unverified_rows: 0            # ОБЯЗАНО == 0
-verified_meta:
+meta:
   trigger_match: 'exact:"<phrase>"'
   plan_files: ['<path>']
   state_memory_files: ['<path>']
