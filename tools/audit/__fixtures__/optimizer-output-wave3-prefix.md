@@ -26,7 +26,7 @@ Wave 3 heading-prefix smoke fixture [sha:wave3pref].
 
 | # | claim_in_bootstrap | source_file | anchor | exact_substring |
 |---|---|---|---|---|
-| 1 | claude.md heading | repo:CLAUDE.md | orchestration | Simple > complex |
+| 1 | claude.md constraints | repo:CLAUDE.md | ## Constraints | no full file reads |
 
 ## §I Манифест инвариантов
 

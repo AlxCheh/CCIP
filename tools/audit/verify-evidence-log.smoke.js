@@ -99,6 +99,8 @@ console.log('\n=== case 1: mixed fixture (expect violations) ===');
     expectIncludes('detects missing source file (row 2)', session, 'source_file_missing');
     expectIncludes('detects missing source prefix (row 3)', session, 'source_prefix_invalid');
     expectIncludes('row 1 (CLAUDE.md / Simple > complex) verified', session, 'evidence_rows_verified: 1/3');
+    expectIncludes('case1: stdout carries block decision', r.stdout, '"decision"');
+    expectIncludes('case1: block reason lists violations', r.stdout, 'failed verification');
   } finally { teardown(tmp); }
 }
 
@@ -115,6 +117,7 @@ console.log('\n=== case 2: clean fixture (expect 0 violations) ===');
     expectIncludes('clean: 1/1 verified', session, 'evidence_rows_verified: 1/1');
     expectNotIncludes('clean: no FIREWALL trips', session, 'FIREWALL_');
     expectNotIncludes('clean: no L2 trips', session, 'L2_EVIDENCE_ROW');
+    expectNotIncludes('clean: no block decision emitted', r.stdout, '"decision"');
   } finally { teardown(tmp); }
 }
 

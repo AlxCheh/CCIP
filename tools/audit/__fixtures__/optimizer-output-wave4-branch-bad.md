@@ -27,7 +27,7 @@ Branch: feat/definitely-nonexistent-branch-xyz
 
 | # | claim_in_bootstrap | source_file | anchor | exact_substring |
 |---|---|---|---|---|
-| 1 | claude.md heading | repo:CLAUDE.md | orchestration | Simple > complex |
+| 1 | claude.md constraints | repo:CLAUDE.md | ## Constraints | no full file reads |
 
 ## §I Манифест инвариантов
 

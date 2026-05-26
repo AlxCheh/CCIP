@@ -29,8 +29,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const crypto = require('crypto');
+const yaml = require('js-yaml');
 
 // @skill: portable — repo-root resolution pattern
 const ROOT = path.resolve(__dirname, '../..');
@@ -48,9 +49,22 @@ const BANNED_LEXEMES = /\b(verified|проверено|self[- ]?test|self[- ]?ch
 // @skill: config:budget-numbers — bootstrap word limit + pre-flight token/call caps; per-project tunable
 const BOOTSTRAP_WORD_LIMIT = 300;
 const PREFLIGHT_TOKEN_LIMIT = 3000;
+// @skill: config:min-quote-bytes — нижняя граница специфичности цитаты
+const MIN_QUOTE_BYTES = parseInt(process.env.OPT_MIN_QUOTE_BYTES || '12', 10);
+const LOW_SIGNAL_QUOTES = new Set(['done', 'pending', 'blocked', 'deferred', 'none', 'n/a', 'todo', 'wip', 'ok', 'yes', 'no']);
 const PREFLIGHT_CALL_LIMIT = 6;
 // @skill: config:source-prefix-vocabulary — each prefix needs a registered resolver (see verifyRowSource)
 const ALLOWED_SOURCE_PREFIXES = ['repo:', 'git:', 'state-memory:'];
+
+// @skill: config:memory-roots — state-memory may live outside the repo (e.g. ~/.claude/.../memory).
+// Repo/git sources are confined to ROOT; state-memory additionally to these roots.
+const MEMORY_ROOTS = (process.env.OPT_MEMORY_ROOTS || '')
+  .split(path.delimiter).filter(Boolean).map(p => path.resolve(p));
+
+function isUnder(child, parent) {
+  const rel = path.relative(parent, child);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,7 +79,7 @@ function responseText(toolResponse) {
 
 function gitShortHash() {
   try {
-    return execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
+    return execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 })
       .toString().trim();
   } catch { return 'nogit'; }
 }
@@ -102,9 +116,9 @@ function atomicAppend(filePath, line) {
 
 // ── extractors ───────────────────────────────────────────────────────────────
 
-/** Require explicit sentinel `manifest=invariants-v1` after ```yaml */
+/** Require explicit sentinel `manifest=invariants-v1` or `-v2` after ```yaml */
 function extractManifestBlock(text) {
-  const re = /```yaml\s+manifest=invariants-v1\s*\n([\s\S]*?)\n```/;
+  const re = /```yaml\s+manifest=invariants-v[12]\s*\n([\s\S]*?)\n```/;
   const m = text.match(re);
   return m ? m[1].trim() : null;
 }
@@ -133,39 +147,28 @@ function extractSection(text, header) {
   return text.slice(startIdx, b ? b.index : text.length).trim();
 }
 
-// ── manifest parser (minimal YAML subset, no deps) ───────────────────────────
+// ── manifest parser (js-yaml) ─────────────────────────────────────────────────
 
 /**
- * Supports flat key:value pairs (numbers, strings with quotes, inline lists).
- * Ignores wrapper key like `invariants:` with no value.
+ * Parse invariants manifest via js-yaml.
+ * Supports flat key:value and wrapped under top-level `invariants:` key.
  */
 function parseManifest(yamlText) {
   if (!yamlText) return null;
-  const obj = {};
-  const lines = yamlText.split(/\r?\n/);
-  for (const rawLine of lines) {
-    const line = rawLine.replace(/\s+#[^"']*$/, ''); // strip trailing comment (not inside quotes)
-    if (!line.trim() || /^\s*#/.test(line)) continue;
-    const m = line.match(/^\s*([a-z_]+)\s*:\s*(.*?)\s*$/i);
-    if (!m) continue;
-    const key = m[1];
-    const rawVal = m[2];
-    if (!rawVal) continue; // wrapper key (e.g. `invariants:` line by itself)
-    obj[key] = parseValue(rawVal);
+  let doc;
+  try { doc = yaml.load(yamlText); }
+  catch { return null; }
+  if (!doc || typeof doc !== 'object') return null;
+  // v2: trust-split — flatten verified + verified_meta + self_declared into one
+  // view, tagging which keys were self-declared (not machine-verified by the hook).
+  if (doc.verified && typeof doc.verified === 'object') {
+    const flat = { ...doc.verified, ...(doc.verified_meta || {}), ...(doc.self_declared || {}) };
+    flat._self_declared_keys = Object.keys(doc.self_declared || {});
+    return flat;
   }
-  return obj;
-}
-
-function parseValue(v) {
-  v = v.trim();
-  if (/^-?\d+$/.test(v)) return parseInt(v, 10);
-  if (/^\[.*\]$/.test(v)) {
-    return v.slice(1, -1).split(',')
-      .map(s => s.trim().replace(/^['"]|['"]$/g, ''))
-      .filter(Boolean);
-  }
-  if (/^'.*'$/.test(v) || /^".*"$/.test(v)) return v.slice(1, -1);
-  return v;
+  // v1: flat or wrapped under `invariants:`.
+  if (doc.invariants && typeof doc.invariants === 'object') return doc.invariants;
+  return doc;
 }
 
 // ── evidence parser ──────────────────────────────────────────────────────────
@@ -177,6 +180,7 @@ function parseValue(v) {
  */
 function parseEvidenceRows(evidenceSection) {
   const rows = [];
+  rows.malformed = 0;
   if (!evidenceSection) return rows;
   const lines = evidenceSection.split(/\r?\n/);
   let inBody = false;
@@ -196,7 +200,7 @@ function parseEvidenceRows(evidenceSection) {
       .map(c => c.trim().replace(/\\\|/g, '|'));
     if (cells[0] === '') cells.shift();
     if (cells[cells.length - 1] === '') cells.pop();
-    if (cells.length < 5) continue;
+    if (cells.length < 5) { rows.malformed += 1; continue; }
 
     let [n, claim, source_file, anchor, ...rest] = cells;
     // Skip placeholder rows: agent uses "—" / "-" / "" in n-column to mean
@@ -211,7 +215,52 @@ function parseEvidenceRows(evidenceSection) {
   return rows;
 }
 
+// ── anchor window (C-2: provenance → entailment) ──────────────────────────────
+
+/**
+ * Slice the source content to the window addressed by `anchor`.
+ * If anchor matches a markdown heading → window = heading .. next heading of same-or-higher level.
+ * Else if anchor is a literal locator present in content → window = ±200 chars around it.
+ * Else → null (anchor not found).
+ */
+function anchorWindow(content, anchor) {
+  if (!anchor) return null;
+  const wanted = anchor.replace(/^#+\s*/, '').trim();
+  const lines = content.split(/\r?\n/);
+  let headingIdx = -1, level = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
+    if (m && (m[2].trim() === wanted || lines[i].trim() === anchor.trim())) {
+      headingIdx = i; level = m[1].length; break;
+    }
+  }
+  if (headingIdx !== -1) {
+    let end = lines.length;
+    for (let i = headingIdx + 1; i < lines.length; i++) {
+      const hm = lines[i].match(/^(#{1,6})\s/);
+      if (hm && hm[1].length <= level) { end = i; break; }
+    }
+    return lines.slice(headingIdx, end).join('\n');
+  }
+  const idx = content.indexOf(anchor);
+  if (idx === -1) return null;
+  return content.slice(Math.max(0, idx - 200), idx + anchor.length + 200);
+}
+
 // ── source verification ──────────────────────────────────────────────────────
+
+/**
+ * C-2: the quote must lie within the WINDOW addressed by the anchor, not just
+ * anywhere in the file. Empty / `n/a` / unresolvable anchors are rejected.
+ */
+function checkInWindow(content, row) {
+  if (!row.anchor || row.anchor.trim() === '' || /^n\/?a$/i.test(row.anchor.trim())) {
+    return { ok: false, reason: 'anchor_required' };
+  }
+  const win = anchorWindow(content, row.anchor);
+  if (win === null) return { ok: false, reason: 'anchor_not_found' };
+  return win.includes(row.quote) ? { ok: true } : { ok: false, reason: 'quote_not_in_anchor_window' };
+}
 
 function verifyRowSource(row) {
   const src = row.source_file;
@@ -229,6 +278,8 @@ function verifyRowSource(row) {
   // multi-byte chars and let Cyrillic-heavy quotes slip past (Wave 2 fix #3).
   const quoteBytes = Buffer.byteLength(row.quote, 'utf-8');
   if (quoteBytes > 80) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
+  if (quoteBytes < MIN_QUOTE_BYTES) return { ok: false, reason: `quote_too_short(${quoteBytes}B)` };
+  if (LOW_SIGNAL_QUOTES.has(row.quote.trim().toLowerCase())) return { ok: false, reason: 'quote_low_signal' };
 
   const colon = src.indexOf(':');
   const kind = src.slice(0, colon);
@@ -239,25 +290,30 @@ function verifyRowSource(row) {
     const m = rest.match(/^([0-9a-f]{4,40}):(.+)$/i);
     if (!m) return { ok: false, reason: 'git_source_format' };
     const [, sha, gitPath] = m;
+    // Reject paths that could be mis-parsed as git options or contain NUL.
+    if (gitPath.startsWith('-') || gitPath.includes(' ')) {
+      return { ok: false, reason: 'git_path_invalid' };
+    }
     let content;
     try {
-      content = execSync(`git show ${sha}:${gitPath}`, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      content = execFileSync('git', ['show', `${sha}:${gitPath}`],
+        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString();
     } catch (e) {
       return { ok: false, reason: `git_show_fail(${sha}:${gitPath})` };
     }
-    return content.includes(row.quote) ? { ok: true } : { ok: false, reason: 'quote_not_in_source' };
+    return checkInWindow(content, row);
   }
 
-  // repo: и state-memory: — оба resolve относительно ROOT
+  // repo: и state-memory: — resolve относительно ROOT; затем confinement.
   const abs = path.isAbsolute(rest) ? rest : path.resolve(ROOT, rest);
+  const confined = isUnder(abs, ROOT) || (kind === 'state-memory' && MEMORY_ROOTS.some(r => isUnder(abs, r)));
+  if (!confined) return { ok: false, reason: 'path_escape' };
   if (!fs.existsSync(abs)) return { ok: false, reason: 'source_file_missing' };
   let content;
   try { content = fs.readFileSync(abs, 'utf-8'); }
   catch (e) { return { ok: false, reason: `source_read_fail(${e.code || 'unknown'})` }; }
 
-  return content.includes(row.quote)
-    ? { ok: true }
-    : { ok: false, reason: 'quote_not_in_source' };
+  return checkInWindow(content, row);
 }
 
 // ── bootstrap firewall ───────────────────────────────────────────────────────
@@ -268,7 +324,12 @@ function bootstrapFirewall(bootstrap) {
     v.push('FIREWALL_BOOTSTRAP_MISSING');
     return v;
   }
-  const lex = bootstrap.match(BANNED_LEXEMES);
+  // Self-attest ban applies to bootstrap PROSE only — not the appended Evidence
+  // Log table or the §I manifest (whose v2 key `verified:` would false-trip).
+  const prose = bootstrap
+    .split(/\n#{2,3}\s+Evidence Log\b/)[0]
+    .replace(/```yaml\s+manifest=invariants-v[12][\s\S]*?```/g, '');
+  const lex = prose.match(BANNED_LEXEMES);
   if (lex) v.push(`FIREWALL_SELF_ATTEST: "${lex[0]}" найдена в bootstrap`);
 
   const wc = countWords(bootstrap);
@@ -283,7 +344,7 @@ function bootstrapFirewall(bootstrap) {
     let actual = null;
     try {
       actual = execSync('git rev-parse --abbrev-ref HEAD',
-        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+        { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], timeout: 5000 }).toString().trim();
     } catch {}
     if (actual && branchClaim[1] !== actual) {
       v.push(`FIREWALL_BRANCH_DRIFT: claimed=${branchClaim[1]} actual=${actual}`);
@@ -296,7 +357,7 @@ function bootstrapFirewall(bootstrap) {
   // git cat-file because the regex only admits [0-9a-f]{4,40}.
   for (const m of bootstrap.matchAll(/\[sha:([0-9a-f]{4,40})\]/gi)) {
     try {
-      execSync(`git cat-file -e ${m[1]}`, { cwd: ROOT, stdio: 'ignore' });
+      execSync(`git cat-file -e ${m[1]}`, { cwd: ROOT, stdio: 'ignore', timeout: 5000 });
     } catch {
       v.push(`FIREWALL_SHA_NOT_FOUND: ${m[1]}`);
     }
@@ -307,14 +368,25 @@ function bootstrapFirewall(bootstrap) {
 
 // ── main ─────────────────────────────────────────────────────────────────────
 
-let raw = '';
-process.stdin.setEncoding('utf-8');
-process.stdin.on('data', chunk => { raw += chunk; });
-process.stdin.on('end', () => {
-  try { run(raw); }
-  catch (e) { process.stderr.write(`[verify-evidence-log] FAIL: ${e.message}\n${e.stack || ''}\n`); }
-  process.exit(0);
-});
+function main() {
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', chunk => { raw += chunk; });
+  process.stdin.on('end', () => {
+    try { run(raw); }
+    catch (e) {
+      process.stderr.write(`[verify-evidence-log] FAIL: ${e.message}\n${e.stack || ''}\n`);
+      try {
+        const stamp = utcStamp();
+        atomicAppend(INDEX_FILE, `| ${stamp} | VERIFIER_ERROR | ? | ? | ? | ? | ? | 1 | ${e.message.slice(0, 120)} |`);
+        atomicAppend(ERRORS_LOG, `\n### ${stamp} — VERIFIER_ERROR\n\n- ${e.message}\n`);
+      } catch {}
+    }
+    process.exit(0);
+  });
+}
+
+if (require.main === module) main();
 
 function run(raw) {
   let payload;
@@ -324,6 +396,8 @@ function run(raw) {
   if (payload.tool_name !== 'Agent') return;
   const subagent = payload.tool_input?.subagent_type;
   if (subagent !== 'ccip-session-optimizer') return;
+
+  if (process.env.OPT_FORCE_FAULT) throw new Error('forced fault (test only)');
 
   const text = responseText(payload.tool_response);
   if (!text || text.length < 50) {
@@ -365,6 +439,9 @@ function run(raw) {
 
   // ── L2 semantic: each evidence row ─────────────────────────────────────────
   const rows = parseEvidenceRows(evidenceSec);
+  if (rows.malformed > 0) {
+    violations.push(`L3_MALFORMED_EVIDENCE_ROWS: ${rows.malformed}`);
+  }
   let verifiedCount = 0;
   for (const row of rows) {
     const res = verifyRowSource(row);
@@ -400,6 +477,9 @@ function run(raw) {
     violations.length
       ? `## VIOLATIONS (${violations.length})\n\n${violations.map(v => `- ${v}`).join('\n')}\n`
       : '## VIOLATIONS\n\n_none_\n',
+    inv && inv._self_declared_keys && inv._self_declared_keys.length
+      ? `_self_declared (NOT verified by hook): ${inv._self_declared_keys.join(', ')}_\n`
+      : '',
     '## Manifest',
     '',
     '```yaml',
@@ -427,8 +507,22 @@ function run(raw) {
   if (violations.length) {
     const errLine = `\n### ${stamp} — VIOLATIONS detected (${violations.length})\n\nfile: \`docs/errors/sessions/${sessionFile}\`\n\n${violations.map(v => `- ${v}`).join('\n')}\n`;
     atomicAppend(ERRORS_LOG, errLine);
+    // C-1: feed violations back to the parent (PostToolUse decision). This is NOT
+    // self-attestation — the hook (not the agent) made the determination. Internal
+    // verifier faults do NOT emit a decision (see main() catch) so a broken verifier
+    // never blocks the parent session.
+    const reason =
+      `ccip-session-optimizer output failed verification (${violations.length}):\n` +
+      violations.map(v => `- ${v}`).join('\n') +
+      `\nRe-run the optimizer; cite only anchor-bound, byte-exact evidence (see §Запреты).`;
+    process.stdout.write(JSON.stringify({ decision: 'block', reason }));
     process.stderr.write(`[verify-evidence-log] ${violations.length} violation(s); see ${sessionFile}\n`);
   }
 
   try { if (fs.existsSync(LOCK_FILE)) fs.unlinkSync(LOCK_FILE); } catch {}
 }
+
+module.exports = {
+  extractManifestBlock, parseManifest, parseEvidenceRows,
+  verifyRowSource, bootstrapFirewall, anchorWindow, run,
+};

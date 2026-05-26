@@ -26,7 +26,7 @@ Wave 2 pipe-escape smoke fixture [sha:wave2pipe].
 
 | # | claim_in_bootstrap | source_file | anchor | exact_substring |
 |---|---|---|---|---|
-| 1 | escaped pipe survives parser | repo:tools/audit/__fixtures__/wave2-pipe-source.txt | pipe line | if (a \|\| b) continue; |
+| 1 | escaped pipe survives parser | repo:tools/audit/__fixtures__/wave2-pipe-source.txt | if (a | if (a \|\| b) continue; |
 
 ## §I Манифест инвариантов
 
