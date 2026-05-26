@@ -35,6 +35,8 @@ Markers — метаданные для будущего рефакторинг�
 <!-- config: lock-path `.claude/runtime/optimizer.lock`, ttl 5 min — per-project tunable -->
 ## §R Re-entrancy guard (первое действие)
 
+Lock теперь enforced PreToolUse-gate'ом (`.claude/runtime/optimizer-gate.js`, C-4): повторный вход в окне TTL/иного turn'а отклоняется (deny) ДО твоего запуска. Шаги ниже — твоя сторона контракта; даже при их пропуске gate не даст двойного исполнения.
+
 Read `.claude/runtime/optimizer.lock`.
 
 - ENOENT → lock'а нет, продолжай и сразу пиши свой.
