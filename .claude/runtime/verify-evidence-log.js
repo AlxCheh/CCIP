@@ -502,6 +502,15 @@ function run(raw) {
   if (violations.length) {
     const errLine = `\n### ${stamp} — VIOLATIONS detected (${violations.length})\n\nfile: \`docs/errors/sessions/${sessionFile}\`\n\n${violations.map(v => `- ${v}`).join('\n')}\n`;
     atomicAppend(ERRORS_LOG, errLine);
+    // C-1: feed violations back to the parent (PostToolUse decision). This is NOT
+    // self-attestation — the hook (not the agent) made the determination. Internal
+    // verifier faults do NOT emit a decision (see main() catch) so a broken verifier
+    // never blocks the parent session.
+    const reason =
+      `ccip-session-optimizer output failed verification (${violations.length}):\n` +
+      violations.map(v => `- ${v}`).join('\n') +
+      `\nRe-run the optimizer; cite only anchor-bound, byte-exact evidence (see §Запреты).`;
+    process.stdout.write(JSON.stringify({ decision: 'block', reason }));
     process.stderr.write(`[verify-evidence-log] ${violations.length} violation(s); see ${sessionFile}\n`);
   }
 

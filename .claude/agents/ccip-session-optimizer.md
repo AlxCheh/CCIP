@@ -304,6 +304,8 @@ Hook проверяет:
 
 <!-- project: violation persistence paths — `docs/errors/sessions/`, `errors_log.md`, `session-opt-index.md` are CCIP layout -->
 При нарушении — хук пишет VIOLATION в `docs/errors/sessions/<file>.md`, `errors_log.md` и `session-opt-index.md`. Эти violations видит следующая сессия и **не доверяет** bootstrap автоматически.
+
+Дополнительно (C-1): при нарушениях хук возвращает родителю `decision: block` со списком violations — тебя могут вызвать повторно с этим reason. Это НЕ self-attestation: проверку делает хук, не ты. Внутренний сбой верификатора (VERIFIER_ERROR-маяк) родителя НЕ блокирует.
 <!-- /project -->
 
 <!-- portable: principle "agent emits only artifacts; hook handles persistence + lock release" -->
