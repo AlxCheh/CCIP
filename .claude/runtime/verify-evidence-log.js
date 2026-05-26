@@ -31,6 +31,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
 const crypto = require('crypto');
+const yaml = require('js-yaml');
 
 // @skill: portable — repo-root resolution pattern
 const ROOT = path.resolve(__dirname, '../..');
@@ -146,39 +147,21 @@ function extractSection(text, header) {
   return text.slice(startIdx, b ? b.index : text.length).trim();
 }
 
-// ── manifest parser (minimal YAML subset, no deps) ───────────────────────────
+// ── manifest parser (js-yaml) ─────────────────────────────────────────────────
 
 /**
- * Supports flat key:value pairs (numbers, strings with quotes, inline lists).
- * Ignores wrapper key like `invariants:` with no value.
+ * Parse invariants manifest via js-yaml.
+ * Supports flat key:value and wrapped under top-level `invariants:` key.
  */
 function parseManifest(yamlText) {
   if (!yamlText) return null;
-  const obj = {};
-  const lines = yamlText.split(/\r?\n/);
-  for (const rawLine of lines) {
-    const line = rawLine.replace(/\s+#[^"']*$/, ''); // strip trailing comment (not inside quotes)
-    if (!line.trim() || /^\s*#/.test(line)) continue;
-    const m = line.match(/^\s*([a-z_]+)\s*:\s*(.*?)\s*$/i);
-    if (!m) continue;
-    const key = m[1];
-    const rawVal = m[2];
-    if (!rawVal) continue; // wrapper key (e.g. `invariants:` line by itself)
-    obj[key] = parseValue(rawVal);
-  }
-  return obj;
-}
-
-function parseValue(v) {
-  v = v.trim();
-  if (/^-?\d+$/.test(v)) return parseInt(v, 10);
-  if (/^\[.*\]$/.test(v)) {
-    return v.slice(1, -1).split(',')
-      .map(s => s.trim().replace(/^['"]|['"]$/g, ''))
-      .filter(Boolean);
-  }
-  if (/^'.*'$/.test(v) || /^".*"$/.test(v)) return v.slice(1, -1);
-  return v;
+  let doc;
+  try { doc = yaml.load(yamlText); }
+  catch { return null; }
+  if (!doc || typeof doc !== 'object') return null;
+  // v1: flat or wrapped under `invariants:`.
+  if (doc.invariants && typeof doc.invariants === 'object') return doc.invariants;
+  return doc;
 }
 
 // ── evidence parser ──────────────────────────────────────────────────────────
@@ -512,6 +495,6 @@ function run(raw) {
 }
 
 module.exports = {
-  extractManifestBlock, parseManifest, parseValue, parseEvidenceRows,
+  extractManifestBlock, parseManifest, parseEvidenceRows,
   verifyRowSource, bootstrapFirewall, anchorWindow, run,
 };
