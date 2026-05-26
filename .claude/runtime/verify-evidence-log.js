@@ -180,6 +180,7 @@ function parseManifest(yamlText) {
  */
 function parseEvidenceRows(evidenceSection) {
   const rows = [];
+  rows.malformed = 0;
   if (!evidenceSection) return rows;
   const lines = evidenceSection.split(/\r?\n/);
   let inBody = false;
@@ -199,7 +200,7 @@ function parseEvidenceRows(evidenceSection) {
       .map(c => c.trim().replace(/\\\|/g, '|'));
     if (cells[0] === '') cells.shift();
     if (cells[cells.length - 1] === '') cells.pop();
-    if (cells.length < 5) continue;
+    if (cells.length < 5) { rows.malformed += 1; continue; }
 
     let [n, claim, source_file, anchor, ...rest] = cells;
     // Skip placeholder rows: agent uses "—" / "-" / "" in n-column to mean
@@ -433,6 +434,9 @@ function run(raw) {
 
   // ── L2 semantic: each evidence row ─────────────────────────────────────────
   const rows = parseEvidenceRows(evidenceSec);
+  if (rows.malformed > 0) {
+    violations.push(`L3_MALFORMED_EVIDENCE_ROWS: ${rows.malformed}`);
+  }
   let verifiedCount = 0;
   for (const row of rows) {
     const res = verifyRowSource(row);
