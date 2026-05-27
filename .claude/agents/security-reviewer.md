@@ -115,11 +115,11 @@ model: claude-sonnet-4-6
 
 ## State Contract
 
-**Input** — читать из `session-state.json`:
-- `agent_outputs[<primary>].artifacts` — список изменённых файлов
-- `agent_outputs[<primary>].handoff_notes` — контекст изменений
+**Input** — read from `session-state.json`:
+- `agent_outputs[<primary>].artifacts` — list of changed files
+- `agent_outputs[<primary>].handoff_notes` — change context
 
-**Output** — в конце ответа:
+**Output** — at the end of your response:
 ```json
 {
   "summary": "Security review: APPROVED/BLOCK/WARN. N findings (M critical).",

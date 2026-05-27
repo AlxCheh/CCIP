@@ -50,7 +50,7 @@ CCIP хранит верифицированные данные о выполн�
 
 ## State Contract
 
-В конце вывода обязательно блок (per CLAUDE.md §15):
+Emit this block at the end of your output (per CLAUDE.md §15):
 
 ````markdown
 ## State Update

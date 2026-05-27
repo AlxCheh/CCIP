@@ -44,11 +44,11 @@ Docker, Kubernetes, Helm, GitHub Actions / GitLab CI, Prometheus, Grafana, OpenT
 
 ## State Contract
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — проверить наличие `DEVOPS`
-- `agent_outputs[*].handoff_notes` — новые сервисы, порты, переменные окружения
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — check for `DEVOPS`
+- `agent_outputs[*].handoff_notes` — new services, ports, env vars
 
-**Output** — в конце ответа обязательно вывести блок (читается PostToolUse hook):
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
 
 ## State Update
 ```json

@@ -49,11 +49,11 @@ Jest, Supertest, Playwright, TypeScript. Тестирование: unit, integra
 
 ## State Contract
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — проверить наличие `QA`
-- `agent_outputs[*].handoff_notes` — что реализовано, что требует тестового покрытия
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — check for `QA`
+- `agent_outputs[*].handoff_notes` — what was implemented, what needs test coverage
 
-**Output** — в конце ответа обязательно вывести блок (читается PostToolUse hook):
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
 
 ## State Update
 ```json

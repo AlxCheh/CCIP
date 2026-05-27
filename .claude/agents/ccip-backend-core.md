@@ -46,11 +46,11 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 
 ## State Contract (CLAUDE.md §15)
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — уточнить, какой модуль затронут (C/D/E)
-- `agent_outputs["ccip-architect"].handoff_notes` — архитектурные ограничения для реализации
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — which module is affected (C/D/E)
+- `agent_outputs["ccip-architect"].handoff_notes` — architectural constraints for implementation
 
-**Output** — в конце ответа обязательно вывести блок (автоматически читается PostToolUse hook):
+**Output** — emit this block at the end of your response (auto-read by PostToolUse hook):
 
 ## State Update
 ```json
@@ -61,4 +61,4 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 }
 ```
 
-> Если задача завершилась reroute или частично — отразить в `handoff_notes`, outcome будет скорректирован вручную.
+> If rerouted or partial — note it in `handoff_notes`; outcome will be set manually.

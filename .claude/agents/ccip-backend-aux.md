@@ -49,11 +49,11 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 
 ## State Contract (CLAUDE.md §15)
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — проверить наличие `AUX`
-- `agent_outputs["ccip-architect"].handoff_notes` — ограничения ADR для Auth/Sync/Multitenancy
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — check for `AUX`
+- `agent_outputs["ccip-architect"].handoff_notes` — ADR constraints for Auth/Sync/Multitenancy
 
-**Output** — в конце ответа обязательно вывести блок (читается PostToolUse hook):
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
 
 ## State Update
 ```json
@@ -64,4 +64,4 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 }
 ```
 
-> Если задача завершилась reroute или частично — отразить в `handoff_notes`.
+> If the task was rerouted or partial — note it in `handoff_notes`.
