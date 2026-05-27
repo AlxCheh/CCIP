@@ -21,7 +21,21 @@ test('allowlist-literal passes on clean fixture', () => {
   assert.equal(res.status, 0, res.stderr);
 });
 
-test('allowlist-literal passes on real .claude/settings.local.json', () => {
+test('allowlist-literal passes on real .claude/settings.local.json (or skips if absent)', () => {
   const res = cp.spawnSync(process.execPath, [SCRIPT], { encoding: 'utf-8' });
   assert.equal(res.status, 0, res.stderr);
+});
+
+test('allowlist-literal skips with OK when default settings.local.json absent (per-machine, CI)', () => {
+  const res = cp.spawnSync(process.execPath, [SCRIPT], {
+    encoding: 'utf-8',
+    env: { ...process.env, CCIP_SETTINGS_LOCAL_PATH: '/nonexistent/settings.local.json' },
+  });
+  assert.equal(res.status, 0, `expected exit 0, got ${res.status}; stderr: ${res.stderr}`);
+  assert.match(res.stdout, /\[ALLOWLIST\] OK.*absent/);
+});
+
+test('allowlist-literal errors when --settings explicitly points to missing file', () => {
+  const res = cp.spawnSync(process.execPath, [SCRIPT, '--settings', '/nonexistent/x.json'], { encoding: 'utf-8' });
+  assert.notEqual(res.status, 0, 'explicit --settings must not silently skip');
 });

@@ -8,13 +8,18 @@ const { fail, ok } = require('./_lib/report');
 const root = gitRoot();
 let violations = 0;
 
-const settingsPath = path.join(root, '.claude/settings.local.json');
-const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-const allow = settings.permissions?.allow || [];
-for (const p of allow) {
-  if (/rm\s+-rf|chmod\s+777|sudo\b/.test(p)) {
-    fail('PEN-SMOKE', `dangerous pattern in allowlist: ${p}`);
-    violations++;
+// settings.local.json — per-machine (gitignored с 3d1003c). На CI его нет —
+// нечего проверять, проверка execute-dag.js ниже всё равно выполняется.
+const settingsPath = process.env.CCIP_SETTINGS_LOCAL_PATH
+  || path.join(root, '.claude/settings.local.json');
+if (fs.existsSync(settingsPath)) {
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+  const allow = settings.permissions?.allow || [];
+  for (const p of allow) {
+    if (/rm\s+-rf|chmod\s+777|sudo\b/.test(p)) {
+      fail('PEN-SMOKE', `dangerous pattern in allowlist: ${p}`);
+      violations++;
+    }
   }
 }
 

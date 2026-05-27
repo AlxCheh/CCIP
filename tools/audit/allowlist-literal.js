@@ -7,9 +7,17 @@ const { fail, ok } = require('./_lib/report');
 
 const args = process.argv.slice(2);
 const sIdx = args.indexOf('--settings');
-const settingsPath = sIdx >= 0
+const explicit = sIdx >= 0;
+const settingsPath = explicit
   ? args[sIdx + 1]
-  : path.join(gitRoot(), '.claude/settings.local.json');
+  : (process.env.CCIP_SETTINGS_LOCAL_PATH || path.join(gitRoot(), '.claude/settings.local.json'));
+
+// settings.local.json — per-machine (gitignored с 3d1003c). На чистом checkout
+// файла нет → нечего валидировать → skip-with-ok. Явный --settings обязан существовать.
+if (!explicit && !fs.existsSync(settingsPath)) {
+  process.stdout.write('[ALLOWLIST] OK (settings.local.json absent — per-machine, nothing to check)\n');
+  process.exit(0);
+}
 
 const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
 const allow = settings.permissions?.allow || [];
