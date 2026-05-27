@@ -13,7 +13,7 @@ const HEAD_PAT = /^#{2,4}\s+(?:§)?(\d+(?:\.\d+)*)[\.\s§]/gm;
 
 // В этих файлах (§N) — cross-doc ref по конвенции (Концепция, audit checklist, plan).
 const CROSS_DOC_ALLOWLIST = [
-  'docs/plans/2026-05-12-zero-drift-compliance-section10.md',
+  'docs/plans/archive/2026-05-12-zero-drift-compliance-section10.md',
   'docs/team_roles_v1_0.md',
 ];
 

@@ -19,6 +19,15 @@
             "command": "node .claude/runtime/optimizer-gate.js"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/runtime/audit-write-sanitize.js"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -32,6 +41,15 @@
           {
             "type": "command",
             "command": "node .claude/runtime/verify-evidence-log.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/runtime/audit-write-sanitize.js"
           }
         ]
       },
