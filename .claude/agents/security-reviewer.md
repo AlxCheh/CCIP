@@ -120,6 +120,8 @@ model: claude-sonnet-4-6
 - `agent_outputs[<primary>].handoff_notes` — change context
 
 **Output** — at the end of your response:
+
+## State Update
 ```json
 {
   "summary": "Security review: APPROVED/BLOCK/WARN. N findings (M critical).",

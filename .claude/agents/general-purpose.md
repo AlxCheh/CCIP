@@ -38,6 +38,8 @@ model: claude-sonnet-4-6
 - `agent_outputs[*].handoff_notes` — context from prior agents
 
 **Output:**
+
+## State Update
 ```json
 {
   "summary": "≤ 3 предложения: что сделано, какие файлы изменены",

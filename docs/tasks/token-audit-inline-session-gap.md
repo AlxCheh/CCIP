@@ -47,7 +47,7 @@
 Реализация:
 - `tools/audit/token-session-record.js` — исход `inline-session` (`scope: out-of-token-attribution` + сигналы из `trigger-state.json`), отдельный счётчик `sessions_inline`. Контракт §15 и схема **не тронуты**.
 - `.claude/agents/token-efficiency-auditor.md` — L2 Ingest и список исходов recorder отражают inline-сессию.
-- `CLAUDE.md §15` — заметка «Scope для inline-сессий».
+- `CLAUDE.md §15` — заметка «Inline-session scope (ADR-016)».
 - Тесты `token-session-record.test.js` — 2 новых кейса (inline-session с активностью; пустой trigger-state → trivial-skip). 11/11 зелёные.
 
 ## Definition of Ready (Architecture Change)
