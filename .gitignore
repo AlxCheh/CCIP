@@ -44,6 +44,9 @@ infra/docker/data/
 docs/errors/sessions/
 .claude/runtime/optimizer.lock
 
+# Per-machine Claude Code permissions (allow-list Bash commands etc.)
+.claude/settings.local.json
+
 # Token-efficiency-auditor runtime artifacts (ADR-016, Q3: смешанно).
 # Коммитим rules/ и metrics/history.jsonl (обучение между машинами); остальное — per-session шум.
 .claude/audit/trigger-state.json
