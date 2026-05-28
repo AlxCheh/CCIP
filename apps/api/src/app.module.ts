@@ -18,6 +18,7 @@ import { SystemConfigModule } from './modules/system-config/system-config.module
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ZeroReportModule } from './modules/zero-report/zero-report.module';
 import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
+import { DisputeModule } from './modules/dispute/dispute.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
     DocumentsModule,
     ZeroReportModule,
     DisputeSlaModule,
+    DisputeModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
