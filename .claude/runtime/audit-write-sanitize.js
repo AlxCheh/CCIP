@@ -49,46 +49,52 @@ function stripBomAtomic(file) {
   return true;
 }
 
-let raw = '';
-process.stdin.setEncoding('utf-8');
-process.stdin.on('data', c => { raw += c; });
-process.stdin.on('end', () => {
-  try {
-    const p = JSON.parse(raw || '{}');
-    const tool = p.tool_name;
-    if (tool !== 'Write' && tool !== 'Edit') return process.exit(0);
+// stdin-driven hook logic runs ONLY when invoked as a script.
+// On `require` (unit tests import the exported helpers) we must NOT attach
+// stdin listeners — they keep the importing process alive forever (stdin never
+// EOFs under the test runner), hanging the suite until the 6h CI timeout.
+if (require.main === module) {
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', c => { raw += c; });
+  process.stdin.on('end', () => {
+    try {
+      const p = JSON.parse(raw || '{}');
+      const tool = p.tool_name;
+      if (tool !== 'Write' && tool !== 'Edit') return process.exit(0);
 
-    const filePath = p.tool_input && p.tool_input.file_path;
-    const event = p.hook_event_name;
+      const filePath = p.tool_input && p.tool_input.file_path;
+      const event = p.hook_event_name;
 
-    if (event === 'PreToolUse') {
-      const bad = detectMalformedAuditPath(filePath);
-      if (bad) {
-        const ext = bad.type === 'reports' ? '.md' : '.json';
-        denyPre(
-          `Malformed audit path '${filePath}': missing separator between '${bad.type}' and filename. ` +
-          `Use '.claude/audit/${bad.type}/<session-id>${ext}' (with '/').`
-        );
+      if (event === 'PreToolUse') {
+        const bad = detectMalformedAuditPath(filePath);
+        if (bad) {
+          const ext = bad.type === 'reports' ? '.md' : '.json';
+          denyPre(
+            `Malformed audit path '${filePath}': missing separator between '${bad.type}' and filename. ` +
+            `Use '.claude/audit/${bad.type}/<session-id>${ext}' (with '/').`
+          );
+          return process.exit(0);
+        }
         return process.exit(0);
       }
-      return process.exit(0);
-    }
 
-    if (event === 'PostToolUse') {
-      if (!isAuditRulesYaml(filePath)) return process.exit(0);
-      try {
-        if (stripBomAtomic(filePath)) {
-          process.stderr.write(`[audit-write-sanitize] stripped UTF-8 BOM from ${filePath}\n`);
+      if (event === 'PostToolUse') {
+        if (!isAuditRulesYaml(filePath)) return process.exit(0);
+        try {
+          if (stripBomAtomic(filePath)) {
+            process.stderr.write(`[audit-write-sanitize] stripped UTF-8 BOM from ${filePath}\n`);
+          }
+        } catch (e) {
+          process.stderr.write(`[audit-write-sanitize] BOM strip failed for ${filePath}: ${e.message}\n`);
         }
-      } catch (e) {
-        process.stderr.write(`[audit-write-sanitize] BOM strip failed for ${filePath}: ${e.message}\n`);
+        return process.exit(0);
       }
-      return process.exit(0);
+    } catch (e) {
+      process.stderr.write(`[audit-write-sanitize] ${e.message}\n`);
     }
-  } catch (e) {
-    process.stderr.write(`[audit-write-sanitize] ${e.message}\n`);
-  }
-  process.exit(0);
-});
+    process.exit(0);
+  });
+}
 
 module.exports = { detectMalformedAuditPath, isAuditRulesYaml, stripBomAtomic };
