@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bull';
 import { PeriodService } from '../period.service';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { AuditLogService } from '../../../common/audit/audit-log.service';
@@ -70,6 +71,7 @@ describe('PeriodService', () => {
   let service: PeriodService;
   let prisma: jest.Mocked<PrismaService>;
   let auditLog: jest.Mocked<AuditLogService>;
+  let analyticsQueue: { add: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -120,11 +122,16 @@ describe('PeriodService', () => {
       log: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<AuditLogService>;
 
+    analyticsQueue = {
+      add: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module = await Test.createTestingModule({
       providers: [
         PeriodService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditLogService, useValue: auditLog },
+        { provide: getQueueToken('analytics'), useValue: analyticsQueue },
       ],
     }).compile();
 
@@ -172,7 +179,7 @@ describe('PeriodService', () => {
       );
     });
 
-    it('sets gpTokenExpiresAt to ~14 days from now', async () => {
+    it('sets slaForceCloseAt to ~14 days from now and gpTokenExpiresAt 1h before it', async () => {
       (prisma.period.findFirst as jest.Mock)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null);
@@ -183,17 +190,22 @@ describe('PeriodService', () => {
 
       const createCall = (prisma.period.create as jest.Mock).mock
         .calls[0][0] as {
-        data: { gpTokenExpiresAt: Date };
+        data: { gpTokenExpiresAt: Date; slaForceCloseAt: Date };
       };
+      const slaForceCloseAt = createCall.data.slaForceCloseAt;
       const expiresAt = createCall.data.gpTokenExpiresAt;
       const msIn14Days = 14 * 24 * 60 * 60 * 1000;
+      const oneHourMs = 60 * 60 * 1000;
 
-      expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+      // slaForceCloseAt = now + 14d
+      expect(slaForceCloseAt.getTime()).toBeGreaterThanOrEqual(
         before + msIn14Days - 1000,
       );
-      expect(expiresAt.getTime()).toBeLessThanOrEqual(
+      expect(slaForceCloseAt.getTime()).toBeLessThanOrEqual(
         after + msIn14Days + 1000,
       );
+      // gpTokenExpiresAt = slaForceCloseAt - 1h (exact contract)
+      expect(expiresAt.getTime()).toBe(slaForceCloseAt.getTime() - oneHourMs);
     });
 
     it('throws ForbiddenException if zero report is not approved', async () => {
@@ -686,6 +698,28 @@ describe('PeriodService', () => {
         data: { closedAt: unknown };
       };
       expect(updateCall.data.closedAt).toBeInstanceOf(Date);
+    });
+
+    it('enqueues mv.refresh job with deduplicated jobId per object', async () => {
+      await service.closePeriod(PERIOD_ID, ACTOR_ID);
+
+      expect(analyticsQueue.add).toHaveBeenCalledWith(
+        'mv.refresh',
+        { periodId: PERIOD_ID, objectId: OBJECT_ID },
+        expect.objectContaining({
+          jobId: `mv-refresh-object-${OBJECT_ID}`,
+          removeOnComplete: true,
+          removeOnFail: false,
+        }),
+      );
+    });
+
+    it('does not fail close when mv.refresh enqueue rejects (Redis down)', async () => {
+      analyticsQueue.add.mockRejectedValueOnce(new Error('Redis down'));
+
+      await expect(
+        service.closePeriod(PERIOD_ID, ACTOR_ID),
+      ).resolves.toBeDefined();
     });
   });
 

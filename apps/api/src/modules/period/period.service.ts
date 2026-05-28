@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
 import { Prisma } from '@ccip/database';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
@@ -20,6 +22,7 @@ export class PeriodService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    @InjectQueue('analytics') private readonly analyticsQueue: Queue,
   ) {}
 
   // ─── openPeriod ──────────────────────────────────────────────────────────────
@@ -57,11 +60,12 @@ export class PeriodService {
         });
 
         const now = new Date();
-        // TODO M-05b: заменить на sla_force_close_at - 1h после реализации SLA scheduler
-        // Требует добавления sla_force_close_at в схему/SystemConfig
-        const gpTokenExpiresAt = new Date(
+        const slaForceCloseAt = new Date(
           now.getTime() + GP_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
         );
+        const gpTokenExpiresAt = new Date(
+          slaForceCloseAt.getTime() - 60 * 60 * 1000,
+        ); // 1h before SLA deadline
 
         const period = await tx.period.create({
           data: {
@@ -73,6 +77,7 @@ export class PeriodService {
             openedAt: now,
             gpSubmissionToken: randomUUID(),
             gpTokenExpiresAt,
+            slaForceCloseAt,
           },
         });
 
@@ -323,7 +328,6 @@ export class PeriodService {
       // Create ReadinessSnapshot — placeholder until Analytics Engine (M-05c) is implemented
       // TODO M-05c: заменить 0 на реальный calcReadiness() из AnalyticsService
       // TODO M-05c: добавить INSERT work_pace в эту же транзакцию (ADR-011)
-      // TODO M-05b: после транзакции enqueue BullMQ job для REFRESH MATERIALIZED VIEW CONCURRENTLY
       await tx.readinessSnapshot.create({
         data: {
           periodId,
@@ -339,6 +343,22 @@ export class PeriodService {
         performedBy: actorId,
         organizationId: period.object.organizationId,
       });
+
+      // Enqueue MV refresh — worker implemented in M-05c; idempotent via fixed jobId per object
+      await this.analyticsQueue
+        .add(
+          'mv.refresh',
+          { periodId, objectId: period.objectId },
+          {
+            jobId: `mv-refresh-object-${period.objectId}`,
+            removeOnComplete: true,
+            removeOnFail: false,
+          },
+        )
+        .catch((err) => {
+          // Non-fatal: if Redis is down, MV refresh will be triggered by next close or M-05c self-healing cron
+          console.error('[PeriodService] Failed to enqueue mv.refresh job:', err);
+        });
 
       return updated;
     });
