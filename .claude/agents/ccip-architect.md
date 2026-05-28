@@ -43,12 +43,12 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 
 ## State Contract (CLAUDE.md §15)
 
-**Input** — читать из `session-state.json` при старте:
-- `task` — описание задачи
-- `intents` — понять scope, проверить наличие `ARCH`
-- `agent_outputs[*].handoff_notes` — контекст от предыдущих агентов
+**Input** — read from `session-state.json` on start:
+- `task` — task description
+- `intents` — understand scope, check for `ARCH`
+- `agent_outputs[*].handoff_notes` — context from prior agents
 
-**Output** — в конце ответа обязательно вывести блок (автоматически читается PostToolUse hook):
+**Output** — emit this block at the end of your response (auto-read by PostToolUse hook):
 
 ## State Update
 ```json
@@ -59,4 +59,4 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 }
 ```
 
-> Если задача завершилась reroute или частично — изменить `"outcome"` на `"rerouted"` или `"partial"` в handoff_notes.
+> If rerouted or partial — set `"outcome"` to `"rerouted"` or `"partial"` in handoff_notes.

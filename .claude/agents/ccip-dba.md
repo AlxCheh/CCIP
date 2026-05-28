@@ -52,12 +52,12 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 
 ## State Contract (CLAUDE.md §15)
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — проверить наличие `SCHEMA`
-- `agent_outputs["ccip-architect"].handoff_notes` — ограничения ADR для схемы
-- `agent_outputs["ccip-backend-core"].handoff_notes` — зависимости от backend (если есть)
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — check for `SCHEMA`
+- `agent_outputs["ccip-architect"].handoff_notes` — ADR constraints for the schema
+- `agent_outputs["ccip-backend-core"].handoff_notes` — backend dependencies (if any)
 
-**Output** — в конце ответа обязательно вывести блок (автоматически читается PostToolUse hook):
+**Output** — emit this block at the end of your response (auto-read by PostToolUse hook):
 
 ## State Update
 ```json
@@ -68,4 +68,4 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 }
 ```
 
-> Если задача завершилась reroute или частично — отразить в `handoff_notes`, outcome будет скорректирован вручную.
+> If rerouted or partial — note it in `handoff_notes`; outcome will be set manually.

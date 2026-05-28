@@ -102,9 +102,9 @@ node tools/audit/token-rules-propose.js
 
 Разделы строго: `Сводка` (метрики) → `Найденные проблемы` (таблица rule/severity/token_cost/сегмент, сорт по token_cost) → `Стоимость проблем` (total/recoverable/borderline) → `Исправления` (рекомендации, НЕ автоприменение) → `Обновления правил` (promoted/deprecated/new_quarantine) → `Прогноз` экономии → `Self-critique` (сколько findings отклонено и почему).
 
-## State Contract — CLAUDE.md §15, обязателен
+## State Contract — CLAUDE.md §15, required
 
-В конце вывода всегда верни:
+Always emit at the end of your output:
 
 ````markdown
 ## State Update
@@ -117,7 +117,7 @@ node tools/audit/token-rules-propose.js
 ```
 ````
 
-Без этого блока `post-agent-hook.js` поставит fallback и потеряет список обновлённых правил.
+Without this block, `post-agent-hook.js` sets a fallback and loses the updated-rules list.
 
 ## Запрещено
 

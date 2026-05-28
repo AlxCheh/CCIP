@@ -48,11 +48,11 @@ React, TypeScript, state management (Zustand/React Query), формы с вал�
 
 ## State Contract
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — проверить наличие `FRONTEND`
-- `agent_outputs["ccip-backend-core"].handoff_notes` — API контракты, эндпоинты, схемы данных
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — check for `FRONTEND`
+- `agent_outputs["ccip-backend-core"].handoff_notes` — API contracts, endpoints, data schemas
 
-**Output** — в конце ответа обязательно вывести блок (читается PostToolUse hook):
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
 
 ## State Update
 ```json

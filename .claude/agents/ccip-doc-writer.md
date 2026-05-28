@@ -60,14 +60,15 @@ model: claude-haiku-4-5-20251001
 3. ADR после принятия — статус Accepted, не редактировать Decision; создавать новый ADR для изменения.
 4. Пользовательские docs — писать для аудитории без IT-бэкграунда, строительная терминология.
 5. CLAUDE.md — проверять на дублирование каждые 2 недели.
+6. CLAUDE.md §15/§16 и State Contract блоки агентов — норма EN машинно-компакт. Не возвращать RU-прозу (RU остаётся только в JSON-плейсхолдерах `summary`/`handoff_notes`). Заголовки `## §15`/`## §16` и блок `## State Update` — инварианты, не трогать.
 
 ## State Contract
 
-**Input** — читать из `session-state.json` при старте:
-- `task` + `intents` — проверить наличие `DOC`
-- `agent_outputs[*].handoff_notes` — принятые решения и изменения, требующие документирования
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — check for `DOC`
+- `agent_outputs[*].handoff_notes` — decisions and changes that need documenting
 
-**Output** — в конце ответа обязательно вывести блок (читается PostToolUse hook):
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
 
 ## State Update
 ```json

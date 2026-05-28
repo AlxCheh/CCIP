@@ -33,11 +33,13 @@ model: claude-sonnet-4-6
 
 ## State Contract
 
-**Input** — из `session-state.json`:
+**Input** — from `session-state.json`:
 - `task`, `intents`, `confidence`
-- `agent_outputs[*].handoff_notes` — контекст от предыдущих агентов
+- `agent_outputs[*].handoff_notes` — context from prior agents
 
 **Output:**
+
+## State Update
 ```json
 {
   "summary": "≤ 3 предложения: что сделано, какие файлы изменены",
