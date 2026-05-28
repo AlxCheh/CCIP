@@ -10,11 +10,11 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-05-07 |
+| **Last Updated** | 2026-05-28 |
 | **Current Phase** | 5 — PeriodEngine |
 | **Phase Status** | 🔄 active |
-| **Active P1 Task** | M-05b — DisputeSLA Module D + BullMQ Worker |
-| **Next Milestone** | M-05b завершён → M-05c разблокирован |
+| **Active P1 Task** | M-05c — Analytics Module E + MV refresh |
+| **Next Milestone** | M-05c разблокирован (M-05b реализация завершена) |
 | **Active Blockers** | см. §3 |
 | **Open Feedbacks** | 0 |
 | **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/red-team-2026-05-07.md`) |
@@ -34,7 +34,7 @@
 | M-03 | P1 | Init Module A: Objects + BoQ + weight_coef trigger | 3 | ✓ done | — |
 | M-04 | P1 | ZeroReport Module B | 4 | ✓ done | — |
 | M-05a | P1 | PeriodEngine Module C | 5 | ✓ done | — |
-| M-05b | P1 | DisputeSLA Module D + BullMQ Worker | 5 | ○ pending | M-05c, M-08 |
+| M-05b | P1 | DisputeSLA Module D + BullMQ Worker | 5 | ✓ done ¹ | M-05c, M-08 |
 | M-05c | P1 | Analytics Module E + MV refresh | 5 | ○ pending | M-08 |
 | M-06 | P3 | Baseline F/G + GC Change H | 6 | ○ pending | M-08 |
 | M-07 | P2 | Sync API I | 7 | ○ pending | M-08 |
@@ -44,6 +44,8 @@
 | M-12 | P1 | Prod Infra / K8s Worker | 12 | ○ pending | Pilot |
 | M-13 | P1 | Pilot | 13 | ○ pending | — |
 | M-M | P4 | Mobile App | post | ○ pending | M-13 |
+
+¹ M-05b: реализация завершена (service+worker+SLA scheduler, HTTP controller/module, PeriodService slaForceCloseAt + mv-refresh enqueue) — 279 unit + audit 18/18 зелёные, разблокирует M-05c/M-08. E2E acceptance (Scenario A + Redis-recovery, Task 10 плана) отложен; см. `docs/plans/archive/2026-05-24-dispute-sla-module.md` Task 10.
 
 ---
 
@@ -76,6 +78,7 @@
 | M-03 | Init Module A: ObjectsModule, BoQModule, SystemConfigModule, DocumentsModule | 2026-05-06 | apps/api/src/modules/objects/ + boq/ + system-config/ + documents/ |
 | M-04 | ZeroReport Module B: create, upsertItem, submit, approve (37 tests) | 2026-05-06 | apps/api/src/modules/zero-report/ |
 | M-05a | PeriodEngine Module C: openPeriod (gpToken), submitGp, upsertPeriodFact, closePeriod, findById (38 tests) | 2026-05-07 | apps/api/src/modules/period/ |
+| M-05b | DisputeSLA Module D: DisputeService, DisputeFlagService, DisputeSlaService+Worker, DisputeController/Module; PeriodService slaForceCloseAt + mv-refresh enqueue (279 tests) — E2E acceptance отложен ¹ | 2026-05-28 | apps/api/src/modules/dispute/ + dispute-sla/ + period/ |
 
 ---
 

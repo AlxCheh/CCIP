@@ -10,7 +10,7 @@
 
 | # | Work-item | Источник | Текущее состояние | Эффорт | Блокирует |
 |---|-----------|----------|-------------------|--------|-----------|
-| **W1** | M-05b завершение | `2026-05-24-dispute-sla-module.md` Tasks 8–10 | Tasks 1–7 done (service+worker+SLA scheduler); **нет HTTP-слоя** (`dispute.controller.ts`, `dispute.module.ts`), 2 TODO M-05b открыты (`period.service.ts:60,326`) | ~0.5–1 d | M-05c, M-08 |
+| ~~**W1**~~ | ~~M-05b завершение~~ | `archive/2026-05-24-dispute-sla-module.md` | ✅ **DONE 2026-05-28** — Tasks 1–9: HTTP-слой + оба TODO M-05b закрыты; 279 unit + audit 18/18. Task 10 (E2E acceptance) отложен. Branch `feat/m-05b-dispute-http-period-fixes` | — | разблокировал M-05c, M-08 |
 | **W2** | §11 Business Correctness gate (Wave 1) | `2026-05-18-sub-plan-a-wave-1.md` (Tier 2 / Sub-plan A) | Не начат (`apps/api/test/integration/` отсутствует) | 3–5 d | regression-safety всех ADR-002/006/007/010 |
 | **W3** | Hook write-lock (X-1 hard guarantee) | Tier 2 / Sub-plan F | Не начат (PARTIAL: atomic write есть, write-lock нет) | 1–2 d | — (изолировано) |
 | **W4** | RLS fuzz suite (X-6) | Tier 2 / Sub-plan E | Не начат | 2–3 d | pre-pilot security |

@@ -1,5 +1,8 @@
 # M-05b: DisputeSLA Module D + BullMQ Worker — Implementation Plan
 
+> **STATUS 2026-05-28 (archived):** Tasks 1–9 ✅ done — service+worker+SLA scheduler, DisputeController/Module, PeriodService `slaForceCloseAt` + `mv.refresh` enqueue. 279 unit + audit 18/18 зелёные. Branch `feat/m-05b-dispute-http-period-fixes`.
+> **Task 10 (E2E acceptance: Scenario A + Redis-recovery) — ⏳ ОТЛОЖЕН.** Требует `prisma migrate deploy` + seed + два long-running dev-процесса (api/worker). Recovery-контракт уже покрыт unit-тестами worker'а (Tasks 1–7). Запустить вручную по шагам Task 10 ниже, когда dev-окружение готово.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implement Type 2 dispute lifecycle (HTTP endpoints + Discrepancy table) and a BullMQ SLA scheduler (Scenario A: day+3 notify, day+5 force-close) that recovers all pending events after Redis restart.
