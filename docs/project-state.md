@@ -10,7 +10,7 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-05-28 |
+| **Last Updated** | 2026-05-29 |
 | **Current Phase** | 5 — PeriodEngine |
 | **Phase Status** | 🔄 active |
 | **Active P1 Task** | M-05c — Analytics Module E + MV refresh |
@@ -45,7 +45,7 @@
 | M-13 | P1 | Pilot | 13 | ○ pending | — |
 | M-M | P4 | Mobile App | post | ○ pending | M-13 |
 
-¹ M-05b: реализация завершена (service+worker+SLA scheduler, HTTP controller/module, PeriodService slaForceCloseAt + mv-refresh enqueue) — 279 unit + audit 18/18 зелёные, разблокирует M-05c/M-08. E2E acceptance (Scenario A + Redis-recovery, Task 10 плана) отложен; см. `docs/plans/archive/2026-05-24-dispute-sla-module.md` Task 10.
+¹ M-05b: реализация завершена (service+worker+SLA scheduler, HTTP controller/module, PeriodService slaForceCloseAt + mv-refresh enqueue) — 279 unit + audit 18/18 зелёные, разблокирует M-05c/M-08. E2E acceptance (Scenario A + Redis-recovery, Task 10 плана) **заблокирован B-01/B-02** (первый E2E bring-up вскрыл runtime/schema drift; 8 фиксов закоммичены, см. `40308e7`). Live-проверка дошла до openPeriod (Task 9 fix подтверждён вживую: slaForceCloseAt=+14d, gpTokenExpiresAt=−1h); упёрлась в B-01. См. `docs/plans/archive/2026-05-24-dispute-sla-module.md` Task 10.
 
 ---
 
@@ -53,7 +53,8 @@
 
 | ID | Блокер | Заблокированный модуль | Разблокируется когда |
 |----|--------|------------------------|----------------------|
-| — | Нет активных блокеров | — | — |
+| B-01 | **Period status drift код↔БД**: CHECK `periods_status_check` = `open/waiting_gp/verifying/closed/force_closed`, а код (M-05a) использует `gp_submitted/verification`. Цикл периода падает на БД (23514). Требует решения по канону статусов + миграции. | E2E цикл периода, M-05b Task 10, M-08 | принят канон статусов + миграция выровняла CHECK/код |
+| B-02 | **Migration-history drift**: БД содержит `20260519…pg_partman`, `20260520…expand_audit_log_enum` (нет локально); локально `0002_audit_log_partman`, `20260524…m05b` не применены. `migrate deploy` не пройдёт. | любые новые миграции, E2E | история миграций приведена к консистентному baseline |
 
 ---
 

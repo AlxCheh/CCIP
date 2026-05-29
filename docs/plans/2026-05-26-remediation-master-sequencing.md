@@ -17,6 +17,7 @@
 | **W5** | M-12 K8s scaffold (F-006, X-11) | Tier 2 / Sub-plan C | Не начат (`infra/k8s/` отсутствует) | 2–3 d | W6, M-12 |
 | **W6** | §12 Operational Readiness gate (DR/RTO/RPO/SLO/runbooks) | Tier 2 / Sub-plan B | Не начат | 4–6 d | pre-pilot M-13 |
 | **W7** | M-M Mobile scaffold (F-005, ADR-008/013/014) | Tier 2 / Sub-plan D | Не начат (`apps/mobile/` отсутствует) | 5–10 d | post-pilot |
+| **W8** | Dev-runtime bring-up + schema/migration sync | вскрыто 2026-05-29 при M-05b Task 10 (первый E2E прогон стека) | Частично: 8 runtime-фиксов done (`40308e7` — @ccip/database CJS build, BullMQ REDIS_PASSWORD, @Public GP submit, seed bcrypt/import; + pg_cron PR #9, ручной ALTER sla_force_close_at, dev `.env`). **Открыто:** B-01 period status drift код↔БД, B-02 migration-history drift (project-state §3) | 1–3 d | M-05b Task 10, M-08, любой E2E |
 
 **Cosmetic / Tier 3 (не фиксируем без триггера):** F-019 (docker-compose location), F-025/026/027, X-5 (auditor self-modify — theoretical). Зафиксированы справочно в residual-remediation плане §0.
 
