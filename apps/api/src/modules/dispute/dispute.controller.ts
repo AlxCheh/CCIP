@@ -8,7 +8,7 @@ export class DisputeController {
   constructor(private readonly disputeService: DisputeService) {}
 
   @Post('periods/:periodId/facts/:boqItemId/dispute')
-  @Roles('site_control')
+  @Roles('stroycontrol')
   async createDispute(
     @Param('periodId', ParseIntPipe) periodId: number,
     @Param('boqItemId', ParseIntPipe) boqItemId: number,
@@ -19,7 +19,7 @@ export class DisputeController {
   }
 
   @Get('periods/:periodId/discrepancies')
-  @Roles('site_control', 'director', 'admin')
+  @Roles('stroycontrol', 'director', 'admin')
   async listDiscrepancies(
     @Param('periodId', ParseIntPipe) periodId: number,
   ) {
