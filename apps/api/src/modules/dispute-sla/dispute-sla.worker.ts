@@ -27,9 +27,9 @@ export class DisputeSlaWorker implements OnModuleInit {
 
     if (!event || event.executedAt || event.isCancelled) return;
 
-    if (event.eventType === 'notify_director') {
+    if (event.eventType === 'notify_director_day3') {
       await this.handleNotify(event);
-    } else if (event.eventType === 'force_close') {
+    } else if (event.eventType === 'force_close_day5') {
       await this.handleForceClose(event);
     }
 
