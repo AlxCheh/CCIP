@@ -2,7 +2,7 @@
   "name": "@ccip/database",
   "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
+  "main": "./index.js",
   "types": "./src/index.ts",
   "scripts": {
     "db:generate": "prisma generate",
@@ -17,9 +17,11 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "bcrypt": "6",
     "prisma": "^5.22.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "jest": "^30.0.0",

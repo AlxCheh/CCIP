@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { Roles } from '../../common/guards/roles.decorator';
+import { Public } from '../../common/guards/public.decorator';
 import { PeriodService } from './period.service';
 import { OpenPeriodDto } from './dto/open-period.dto';
 import { SubmitGpDto } from './dto/submit-gp.dto';
@@ -50,6 +51,7 @@ export class PeriodController {
   }
 
   // Public endpoint — authenticated by GP token embedded in URL
+  @Public()
   @Post('gp/submit/:token')
   submitGp(@Param('token') token: string, @Body() dto: SubmitGpDto) {
     return this.periodService.submitGp(token, dto.gpSubmittedByName, dto.items);
