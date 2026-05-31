@@ -102,3 +102,41 @@ export const objectsApi = {
   detail: (id: number) =>
     api.get<ObjectDetailResponse>(`/objects/${id}`).then((r) => r.data),
 };
+
+export type PeriodPosition = {
+  boqItemId: number;
+  workCode: string;
+  name: string;
+  unit: string;
+  planVolume: number;
+  gpVolume: number | null;
+  scVolume: number | null;
+  discrepancyType: number | null;
+  discrepancyStatus: string | null;
+  acceptedVolume: number | null;
+};
+
+export type PeriodDetailResponse = {
+  id: number;
+  periodNumber: number;
+  status: 'open' | 'gp_submitted' | 'verification' | 'closed';
+  openedAt: string;
+  closedAt: string | null;
+  objectId: number;
+  boqVersionId: number;
+  positions: PeriodPosition[];
+  openDiscrepancyCount: number;
+};
+
+export const periodApi = {
+  getDetail: (id: number) =>
+    api.get<PeriodDetailResponse>(`/periods/${id}/detail`).then((r) => r.data),
+  open: (objectId: number) =>
+    api.post<{ id: number }>('/periods/open', { objectId }).then((r) => r.data),
+  upsertFact: (periodId: number, boqItemId: number, scVolume: number) =>
+    api
+      .patch<void>(`/periods/${periodId}/facts/${boqItemId}`, { scVolume })
+      .then((r) => r.data),
+  close: (periodId: number) =>
+    api.patch<void>(`/periods/${periodId}/close`).then((r) => r.data),
+};
