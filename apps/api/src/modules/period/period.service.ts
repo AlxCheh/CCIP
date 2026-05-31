@@ -124,6 +124,78 @@ export class PeriodService {
     return period;
   }
 
+  // ─── getDetail ──────────────────────────────────────────────────────────────
+
+  async getDetail(periodId: number, actorId: number) {
+    const actor = await this.prisma.user.findUniqueOrThrow({
+      where: { id: actorId },
+      select: { organizationId: true },
+    });
+
+    const period = await this.prisma.period.findFirst({
+      where: {
+        id: periodId,
+        object: { organizationId: actor.organizationId },
+      },
+      include: {
+        boqVersion: {
+          include: {
+            boqItems: {
+              select: { id: true, workCode: true, name: true, unit: true, planVolume: true },
+              orderBy: { id: 'asc' },
+            },
+          },
+        },
+        periodFacts: {
+          select: {
+            boqItemId: true,
+            gpVolume: true,
+            scVolume: true,
+            discrepancyType: true,
+            discrepancyStatus: true,
+            acceptedVolume: true,
+          },
+        },
+      },
+    });
+
+    if (!period) throw new NotFoundException('PERIOD_NOT_FOUND');
+
+    const factMap = new Map(period.periodFacts.map((f) => [f.boqItemId, f]));
+
+    const positions = period.boqVersion.boqItems.map((item) => {
+      const f = factMap.get(item.id);
+      return {
+        boqItemId: item.id,
+        workCode: item.workCode,
+        name: item.name,
+        unit: item.unit ?? '',
+        planVolume: Number(item.planVolume),
+        gpVolume: f?.gpVolume != null ? Number(f.gpVolume) : null,
+        scVolume: f?.scVolume != null ? Number(f.scVolume) : null,
+        discrepancyType: f?.discrepancyType ?? null,
+        discrepancyStatus: f?.discrepancyStatus ?? null,
+        acceptedVolume: f?.acceptedVolume != null ? Number(f.acceptedVolume) : null,
+      };
+    });
+
+    const openDiscrepancyCount = await this.prisma.discrepancy.count({
+      where: { periodFact: { periodId }, status: 'open' },
+    });
+
+    return {
+      id: period.id,
+      periodNumber: period.periodNumber,
+      status: period.status as 'open' | 'gp_submitted' | 'verification' | 'closed',
+      openedAt: period.openedAt.toISOString(),
+      closedAt: period.closedAt?.toISOString() ?? null,
+      objectId: period.objectId,
+      boqVersionId: period.boqVersionId,
+      positions,
+      openDiscrepancyCount,
+    };
+  }
+
   // ─── submitGp ────────────────────────────────────────────────────────────────
 
   async submitGp(

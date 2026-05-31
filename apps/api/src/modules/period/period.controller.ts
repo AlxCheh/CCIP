@@ -31,6 +31,15 @@ export class PeriodController {
     );
   }
 
+  @Get(':id/detail')
+  @Roles('director', 'stroycontrol', 'admin')
+  getDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest,
+  ) {
+    return this.periodService.getDetail(id, parseInt(req.user.id, 10));
+  }
+
   @Get(':id')
   @Roles('director', 'stroycontrol', 'admin')
   findById(@Param('id', ParseIntPipe) id: number, @Request() req: AuthRequest) {

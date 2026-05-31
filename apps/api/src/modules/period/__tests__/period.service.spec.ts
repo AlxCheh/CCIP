@@ -319,6 +319,68 @@ describe('PeriodService', () => {
     });
   });
 
+  // ─── getDetail ──────────────────────────────────────────────────────────────
+
+  describe('getDetail', () => {
+    const boqItems = [
+      { id: BOQ_ITEM_ID,     workCode: 'C-01', name: 'Earthworks', unit: 'm3', planVolume: '200' },
+      { id: BOQ_ITEM_ID + 1, workCode: 'C-02', name: 'Concrete',   unit: 'm3', planVolume: '100' },
+    ];
+
+    const periodWithDetail = {
+      ...makePeriod({ status: 'verification' }),
+      boqVersion: { boqItems },
+      periodFacts: [
+        {
+          boqItemId: BOQ_ITEM_ID,
+          gpVolume: '150',
+          scVolume: '140',
+          discrepancyType: 1,
+          discrepancyStatus: 'open',
+          acceptedVolume: null,
+        },
+      ],
+    };
+
+    it('returns merged positions for the period BoQ version', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValueOnce({ organizationId: ORG_ID });
+      (prisma.period.findFirst as jest.Mock).mockResolvedValueOnce(periodWithDetail);
+      (prisma.discrepancy.count as jest.Mock).mockResolvedValueOnce(1);
+
+      const result = await service.getDetail(PERIOD_ID, ACTOR_ID);
+
+      expect(result.id).toBe(PERIOD_ID);
+      expect(result.status).toBe('verification');
+      expect(result.positions).toHaveLength(2);
+      expect(result.positions[0]).toMatchObject({
+        boqItemId: BOQ_ITEM_ID,
+        workCode: 'C-01',
+        name: 'Earthworks',
+        unit: 'm3',
+        planVolume: 200,
+        gpVolume: 150,
+        scVolume: 140,
+        discrepancyType: 1,
+        discrepancyStatus: 'open',
+        acceptedVolume: null,
+      });
+      expect(result.positions[1]).toMatchObject({
+        boqItemId: BOQ_ITEM_ID + 1,
+        gpVolume: null,
+        scVolume: null,
+        discrepancyStatus: null,
+      });
+      expect(result.openDiscrepancyCount).toBe(1);
+    });
+
+    it('throws NotFoundException when period is not in actor organisation', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValueOnce({ organizationId: ORG_ID });
+      (prisma.period.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
+      await expect(service.getDetail(PERIOD_ID, ACTOR_ID)).rejects.toThrow(NotFoundException);
+    });
+  });
+
   // ─── submitGp ────────────────────────────────────────────────────────────────
 
   describe('submitGp', () => {
