@@ -27,6 +27,21 @@ describe('StaleBanner', () => {
     );
     expect(screen.getByText(/обратитесь к администратору/)).toBeInTheDocument();
   });
+
+  it('shows an hours-ago age when older than an hour', () => {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    render(
+      <StaleBanner meta={{ isStale: true, refreshedAt: twoHoursAgo, staleReason: 'older_than_30min' }} />,
+    );
+    expect(screen.getByText(/2 ч назад/)).toBeInTheDocument();
+  });
+
+  it('shows fallback age text when stale with no refreshedAt', () => {
+    render(
+      <StaleBanner meta={{ isStale: true, refreshedAt: null, staleReason: 'mv_refresh_failed' }} />,
+    );
+    expect(screen.getByText(/неизвестно когда/)).toBeInTheDocument();
+  });
 });
 
 describe('ProgressBar', () => {

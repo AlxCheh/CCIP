@@ -51,6 +51,14 @@ describe('dashboard hooks', () => {
     expect(objectsApi.detail).toHaveBeenCalledWith(42);
   });
 
+  it('useObjectDetail stores data under the [objectDetail, id] query key', async () => {
+    vi.mocked(objectsApi.detail).mockResolvedValue({} as ObjectDetailResponse);
+    const client = freshClient();
+    const { result } = renderHook(() => useObjectDetail(42), { wrapper: makeWrapper(client) });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(client.getQueryData(['objectDetail', 42])).toBeDefined();
+  });
+
   it('useRefreshDashboard invalidates dashboard and objectDetail queries on success', async () => {
     vi.mocked(dashboardApi.refreshDashboard).mockResolvedValue({ refreshedAt: '2026-01-01T00:00:00Z' });
     const client = freshClient();

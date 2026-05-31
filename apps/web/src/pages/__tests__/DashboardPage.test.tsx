@@ -82,4 +82,26 @@ describe('DashboardPage', () => {
     await userEvent.click(screen.getByText('Объект А'));
     expect(navigateMock).toHaveBeenCalledWith('/objects/1');
   });
+
+  it('renders the loading state', () => {
+    vi.mocked(useDashboard).mockReturnValue(mockReturn({ isLoading: true }));
+    render(<DashboardPage />);
+    expect(screen.getByText('Загрузка...')).toBeInTheDocument();
+  });
+
+  it('renders the error state', () => {
+    vi.mocked(useDashboard).mockReturnValue(mockReturn({ isError: true }));
+    render(<DashboardPage />);
+    expect(screen.getByText('Ошибка загрузки данных.')).toBeInTheDocument();
+  });
+
+  it('renders dashes for analytics columns when hasAnalytics is false', () => {
+    const data = dataWithRows();
+    data.items[0] = { ...data.items[0], hasAnalytics: false };
+    vi.mocked(useDashboard).mockReturnValue(mockReturn({ data }));
+    render(<DashboardPage />);
+    expect(screen.getByText('Объект А')).toBeInTheDocument();
+    // readiness + weighted + critical + gap columns all render an em-dash placeholder
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(4);
+  });
 });

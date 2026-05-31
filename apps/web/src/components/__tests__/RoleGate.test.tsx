@@ -27,7 +27,8 @@ describe('RoleGate', () => {
   });
 
   it('renders nothing when there is no user', () => {
-    render(<RoleGate allow={['admin']}>secret</RoleGate>);
+    const { container } = render(<RoleGate allow={['admin']}>secret</RoleGate>);
     expect(screen.queryByText('secret')).not.toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 });
