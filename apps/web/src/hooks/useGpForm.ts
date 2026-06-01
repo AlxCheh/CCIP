@@ -8,7 +8,7 @@ export function useGpFormData(token: string) {
     queryFn: () => gpApi.getForm(token),
     retry: false,
     staleTime: Infinity,
-    enabled: token.length > 0,
+    enabled: Boolean(token),
   });
 }
 

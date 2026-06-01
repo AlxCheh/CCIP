@@ -196,6 +196,27 @@ export class PeriodService {
     };
   }
 
+  // ─── GP token guard ────────────────────────────────────────────────────────────
+
+  /**
+   * Validates a GP submission token: existence, expiry, and not-yet-submitted.
+   * A missing `gpTokenExpiresAt` is treated as expired so the form and the submit
+   * path behave consistently. Narrows `gpTokenExpiresAt` to a non-null `Date`.
+   */
+  private assertGpTokenValid<
+    T extends { gpTokenExpiresAt: Date | null; gpSubmittedAt: Date | null },
+  >(period: T | null): asserts period is T & { gpTokenExpiresAt: Date } {
+    if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
+
+    if (!period.gpTokenExpiresAt || period.gpTokenExpiresAt < new Date()) {
+      throw new ForbiddenException('GP_TOKEN_EXPIRED');
+    }
+
+    if (period.gpSubmittedAt !== null) {
+      throw new ForbiddenException('GP_ALREADY_SUBMITTED');
+    }
+  }
+
   // ─── getGpFormData ────────────────────────────────────────────────────────────
 
   async getGpFormData(token: string) {
@@ -217,20 +238,12 @@ export class PeriodService {
       },
     });
 
-    if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
-
-    if (period.gpTokenExpiresAt && period.gpTokenExpiresAt < new Date()) {
-      throw new ForbiddenException('GP_TOKEN_EXPIRED');
-    }
-
-    if (period.gpSubmittedAt !== null) {
-      throw new ForbiddenException('GP_ALREADY_SUBMITTED');
-    }
+    this.assertGpTokenValid(period);
 
     return {
       periodNumber: period.periodNumber,
       objectName: period.object.name,
-      gpTokenExpiresAt: period.gpTokenExpiresAt!.toISOString(),
+      gpTokenExpiresAt: period.gpTokenExpiresAt.toISOString(),
       items: period.boqVersion.boqItems.map((item) => ({
         boqItemId: item.id,
         name: item.name,
@@ -257,15 +270,7 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
-      if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
-
-      if (period.gpTokenExpiresAt && period.gpTokenExpiresAt < new Date()) {
-        throw new ForbiddenException('GP_TOKEN_EXPIRED');
-      }
-
-      if (period.gpSubmittedAt !== null) {
-        throw new ForbiddenException('GP_ALREADY_SUBMITTED');
-      }
+      this.assertGpTokenValid(period);
 
       if (period.status !== 'open') {
         throw new ConflictException('PERIOD_WRONG_STATUS');
