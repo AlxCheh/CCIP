@@ -115,7 +115,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - Line-number якорь (`file.md:2619-2640`) как контракт. Только heading-anchored ссылки; line — hint, не контракт.
 - Bare commit SHA без subject line. Формат: `"feat(...): subject"` `[sha:abc1234]`.
 - Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
-- Только `## Next-Session Bootstrap` (h2) и `### Evidence Log` (h3). Bare `## Bootstrap` / legacy-формы не распознаются. Canonical эмит — всегда без префикса; `### Артефакт N —` форма только hook-side defense-in-depth, агент её не использует.
+- Только `## Next-Session Bootstrap` (h2) и `## Evidence Log` (h2). Bare `## Bootstrap` / legacy-формы не распознаются. Canonical эмит — всегда без префикса; `### Артефакт N —` форма только hook-side defense-in-depth, агент её не использует. **Причина h2 для Evidence Log:** `extractSection` Bootstrap (h2) завершается на следующем `##`; если Evidence Log h3 — он попадает в Bootstrap и wordcount нарушает ≤300 (FIREWALL_WORDCOUNT).
 - Строка `Branch: <name>` в bootstrap, если присутствует, верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → FIREWALL_BRANCH_DRIFT. Либо emit'ить точное имя текущей ветки, либо опускать строку — стейл-claim'ы из предыдущей сессии запрещены.
 - Токены `[sha:NNNNNNN]` в bootstrap (4–40 hex chars) верифицируются через `git cat-file -e <sha>`. Несуществующий объект → FIREWALL_SHA_NOT_FOUND: <sha>. Цитируй только реальные commits — фабрикация или копирование из прошлой сессии ловится.
 - Evidence row с `source_file: repo:docs/errors/sessions/...` ЗАПРЕЩЁН. Это hook-генерируемые session-артефакты — цитировать их = telephone-game, переносить bootstrap прошлой сессии в эту как «верифицированный» факт. Reason: `source_is_session_artifact`. Первичный источник всегда в repo / state-memory / git-history, не в hook-output.
@@ -161,17 +161,35 @@ Buckets: SMALL <5k, MEDIUM 5–20k, LARGE >20k. Heuristic, ±50%.
 full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 ```
 
-### Артефакт 2 — Next-Session Bootstrap (≤ 60 строк / ≤ 300 слов, verbatim)
+### Артефакт 2 — Next-Session Bootstrap (≤ 60 строк, verbatim)
 
 **Эмит начинается с heading'а `## Next-Session Bootstrap` (h2, без префикса).** Хук `extractSection` ищет литерал `Next-Session Bootstrap` после `## ` или `### `; форма `### Артефакт 2 — Next-Session Bootstrap` НЕ распознаётся (FIREWALL_BOOTSTRAP_MISSING). Метка «Артефакт 2 —» — spec-структура, не часть emit'а.
+
+**Workflow формирования (3 этапа):**
+
+1. **Анализ сессии** — определить текущую фазу точно; SHA + subject последнего коммита; прогресс (что завершено, какие артефакты созданы); активные блокеры и pre-existing нюансы.
+2. **Приоритизация** — включать только то, что нужно для немедленного старта следующей сессии без чтения истории. Фокус на потребностях *следующей* сессии, не на итогах текущей. Нет evidence → элемент удаляется, не помечается `[unverified]`.
+3. **Сборка** — по блокам ниже.
 
 Блоки (опусти, если нет evidence; НИКОГДА не выдумывай):
 
 1. **Context (1 строка):** фаза/этап + subject последнего коммита `[sha:hint]`.
-2. **Tasks (1–2):** heading-anchored ссылка, ожидаемые артефакты, commit message template.
-3. **Blockers:** `F-XXX` + 1 строка контекста, или `none`.
-4. **Constraints:** ≤ 5, только применимые этой сессии. Не дублировать CLAUDE.md.
-5. **Gotchas:** ≤ 5, pre-existing нюансы.
+   *Верификация:* фаза — `state-memory:` или `repo:docs/project-state.md`; коммит — `git:<SHA>:<plan-file>`.
+
+2. **Tasks (1–2 наиболее критических):** задачи, готовые к немедленному выполнению в следующей сессии. Для каждой — 2–4 строки:
+   - heading-anchored ссылка на план (`[path:docs/plans/X.md]` в прозе)
+   - ожидаемые артефакты: конкретные файлы для изменения / создания
+   - шаблон commit message
+   *Верификация:* `repo:docs/plans/<file>` по heading-anchor задачи.
+
+3. **Blockers:** идентификатор + 1 строка контекста, или `none`.
+   *Верификация:* `repo:docs/tasks/<file>.md` или `state-memory:`.
+
+4. **Constraints (≤ 5):** специфичные для *следующей* сессии. Не дублировать CLAUDE.md и общесистемные правила.
+   *Верификация:* `repo:` (spec/plan) или `state-memory:`. Факт, покрытый CLAUDE.md, — не включать.
+
+5. **Gotchas (≤ 5):** pre-existing нюансы — что нужно знать ДО начала работы, не резюме текущей сессии.
+   *Верификация:* `repo:` (код/spec/тест), `state-memory:` или `git:<SHA>:` (diff коммита).
 
 Хвост (machine-readable):
 
@@ -181,6 +199,8 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 
 Идентификаторы помечаются `[id:T-27]`, `[path:docs/plans/X.md]`, `[sha:ea88c44]` — следующая сессия знает: tagged-токены литеральны, не переводить.
 
+**Нотация `[path:]` — только в прозе Bootstrap.** В Evidence Log колонка `source_file` обязана использовать полный префикс: `repo:docs/plans/X.md`, не `plan:X.md`. Хук принимает только `repo:` / `git:<SHA>:` / `state-memory:` — любой другой префикс → `source_prefix_invalid`.
+
 **Кардинальный контракт:** `count(claims in bootstrap) == count(rows in Артефакт 3)`. Несовпадение → хук фиксирует L1_CARDINALITY_MISMATCH (violation, видим следующей сессии).
 
 Если bootstrap не помещается в 300 слов — режь gotchas/constraints, не задачи. Если нечего класть в task'и (нет evidence ни на одну) — bootstrap состоит из «нет верифицированных задач, сессия завершена без active follow-ups» + текущий коммит. Манифест в этом случае: `bootstrap_claims: 0`, `evidence_rows: 0`; Артефакт 3 — header+separator только, БЕЗ body-row (см. §Запреты).
@@ -188,7 +208,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 ### Артефакт 3 — Evidence Log (≤ 25 строк)
 
 ```markdown
-### Evidence Log
+## Evidence Log
 
 | # | claim_in_bootstrap | source_file | anchor | exact_substring (≤ 80B UTF-8, `|` → `\|`) |
 |---|---|---|---|---|
@@ -263,5 +283,5 @@ Hook проверяет:
 3. Параллельность §0: все независимые Read+Grep в ОДНОМ сообщении.
 4. Не критикуй решения по существу — только эффективность tool calls.
 5. Нарушений нет → пиши «нарушений не обнаружено» + что было сделано правильно. Артефакты 2+3+Манифест всё равно обязательны.
-6. Артефакт 1 ≤ 50 строк, Артефакт 2 ≤ 60 строк / 300 слов, Артефакт 3 ≤ 25 строк, Манифест ≤ 14 строк YAML.
+6. Артефакт 1 ≤ 50 строк, Артефакт 2 ≤ 60 строк, Артефакт 3 ≤ 25 строк, Манифест ≤ 14 строк YAML.
 7. При нехватке evidence на 0 задач — bootstrap фиксирует пустоту явно, не выдумывает. Нет задач — нет задач.

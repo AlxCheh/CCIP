@@ -1,22 +1,27 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useOpenPeriod } from '../hooks/useOpenPeriod';
+import { getAuthUser } from '../store/auth';
 import { useObjectDetail } from '../hooks/useObjectDetail';
 import { StaleBanner } from '../components/StaleBanner';
 import { ProgressBar } from '../components/ProgressBar';
 import { EmptyCell } from '../components/EmptyCell';
 
 const PERIOD_STATUS_LABELS: Record<string, string> = {
-  open: 'Открыт',
+  open:         'Открыт',
   gp_submitted: 'ГП подал данные',
-  verified: 'Верифицирован',
-  closed: 'Закрыт',
-  forced_sc_figure: 'SC закрыл принудительно',
+  verification: 'Верификация',
+  closed:       'Закрыт',
 };
 
 export function ObjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const objectId = parseInt(id ?? '0', 10);
   const { data, isLoading, isError } = useObjectDetail(objectId);
+  const navigate = useNavigate();
+  const openPeriod = useOpenPeriod();
+  const user = getAuthUser();
+  const canAct = user?.role === 'stroycontrol' || user?.role === 'admin';
 
   if (isLoading) return <div style={{ padding: 24 }}>Загрузка...</div>;
   if (isError || !data)
@@ -73,8 +78,24 @@ export function ObjectDetailPage() {
             <span>Период #{currentPeriod.periodNumber} · </span>
             <span>{PERIOD_STATUS_LABELS[currentPeriod.status] ?? currentPeriod.status} · </span>
             <span>Открыт: {new Date(currentPeriod.openedAt).toLocaleDateString('ru-RU')} · </span>
-            <span style={{ color: '#aaa' }}>Перейти к периоду (недоступно в MVP)</span>
+            <Link to={`/periods/${currentPeriod.id}`}>Открыть →</Link>
           </div>
+        </Section>
+      )}
+
+      {!currentPeriod && canAct && (
+        <Section title="Период">
+          <button
+            onClick={() =>
+              openPeriod.mutate(objectId, {
+                onSuccess: (p) => navigate(`/periods/${p.id}`),
+              })
+            }
+            disabled={openPeriod.isPending}
+            style={{ padding: '4px 12px', fontSize: 13 }}
+          >
+            {openPeriod.isPending ? 'Открываем...' : 'Открыть период'}
+          </button>
         </Section>
       )}
 

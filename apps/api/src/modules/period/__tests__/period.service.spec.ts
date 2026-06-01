@@ -319,6 +319,68 @@ describe('PeriodService', () => {
     });
   });
 
+  // ─── getDetail ──────────────────────────────────────────────────────────────
+
+  describe('getDetail', () => {
+    const boqItems = [
+      { id: BOQ_ITEM_ID,     workCode: 'C-01', name: 'Earthworks', unit: 'm3', planVolume: '200' },
+      { id: BOQ_ITEM_ID + 1, workCode: 'C-02', name: 'Concrete',   unit: 'm3', planVolume: '100' },
+    ];
+
+    const periodWithDetail = {
+      ...makePeriod({ status: 'verification' }),
+      boqVersion: { boqItems },
+      periodFacts: [
+        {
+          boqItemId: BOQ_ITEM_ID,
+          gpVolume: '150',
+          scVolume: '140',
+          discrepancyType: 1,
+          discrepancyStatus: 'open',
+          acceptedVolume: null,
+        },
+      ],
+    };
+
+    it('returns merged positions for the period BoQ version', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValueOnce({ organizationId: ORG_ID });
+      (prisma.period.findFirst as jest.Mock).mockResolvedValueOnce(periodWithDetail);
+      (prisma.discrepancy.count as jest.Mock).mockResolvedValueOnce(1);
+
+      const result = await service.getDetail(PERIOD_ID, ACTOR_ID);
+
+      expect(result.id).toBe(PERIOD_ID);
+      expect(result.status).toBe('verification');
+      expect(result.positions).toHaveLength(2);
+      expect(result.positions[0]).toMatchObject({
+        boqItemId: BOQ_ITEM_ID,
+        workCode: 'C-01',
+        name: 'Earthworks',
+        unit: 'm3',
+        planVolume: 200,
+        gpVolume: 150,
+        scVolume: 140,
+        discrepancyType: 1,
+        discrepancyStatus: 'open',
+        acceptedVolume: null,
+      });
+      expect(result.positions[1]).toMatchObject({
+        boqItemId: BOQ_ITEM_ID + 1,
+        gpVolume: null,
+        scVolume: null,
+        discrepancyStatus: null,
+      });
+      expect(result.openDiscrepancyCount).toBe(1);
+    });
+
+    it('throws NotFoundException when period is not in actor organisation', async () => {
+      (prisma.user.findUniqueOrThrow as jest.Mock).mockResolvedValueOnce({ organizationId: ORG_ID });
+      (prisma.period.findFirst as jest.Mock).mockResolvedValueOnce(null);
+
+      await expect(service.getDetail(PERIOD_ID, ACTOR_ID)).rejects.toThrow(NotFoundException);
+    });
+  });
+
   // ─── submitGp ────────────────────────────────────────────────────────────────
 
   describe('submitGp', () => {
@@ -449,6 +511,72 @@ describe('PeriodService', () => {
         expect.objectContaining({
           action: 'gp_submitted',
         }),
+      );
+    });
+  });
+
+  // ─── getGpFormData ────────────────────────────────────────────────────────────
+
+  describe('getGpFormData', () => {
+    const BOQ_ITEMS = [
+      { id: BOQ_ITEM_ID, name: 'Земляные работы', unit: 'м³', planVolume: 1200 },
+      { id: BOQ_ITEM_ID + 1, name: 'Бетонирование', unit: 'м³', planVolume: 840 },
+    ];
+
+    const makePeriodWithBoq = (overrides: Record<string, unknown> = {}) => ({
+      ...makePeriod(overrides),
+      object: { name: 'Северный' },
+      boqVersion: { boqItems: BOQ_ITEMS },
+    });
+
+    beforeEach(() => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue(
+        makePeriodWithBoq(),
+      );
+    });
+
+    it('returns period info and boq items', async () => {
+      const result = await service.getGpFormData(GP_TOKEN);
+
+      expect(result.periodNumber).toBe(1);
+      expect(result.objectName).toBe('Северный');
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0]).toEqual({
+        boqItemId: BOQ_ITEM_ID,
+        name: 'Земляные работы',
+        unit: 'м³',
+        planVolume: 1200,
+      });
+    });
+
+    it('returns ISO string for gpTokenExpiresAt', async () => {
+      const result = await service.getGpFormData(GP_TOKEN);
+      expect(typeof result.gpTokenExpiresAt).toBe('string');
+      expect(() => new Date(result.gpTokenExpiresAt)).not.toThrow();
+    });
+
+    it('throws NotFoundException when token not found', async () => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue(null);
+      await expect(service.getGpFormData('bad-token')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws ForbiddenException GP_TOKEN_EXPIRED when token is past', async () => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue(
+        makePeriodWithBoq({ gpTokenExpiresAt: new Date(Date.now() - 1000) }),
+      );
+      await expect(service.getGpFormData(GP_TOKEN)).rejects.toThrow(
+        'GP_TOKEN_EXPIRED',
+      );
+    });
+
+    it('throws ForbiddenException GP_ALREADY_SUBMITTED when already submitted', async () => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue(
+        makePeriodWithBoq({ gpSubmittedAt: new Date('2026-05-01T12:00:00Z') }),
+      );
+      await expect(service.getGpFormData(GP_TOKEN)).rejects.toThrow(
+        'GP_ALREADY_SUBMITTED',
       );
     });
   });
