@@ -196,6 +196,50 @@ export class PeriodService {
     };
   }
 
+  // ─── getGpFormData ────────────────────────────────────────────────────────────
+
+  async getGpFormData(token: string) {
+    const period = await this.prisma.period.findFirst({
+      where: { gpSubmissionToken: token },
+      select: {
+        periodNumber: true,
+        gpTokenExpiresAt: true,
+        gpSubmittedAt: true,
+        object: { select: { name: true } },
+        boqVersion: {
+          select: {
+            boqItems: {
+              select: { id: true, name: true, unit: true, planVolume: true },
+              orderBy: { id: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
+
+    if (period.gpTokenExpiresAt && period.gpTokenExpiresAt < new Date()) {
+      throw new ForbiddenException('GP_TOKEN_EXPIRED');
+    }
+
+    if (period.gpSubmittedAt !== null) {
+      throw new ForbiddenException('GP_ALREADY_SUBMITTED');
+    }
+
+    return {
+      periodNumber: period.periodNumber,
+      objectName: period.object.name,
+      gpTokenExpiresAt: period.gpTokenExpiresAt!.toISOString(),
+      items: period.boqVersion.boqItems.map((item) => ({
+        boqItemId: item.id,
+        name: item.name,
+        unit: item.unit ?? '',
+        planVolume: Number(item.planVolume),
+      })),
+    };
+  }
+
   // ─── submitGp ────────────────────────────────────────────────────────────────
 
   async submitGp(
