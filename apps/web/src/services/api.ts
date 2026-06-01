@@ -140,3 +140,31 @@ export const periodApi = {
   close: (periodId: number) =>
     api.patch<void>(`/periods/${periodId}/close`).then((r) => r.data),
 };
+
+// ─── GP Form ──────────────────────────────────────────────────────────────────
+
+export type GpFormItem = {
+  boqItemId: number;
+  name: string;
+  unit: string;
+  planVolume: number;
+};
+
+export type GpFormResponse = {
+  periodNumber: number;
+  objectName: string;
+  gpTokenExpiresAt: string;
+  items: GpFormItem[];
+};
+
+export type GpSubmitPayload = {
+  gpSubmittedByName: string;
+  items: Array<{ boqItemId: number; gpVolume: number }>;
+};
+
+export const gpApi = {
+  getForm: (token: string) =>
+    api.get<GpFormResponse>(`/periods/gp/${token}`).then((r) => r.data),
+  submit: (token: string, payload: GpSubmitPayload) =>
+    api.post<void>(`/periods/gp/submit/${token}`, payload).then((r) => r.data),
+};
