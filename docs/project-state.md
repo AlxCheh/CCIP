@@ -10,11 +10,11 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-06-01 |
+| **Last Updated** | 2026-06-02 |
 | **Current Phase** | 8 — Web App |
-| **Phase Status** | 🔄 active |
-| **Active P1 Task** | M-08 — Web App: GP Form (остаток) |
-| **Next Milestone** | M-08 GP Form завершит Web App → M-10 разблокирован |
+| **Phase Status** | ✓ complete |
+| **Active P1 Task** | — (M-08 завершён; следующий трек выбирает пользователь: M-10 / M-08 design-pass) |
+| **Next Milestone** | M-10 Security / Immutability / REVOKE (разблокирован) |
 | **Active Blockers** | 0 — нет |
 | **Open Feedbacks** | 0 |
 | **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/red-team-2026-05-07.md`) |
@@ -38,7 +38,7 @@
 | M-05c | P1 | Analytics Module E + MV refresh | 5 | ✓ done | — |
 | M-06 | P3 | Baseline F/G + GC Change H | 6 | ○ pending | M-08 |
 | M-07 | P2 | Sync API I | 7 | ○ pending | M-08 |
-| M-08 | P1 | Web App: Dashboard + Period Cycle + GP Form | 8 | 🔄 active ² | Pilot |
+| M-08 | P1 | Web App: Dashboard + Period Cycle + GP Form | 8 | ✓ done | Pilot |
 | M-10 | P1 | Security / Immutability / REVOKE | 10 | ○ pending | Pilot |
 | M-11 | P1 | Testing / SLA Recovery scan | 11 | ○ pending | Pilot |
 | M-12 | P1 | Prod Infra / K8s Worker | 12 | ○ pending | Pilot |
@@ -46,8 +46,6 @@
 | M-M | P4 | Mobile App | post | ○ pending | M-13 |
 
 ¹ M-05b: реализация завершена + **E2E acceptance ПРОЙДЕН 2026-05-29** (Scenario A + Redis-recovery, Task 10). 279 unit + audit 18/18. Bring-up + schema/code drift (B-01,B-03..B-06) закрыты в W8. **B-02** (migration-history drift) закрыт 2026-05-31 через `migrate resolve --applied`. Остатки — cron PR #9 + orphan-строки истории (косметика, не блокируют).
-
-² M-08: **частично завершён** — Dashboard директора (PR #10, `743b509`, 33 Vitest-теста) + Period Cycle стройконтроля (`bdadd66`..`4d9f229`, 24 Vitest-теста) на `main`. Vitest + RTL + ESLint flat config внедрены. **Не начат:** GP Form (форма ГП через GpToken). Следующий шаг — GP Form brainstorming. Стек: Vite 6 · React 18 · TS 5.7 · React Query 5 · 57 тестов итого.
 
 ---
 
@@ -82,6 +80,7 @@
 | M-05a | PeriodEngine Module C: openPeriod (gpToken), submitGp, upsertPeriodFact, closePeriod, findById (38 tests) | 2026-05-07 | apps/api/src/modules/period/ |
 | M-05b | DisputeSLA Module D + BullMQ Worker: E2E acceptance (Scenario A + Redis-recovery), 279 unit | 2026-05-29 | apps/api/src/modules/dispute-sla/ |
 | M-05c | Analytics Module E + MV refresh: AnalyticsComputeService, MvRefreshWorker, forecast_reason, B-02 closed | 2026-05-31 | apps/api/src/modules/analytics/ |
+| M-08 | Web App: Dashboard директора + Period Cycle стройконтроля + GP Form (GpToken) | 2026-06-02 | apps/web/ (PR #10 Dashboard, PR #11 GP Form) |
 
 ---
 
