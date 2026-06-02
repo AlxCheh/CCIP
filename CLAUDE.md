@@ -59,6 +59,10 @@ DEFAULT → direct agent of primary intent
 | consistency-checker         | по запросу при cross-doc анализе       |
 | general-purpose             | fallback при DEGRADED specialist       |
 
+> **session-optimizer relay (жёсткое правило):** после прогона `ccip-session-optimizer` его `Next-Session Bootstrap` выводится пользователю ДОСЛОВНО (verbatim, в code-блоке) — не пересказывать.
+>
+> *Исключение:* факт, устаревший между прогоном и концом сессии (напр. сместившийся HEAD sha), помечается отдельной строкой без правки блока.
+
 ## Risk Rules
 ```
 HIGH          → add security-reviewer as co-agent
