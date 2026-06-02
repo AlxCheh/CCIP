@@ -482,3 +482,42 @@ file: `docs/errors/sessions/2026-05-24T13-47-26-315Z-f86fdc9.md`
 - L2_EVIDENCE_ROW_3: quote_too_long(85B) [source=repo:.claude/runtime/audit-turn-hook.js]
 - L2_EVIDENCE_ROW_4: quote_too_long(111B) [source=repo:tools/audit/__tests__/audit-turn-hook.test.js]
 - L2_EVIDENCE_ROW_5: quote_not_in_source [source=git:f86fdc9a639480478cc6b2d09c5dff3f23eef452:.claude/runtime/audit-turn-hook.js]
+
+### 2026-06-01T17-38-35-439Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-01T17-38-35-439Z-91d1bc4.md`
+
+- FIREWALL_WORDCOUNT: 643 > 300
+- L2_EVIDENCE_ROW_7: quote_too_long(81B) [source=repo:docs/superpowers/specs/2026-06-01-gp-form-design.md]
+- L2_EVIDENCE_ROW_14: quote_too_long(97B) [source=repo:docs/superpowers/specs/2026-06-01-gp-form-design.md]
+
+### 2026-06-01T17-39-52-627Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-01T17-39-52-627Z-91d1bc4.md`
+
+- FIREWALL_WORDCOUNT: 696 > 300
+- L2_EVIDENCE_ROW_15: quote_too_long(84B) [source=repo:docs/superpowers/specs/2026-06-01-gp-form-design.md]
+- L2_EVIDENCE_ROW_17: quote_too_long(106B) [source=repo:docs/plans/2026-06-01-gp-form.md]
+
+### 2026-06-01T17-52-38-131Z — VIOLATIONS detected (1)
+
+file: `docs/errors/sessions/2026-06-01T17-52-38-131Z-91d1bc4.md`
+
+- FIREWALL_WORDCOUNT: 725 > 300
+
+### 2026-06-01T19-00-02-648Z — VIOLATIONS detected (4)
+
+file: `docs/errors/sessions/2026-06-01T19-00-02-648Z-067fe40.md`
+
+- L2_EVIDENCE_ROW_2: quote_too_long(88B) [source=repo:docs/project-state.md]
+- L2_EVIDENCE_ROW_3: quote_too_long(141B) [source=repo:docs/plans/2026-06-01-gp-form.md]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-01-gp-form.md]
+- L2_EVIDENCE_ROW_5: anchor_not_found [source=git:067fe406462308e257f74a3c96b08c01ebb74be6:apps/api/src/modules/period/period.service.ts]
+
+### 2026-06-01T19-02-38-243Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-01T19-02-38-243Z-067fe40.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/project-state.md]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:apps/api/src/modules/period/period.service.ts]
+- L2_EVIDENCE_ROW_5: quote_not_in_anchor_window [source=git:067fe40:apps/api/src/modules/period/period.service.ts]
