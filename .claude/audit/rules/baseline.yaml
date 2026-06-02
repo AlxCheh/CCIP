@@ -172,3 +172,25 @@ rules:
     requires_transcript_access: false
     hit_count: 0
     precision: null
+
+  - id: R-016
+    category: context_bloat
+    severity: high
+    match: { type: heuristic, signal: "≥3 optimizer-прогона подряд с verification_violations>0 в session-opt-index", in_segments: [session_metadata] }
+    detect: "Повторные запуски ccip-session-optimizer с провалами verify-evidence-log.js."
+    rationale: "Каждый retry реинъецирует bootstrap+evidence+report; ~2000-2500 токенов overhead (M-08)."
+    fix: "Pre-flight: bootstrap ≤300 слов, цитаты ≤70B; graceful degradation в хуке."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null
+
+  - id: R-017
+    category: redundant_io
+    severity: medium
+    match: { type: heuristic, signal: "строка Evidence Log с exact_substring > 70B", in_segments: [session_metadata] }
+    detect: "Цитата Evidence Log превышает 70B UTF-8 (hard-limit 80B) — риск retry-петли."
+    rationale: "Буфер всего 10B до отказа; малое расширение цитаты запускает retry."
+    fix: "Короткие цитаты ≤60B; элизия [...] если >70B; warn в pre-flight оптимизатора."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null

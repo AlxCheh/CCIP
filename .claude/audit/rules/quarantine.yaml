@@ -30,3 +30,17 @@ quarantine:
     sessions_in_quarantine: 0
     hit_count: 0
     precision: null
+
+  - id: R-016
+    status: quarantine
+    requires_transcript_access: false
+    sessions_in_quarantine: 1
+    hit_count: 1
+    precision: 1.0
+
+  - id: R-017
+    status: quarantine
+    requires_transcript_access: false
+    sessions_in_quarantine: 1
+    hit_count: 2
+    precision: 1.0
