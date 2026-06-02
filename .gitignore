@@ -54,3 +54,5 @@ docs/errors/sessions/
 .claude/audit/evidence/
 .claude/audit/metrics/rolling-30.json
 .claude/audit/rules/rules-delta.json
+
+.superpowers/
