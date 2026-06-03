@@ -48,7 +48,7 @@ describe('DashboardPage', () => {
     vi.mocked(useDashboard).mockReturnValue(mockReturn({ data: dataWithRows() }));
     render(<DashboardPage />);
     expect(screen.getByText('Объект А')).toBeInTheDocument();
-    expect(screen.getByText('50.0%')).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
   });
 
   it('renders the empty-state when there are no items', () => {

@@ -101,14 +101,14 @@ describe('ProgressBar', () => {
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
-  it('renders the percentage with one decimal', () => {
+  it('renders the percentage as a rounded integer', () => {
     render(<ProgressBar value={42.5} />);
-    expect(screen.getByText('42.5%')).toBeInTheDocument();
+    expect(screen.getByText('43%')).toBeInTheDocument();
   });
 
   it('clamps values above 100', () => {
     render(<ProgressBar value={150} />);
-    expect(screen.getByText('100.0%')).toBeInTheDocument();
+    expect(screen.getByText('100%')).toBeInTheDocument();
   });
 });
 
