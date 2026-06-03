@@ -185,3 +185,12 @@ Token-saving rules for file reads. Goal: cut per-session token cost 30-50% with 
 **Agent frontmatter contract:** `name`,`description`,`tools`,`model` required; `summary` (opt) = operational TL;DR <=200 chars — what the agent READS/WRITES, body size, key ADR anchors. A reader with `limit:10` routes WITHOUT reading body.
 
 **Anti-patterns (forbidden):** reading `.claude/agents/X.md` in full for a routing decision (`limit:10` suffices) · re-reading the same file without an offset change · reading architecture docs in full (`docs/architecture/*.md`) · Read to check file existence (use Glob or Bash `ls`).
+
+## §17 Test Discipline
+
+Тестируй наблюдаемое поведение / семантику, не детали реализации.
+**Base rule:** ассерт по ARIA-роли / `aria-current` / accessible-name, не по имени CSS-класса или структуре текстовых узлов.
+
+**Зелёный ≠ закрытый риск:** тест, проходящий только из-за неявного дефолта среды (напр. Vitest `css:false` → CSS-модули как identity-прокси) или DOM-детали (иконка как голый текстовый узел) — отложенная поломка. Закрывай риск семантикой, не обходом: при необходимости добавь ARIA-атрибут в компонент (улучшает и a11y, и тестируемость).
+
+**Anti-patterns (forbidden):** `toHaveClass('active')` для проверки активности (используй `aria-current`) · `getByText`, склеенный с иконкой/обёрткой (используй `getByRole` + accessible-name) · принятие зелёного теста, чья зелёность держится на дефолте тест-раннера.
