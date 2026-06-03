@@ -54,6 +54,15 @@
         ]
       },
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/agent-file-watcher.js"
+          }
+        ]
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
