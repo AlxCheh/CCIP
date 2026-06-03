@@ -91,7 +91,7 @@ import './styles/tokens.css';
 - [ ] **Step 4: Убедиться, что тесты проходят**
 
 ```bash
-pnpm --filter @ccip/web test --run
+pnpm --filter @ccip/web test
 ```
 
 Ожидание: все тесты зелёные.
@@ -156,7 +156,7 @@ function renderWithProviders(ui: React.ReactElement, { route = '/' } = {}) {
 - [ ] **Step 2: Запустить тест — убедиться в FAIL**
 
 ```bash
-pnpm --filter @ccip/web test --run components.test
+pnpm --filter @ccip/web test -- components.test
 ```
 
 Ожидание: `Cannot find module '../AppShell'`
@@ -319,7 +319,7 @@ import { AppShell } from './components/AppShell';
 - [ ] **Step 6: Запустить тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run
+pnpm --filter @ccip/web test
 ```
 
 Ожидание: AppShell тесты зелёные, остальные не сломаны.
@@ -373,7 +373,7 @@ describe('StatusPill', () => {
 - [ ] **Step 2: Run — убедиться в FAIL**
 
 ```bash
-pnpm --filter @ccip/web test --run components.test
+pnpm --filter @ccip/web test -- components.test
 ```
 
 - [ ] **Step 3: Создать `BackLink.module.css`**
@@ -449,7 +449,7 @@ export function StatusPill({ variant, children }: Props) {
 - [ ] **Step 7: Запустить тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run components.test
+pnpm --filter @ccip/web test -- components.test
 ```
 
 Ожидание: все зелёные.
@@ -495,7 +495,7 @@ describe('ProgressBar', () => {
 - [ ] **Step 2: Run — убедиться, что обновлённые тесты ПАДАЮТ (компонент пока старый)**
 
 ```bash
-pnpm --filter @ccip/web test --run components.test
+pnpm --filter @ccip/web test -- components.test
 ```
 
 Ожидание: `'43%'` не найден — старый компонент рендерит `'42.5%'`. Ожидаемый FAIL перед правкой компонента (TDD red).
@@ -534,7 +534,7 @@ export function ProgressBar({ value }: Props) {
 - [ ] **Step 5: Запустить тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run
+pnpm --filter @ccip/web test
 ```
 
 Ожидание: все зелёные (включая существующие snapshot/RTL тесты ProgressBar).
@@ -582,7 +582,7 @@ describe('StepperTabs', () => {
 - [ ] **Step 2: Run — убедиться в FAIL**
 
 ```bash
-pnpm --filter @ccip/web test --run components.test
+pnpm --filter @ccip/web test -- components.test
 ```
 
 - [ ] **Step 3: Создать `StepperTabs.module.css`**
@@ -664,7 +664,7 @@ export function StepperTabs<T extends string>({ steps, current }: Props<T>) {
 - [ ] **Step 5: Запустить тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run components.test
+pnpm --filter @ccip/web test -- components.test
 ```
 
 Ожидание: все зелёные.
@@ -687,7 +687,7 @@ git commit -m "feat(web): add StepperTabs Ledger component"
 - [ ] **Step 1: Запустить существующие тесты дашборда — убедиться, что они зелёные**
 
 ```bash
-pnpm --filter @ccip/web test --run DashboardPage.test
+pnpm --filter @ccip/web test -- DashboardPage.test
 ```
 
 - [ ] **Step 2: Создать `DashboardPage.module.css`**
@@ -1022,7 +1022,7 @@ export function StaleBanner({ meta }: Props) {
 - [ ] **Step 5: Запустить тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run
+pnpm --filter @ccip/web test
 ```
 
 Ожидание: все зелёные. Если тест проверяет старый className — обновить селектор на `getByRole`/`getByText`.
@@ -1045,7 +1045,7 @@ git commit -m "feat(web): redesign DashboardPage with Ledger CSS Modules"
 - [ ] **Step 1: Запустить тесты ObjectDetailPage перед изменениями**
 
 ```bash
-pnpm --filter @ccip/web test --run ObjectDetailPage.test
+pnpm --filter @ccip/web test -- ObjectDetailPage.test
 ```
 
 - [ ] **Step 2: Создать `ObjectDetailPage.module.css`**
@@ -1306,7 +1306,7 @@ export function ObjectDetailPage() {
 - [ ] **Step 4: Запустить тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run
+pnpm --filter @ccip/web test
 ```
 
 - [ ] **Step 5: Commit**
@@ -1552,7 +1552,7 @@ export function PeriodPage() {
 - [ ] **Step 3: Запустить все тесты**
 
 ```bash
-pnpm --filter @ccip/web test --run
+pnpm --filter @ccip/web test
 ```
 
 Ожидание: все зелёные.
