@@ -36,6 +36,6 @@
 **Current:** `model: claude-haiku-4-5-20251001`
 **Proposed:** `model: claude-sonnet-4-6`
 **Rationale:** Агент выполняет write + семантические задачи: написание ADR, пользовательских руководств, CLAUDE.md. По правилу C-03 — `claude-haiku-4-5-20251001` только для read-only агентов; write + семантика требует `claude-sonnet-4-6`.
-**Status:** PENDING_HUMAN_REVIEW
+**Status:** APPLIED 2026-06-03
 
 ---
