@@ -28,7 +28,7 @@
 - ADR-001..ADR-016 — полный реестр в `docs/decisions/index.md`
 - При написании нового ADR — использовать шаблон из секции "Шаблон ADR" выше
 ```
-**Status:** PENDING_HUMAN_REVIEW
+**Status:** APPLIED 2026-06-03
 
 ## ccip-doc-writer — 2026-06-03
 **Rule:** C-03 · **Severity:** info
