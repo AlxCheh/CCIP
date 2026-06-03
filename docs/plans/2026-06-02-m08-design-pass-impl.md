@@ -28,6 +28,8 @@
 | Create | `apps/web/src/components/StatusPill.module.css` | Стили пилюли |
 | Modify | `apps/web/src/components/ProgressBar.tsx` | Ledger-стиль бара |
 | Create | `apps/web/src/components/ProgressBar.module.css` | Стили бара |
+| Modify | `apps/web/src/components/RefreshButton.tsx` | Принять `className?` prop |
+| Modify | `apps/web/src/components/StaleBanner.tsx` | Принять `meta: … \| null` |
 | Create | `apps/web/src/components/StepperTabs.tsx` | Степпер-табы периода |
 | Create | `apps/web/src/components/StepperTabs.module.css` | Стили степпера |
 | Modify | `apps/web/src/components/__tests__/components.test.tsx` | Тесты новых компонентов |
@@ -119,15 +121,18 @@ describe('AppShell', () => {
   it('renders sidebar brand and nav links', () => {
     renderWithProviders(<AppShell />, { route: '/dashboard' });
     expect(screen.getByText('CCIP')).toBeInTheDocument();
-    expect(screen.getByText(/Дашборд/i)).toBeInTheDocument();
-    expect(screen.getByText(/Объекты/i)).toBeInTheDocument();
-    expect(screen.getByText(/Периоды/i)).toBeInTheDocument();
+    // По accessible-name ссылки, а не по тексту: устойчиво к обёртке иконки (aria-hidden span).
+    expect(screen.getByRole('link', { name: /Дашборд/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Объекты/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Периоды/i })).toBeInTheDocument();
   });
 
   it('marks dashboard link active on /dashboard route', () => {
     renderWithProviders(<AppShell />, { route: '/dashboard' });
     const link = screen.getByRole('link', { name: /Дашборд/i });
-    expect(link).toHaveClass('active');
+    // Семантика активности, а не имя CSS-класса: NavLink сам ставит aria-current="page".
+    // Устойчиво к css:true и к обёрткам иконки.
+    expect(link).toHaveAttribute('aria-current', 'page');
   });
 });
 ```
@@ -267,7 +272,8 @@ export function AppShell() {
 
         {user && (
           <div className={s.who}>
-            <div className={s.whoName}>{user.name ?? user.email}</div>
+            {/* AuthUser = { id, email, role } — поля name НЕТ */}
+            <div className={s.whoName}>{user.email}</div>
             <div className={s.whoRole}>{user.role}</div>
           </div>
         )}
@@ -463,31 +469,36 @@ git commit -m "feat(web): add BackLink and StatusPill Ledger components"
 - Create: `apps/web/src/components/ProgressBar.module.css`
 - Modify: `apps/web/src/components/ProgressBar.tsx`
 
-- [ ] **Step 1: Написать тест**
+- [ ] **Step 1: Обновить существующий блок тестов `ProgressBar`**
 
-Добавить в `components.test.tsx`:
+⚠️ `ProgressBar` уже импортирован в `components.test.tsx`, и `describe('ProgressBar', …)` уже существует — старые тесты ассертят формат `.toFixed(1)` (`'42.5%'`, `'100.0%'`). Новый дизайн рендерит **целое** число (`Math.round`), поэтому старые ассерты сломаются. НЕ добавлять второй `describe`/повторный import — **заменить** существующий блок на:
 
 ```tsx
-import { ProgressBar } from '../ProgressBar';
-
 describe('ProgressBar', () => {
-  it('renders percentage text', () => {
-    render(<ProgressBar value={70} />);
-    expect(screen.getByText('70%')).toBeInTheDocument();
-  });
-
-  it('renders dash when value is null', () => {
+  it('renders a dash when value is null', () => {
     render(<ProgressBar value={null} />);
     expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('renders the percentage as a rounded integer', () => {
+    render(<ProgressBar value={42.5} />);
+    expect(screen.getByText('43%')).toBeInTheDocument();
+  });
+
+  it('clamps values above 100', () => {
+    render(<ProgressBar value={150} />);
+    expect(screen.getByText('100%')).toBeInTheDocument();
   });
 });
 ```
 
-- [ ] **Step 2: Run — убедиться, что тесты зелёные (компонент уже есть)**
+- [ ] **Step 2: Run — убедиться, что обновлённые тесты ПАДАЮТ (компонент пока старый)**
 
 ```bash
 pnpm --filter @ccip/web test --run components.test
 ```
+
+Ожидание: `'43%'` не найден — старый компонент рендерит `'42.5%'`. Ожидаемый FAIL перед правкой компонента (TDD red).
 
 - [ ] **Step 3: Создать `ProgressBar.module.css`**
 
@@ -558,10 +569,12 @@ describe('StepperTabs', () => {
     STEPS.forEach(s => expect(screen.getByText(s)).toBeInTheDocument());
   });
 
-  it('applies active class only to current step label', () => {
+  it('marks only the current step with aria-current', () => {
     render(<StepperTabs steps={STEPS} current="Верификация" />);
-    expect(screen.getByText('Верификация').className).toMatch(/activeLabel/);
-    expect(screen.getByText('Открыт').className).not.toMatch(/activeLabel/);
+    // Семантика «текущий шаг», а не имя CSS-класса: устойчиво к css:true.
+    expect(screen.getByText('Верификация').closest('[aria-current]'))
+      .toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Открыт').closest('[aria-current="step"]')).toBeNull();
   });
 });
 ```
@@ -601,7 +614,7 @@ pnpm --filter @ccip/web test --run components.test
   background: var(--err-bg);
   padding: 3px 8px;
 }
-/* alias used in test selector */
+/* стиль лейбла активного шага (применяется в TSX при state==='active') */
 .activeLabel { color: var(--err); border: 1.5px solid var(--err); background: var(--err-bg); padding: 3px 8px; }
 
 /* ahead */
@@ -631,7 +644,11 @@ export function StepperTabs<T extends string>({ steps, current }: Props<T>) {
           i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'ahead';
         const num = String(i + 1).padStart(2, '0');
         return (
-          <div key={step} className={`${s.step} ${s[state]}`}>
+          <div
+            key={step}
+            className={`${s.step} ${s[state]}`}
+            aria-current={state === 'active' ? 'step' : undefined}
+          >
             <span className={s.num}>{num}</span>
             <span className={`${s.label} ${state === 'active' ? s.activeLabel : ''}`}>
               {step}
@@ -736,8 +753,12 @@ table.table { width: 100%; border-collapse: collapse; }
 
 .objName { font-family: 'EB Garamond', serif; font-size: 18px; color: var(--text); }
 .objSub  { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .5px; color: var(--brown); margin-top: 3px; }
-.statusDot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.statusDot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; background: var(--brown); }
+.statusDot.active { background: var(--green); }
+.statusDot.paused { background: var(--accent); }
+.statusDot.closed { background: var(--brown); }
 .statusText { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.cellEmpty { color: var(--rule); }
 .forecast { font-family: 'Space Mono', monospace; font-size: 12px; font-variant-numeric: tabular-nums; }
 .forecast.late { color: var(--err); }
 .forecastSub { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--brown); margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -773,9 +794,6 @@ import s from './DashboardPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Активный', paused: 'Приостановлен', closed: 'Завершён',
-};
-const STATUS_COLORS: Record<string, string> = {
-  active: 'var(--green)', paused: 'var(--accent)', closed: 'var(--brown)',
 };
 
 function formatRefreshed(iso: string | null): string {
@@ -906,10 +924,7 @@ export function DashboardPage() {
                       <div className={s.objSub}>{row.objectClass ?? ''}</div>
                     </td>
                     <td>
-                      <span
-                        className={s.statusDot}
-                        style={{ background: STATUS_COLORS[row.status] ?? 'var(--brown)' }}
-                      />
+                      <span className={`${s.statusDot} ${s[row.status] ?? ''}`} />
                       <span className={s.statusText}>
                         {STATUS_LABELS[row.status] ?? row.status}
                       </span>
@@ -917,7 +932,7 @@ export function DashboardPage() {
                     <td>
                       {row.hasAnalytics
                         ? <ProgressBar value={row.objReadinessPct} />
-                        : <span style={{ color: 'var(--rule)' }}>—</span>}
+                        : <span className={s.cellEmpty}>—</span>}
                     </td>
                     <td className={s.r}>
                       {row.hasAnalytics && row.weightedForecastDate ? (
@@ -932,7 +947,7 @@ export function DashboardPage() {
                           )}
                         </>
                       ) : (
-                        <span style={{ color: 'var(--rule)' }}>—</span>
+                        <span className={s.cellEmpty}>—</span>
                       )}
                     </td>
                     <td className={s.r}>
@@ -940,7 +955,7 @@ export function DashboardPage() {
                         ? row.gapFlag
                           ? <StatusPill variant="gap">разрыв</StatusPill>
                           : <StatusPill variant="ok">в плане</StatusPill>
-                        : <span style={{ color: 'var(--rule)' }}>—</span>}
+                        : <span className={s.cellEmpty}>—</span>}
                     </td>
                   </tr>
                 ))}
@@ -971,10 +986,38 @@ export function DashboardPage() {
 }
 ```
 
-- [ ] **Step 4: Обновить `RefreshButton` и `StaleBanner` — добавить поддержку `className` prop**
+- [ ] **Step 4: Обновить `RefreshButton` и `StaleBanner` под новые контракты**
 
-В `RefreshButton.tsx` добавить `className?: string` в Props и передать в кнопку.
-В `StaleBanner.tsx` принять `meta: StalenessMeta | null` вместо `meta: StalenessMeta` (handle null).
+`RefreshButton` сейчас не принимает `className` (хардкод inline-style), а `StaleBanner` объявлен `meta: StalenessMeta` (non-null) — дашборд же передаёт `meta={data?.meta ?? null}`. Обновить оба:
+
+`RefreshButton.tsx`:
+```tsx
+import React from 'react';
+import { useRefreshDashboard } from '../hooks/useRefreshDashboard';
+
+type Props = { className?: string };
+
+export function RefreshButton({ className }: Props) {
+  const { mutate, isPending } = useRefreshDashboard();
+  return (
+    <button className={className} onClick={() => mutate()} disabled={isPending}>
+      {isPending ? 'Обновление...' : 'Обновить данные'}
+    </button>
+  );
+}
+```
+
+`StaleBanner.tsx` — изменить тип Props и добавить ранний возврат на `null` (существующие тесты передают non-null meta → не сломаются):
+```tsx
+type Props = { meta: StalenessMeta | null };
+
+export function StaleBanner({ meta }: Props) {
+  if (!meta || !meta.isStale) return null;
+  // … остальное без изменений
+}
+```
+
+Примечание: inline-стиль баннера `StaleBanner` оставляем как есть в рамках этого pass (компонент в File Map помечен только под null-контракт; визуальный редизайн баннера — вне scope).
 
 - [ ] **Step 5: Запустить тесты**
 
@@ -1060,6 +1103,11 @@ pnpm --filter @ccip/web test --run ObjectDetailPage.test
 .monoCell { font-family: 'Space Mono', monospace; font-size: 11px; font-variant-numeric: tabular-nums; }
 .errCell  { color: var(--err); }
 .emptyCell { color: var(--rule); }
+
+/* states */
+.loadingBox { padding: 40px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--brown2); }
+.errorBox   { padding: 20px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--err); }
+.okMark     { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--green); }
 ```
 
 - [ ] **Step 3: Переписать `ObjectDetailPage.tsx` с CSS Modules**
@@ -1094,8 +1142,8 @@ export function ObjectDetailPage() {
   const user = getAuthUser();
   const canAct = user?.role === 'stroycontrol' || user?.role === 'admin';
 
-  if (isLoading) return <div className={s.page}><div style={{ padding: '40px 0', fontFamily: 'Space Mono, monospace', fontSize: 11, color: 'var(--brown2)' }}>Загрузка...</div></div>;
-  if (isError || !data) return <div className={s.page}><div style={{ padding: '20px 0', fontFamily: 'Space Mono, monospace', fontSize: 11, color: 'var(--err)' }}>Объект не найден.</div></div>;
+  if (isLoading) return <div className={s.page}><div className={s.loadingBox}>Загрузка...</div></div>;
+  if (isError || !data) return <div className={s.page}><div className={s.errorBox}>Объект не найден.</div></div>;
 
   const { object: obj, participants, activeBoq, currentPeriod, hasAnalytics, current, history, meta } = data;
 
@@ -1241,7 +1289,7 @@ export function ObjectDetailPage() {
                     </td>
                     <td>{h.gapFlag
                       ? <StatusPill variant="gap">⚠</StatusPill>
-                      : <span style={{ color: 'var(--green)', fontFamily: 'Space Mono, monospace', fontSize: 11 }}>✓</span>}
+                      : <span className={s.okMark}>✓</span>}
                     </td>
                     <td className={s.monoCell}>{h.boqVersionNumber}</td>
                   </tr>
@@ -1326,6 +1374,10 @@ git commit -m "feat(web): redesign ObjectDetailPage with Ledger CSS Modules"
   background: var(--dark); color: var(--accent); border: none; padding: 5px 9px; cursor: pointer;
 }
 .scOk:disabled { opacity: .5; cursor: not-allowed; }
+
+/* states */
+.loadingBox { padding: 40px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--brown2); }
+.errorBox   { padding: 20px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--err); }
 ```
 
 - [ ] **Step 2: Переписать `PeriodPage.tsx` с CSS Modules**
@@ -1374,8 +1426,8 @@ export function PeriodPage() {
   const closePeriod = useClosePeriod(periodId);
   const [editValues, setEditValues] = useState<Record<number, string>>({});
 
-  if (isLoading) return <div className={s.page}><div style={{ padding: '40px 0', fontFamily: 'Space Mono, monospace', fontSize: 11, color: 'var(--brown2)' }}>Загрузка...</div></div>;
-  if (isError || !data)  return <div className={s.page}><div style={{ padding: '20px 0', fontFamily: 'Space Mono, monospace', fontSize: 11, color: 'var(--err)' }}>Период не найден.</div></div>;
+  if (isLoading) return <div className={s.page}><div className={s.loadingBox}>Загрузка...</div></div>;
+  if (isError || !data)  return <div className={s.page}><div className={s.errorBox}>Период не найден.</div></div>;
 
   const user      = getAuthUser();
   const canAct    = user?.role === 'stroycontrol' || user?.role === 'admin';
@@ -1527,10 +1579,17 @@ git commit -m "feat(web): redesign PeriodPage with Ledger CSS Modules"
 - ✓ ObjectDetailPage (hero, KPI с R3 разрывом, секции) → Task 7
 - ✓ PeriodPage (stepper-табы, таблица, SC input) → Task 8
 - ✓ GP Form не затронута
-- ✓ Бэкенд-зависимость (periodNumber) задокументирована — objectClass используется вместо
+- ✓ `periodNumber` доступен: `currentPeriod.periodNumber`, `history.periodNumber` (ObjectDetailResponse), `PeriodDetailResponse.periodNumber` — Task 7/8 НЕ блокированы. Блокер из bootstrap (`DashboardRow.periodNumber`) касается отдельной будущей колонки дашборда, а не этого pass.
 
 **Placeholder scan:** нет TBD, TODO, «add appropriate styles» — все CSS классы прописаны.
 
 **Type consistency:** `StatusPill variant` — 'gap' | 'ok' | 'done' | 'err' — используется одинаково во всех задачах. `StepperTabs steps/current` — readonly string[] + string — консистентно. `BackLink to/label` — string/string.
 
-**Замечание:** `RefreshButton` ожидает `className` prop (Task 6, Step 4) — если компонент не принимает его, добавить в том же коммите.
+**Pre-flight контроль (сверено с кодом, исправлено в плане):**
+- **A** — `AuthUser` = `{ id, email, role }` (нет поля `name`) → AppShell использует `user.email` (Task 2 Step 4).
+- **B** — существующие тесты `ProgressBar` ассертили формат `.toFixed(1)` → переписаны под `Math.round` (`'43%'`, `'100%'`) в Task 4 Step 1; Step 2 теперь корректно ожидает RED.
+- **C** — статические инлайн-стили вынесены в CSS-классы: `.cellEmpty` + `.statusDot.{active,paused,closed}` (Task 6), `.loadingBox`/`.errorBox`/`.okMark` (Task 7), `.loadingBox`/`.errorBox` (Task 8). Единственный оставшийся инлайн — `style={{ width: ${pct}% }}` в ProgressBar: динамический, оправдан (ширина бара от значения).
+- **D** — `RefreshButton` получает `className?` prop, `StaleBanner` — `meta: … | null` с ранним возвратом (Task 6 Step 4, код приведён). Оба внесены в File Map. Существующие тесты обоих компонентов не ломаются.
+- **E** — хрупкие ассерты (имя CSS-класса / склейка текста с иконкой) заменены на семантические: Task 2 → `getByRole('link', { name })` + `aria-current="page"` (NavLink ставит сам), Task 5 → `aria-current="step"` добавлен в `StepperTabs` + тест через `closest('[aria-current]')`. Теперь тесты НЕ зависят от `css:false` и переживут обёртку иконки; заодно улучшена доступность степпера.
+
+**CSS Modules в тестах:** `vite.config.ts` без секции `css` → Vitest `css:false` → CSS-модули мокаются identity-прокси. После правки **E** тесты на это поведение больше не опираются (проверяют ARIA, а не имена классов) — опора устранена, не закостылена.
