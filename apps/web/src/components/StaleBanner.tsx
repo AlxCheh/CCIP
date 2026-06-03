@@ -1,7 +1,6 @@
-import React from 'react';
 import type { StalenessMeta } from '../services/api';
 
-type Props = { meta: StalenessMeta };
+type Props = { meta: StalenessMeta | null };
 
 function formatAge(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -12,7 +11,7 @@ function formatAge(iso: string): string {
 }
 
 export function StaleBanner({ meta }: Props) {
-  if (!meta.isStale) return null;
+  if (!meta || !meta.isStale) return null;
   const age = meta.refreshedAt ? formatAge(meta.refreshedAt) : 'неизвестно когда';
   return (
     <div style={{ background: '#fff3cd', border: '1px solid #ffc107', padding: '8px 16px', marginBottom: 12, borderRadius: 4, fontSize: 14 }}>
