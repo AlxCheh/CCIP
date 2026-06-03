@@ -57,6 +57,7 @@ DEFAULT → direct agent of primary intent
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
 | token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
+| ccip-agent-optimizer        | по запросу: 3+ повторных ошибки агента, новый агент, рефактор CLAUDE.md |
 | general-purpose             | fallback при DEGRADED specialist       |
 
 > **session-optimizer relay (жёсткое правило):** после прогона `ccip-session-optimizer` его `Next-Session Bootstrap` выводится пользователю ДОСЛОВНО (verbatim, в code-блоке) — не пересказывать.
