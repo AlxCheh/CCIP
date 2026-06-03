@@ -11,6 +11,7 @@ import { RefreshButton } from '../RefreshButton';
 import { AppShell } from '../AppShell';
 import { BackLink } from '../BackLink';
 import { StatusPill } from '../StatusPill';
+import { StepperTabs } from '../StepperTabs';
 import { useRefreshDashboard } from '../../hooks/useRefreshDashboard';
 
 vi.mock('../../hooks/useRefreshDashboard', () => ({
@@ -59,6 +60,25 @@ describe('StatusPill', () => {
   it('renders ok variant', () => {
     render(<StatusPill variant="ok">в плане</StatusPill>);
     expect(screen.getByText('в плане')).toBeInTheDocument();
+  });
+});
+
+const STEPPER_STEPS = ['Открыт', 'ГП подал данные', 'Верификация', 'Закрыт'] as const;
+
+describe('StepperTabs', () => {
+  it('renders all 4 steps', () => {
+    render(<StepperTabs steps={STEPPER_STEPS} current="ГП подал данные" />);
+    STEPPER_STEPS.forEach((s) => expect(screen.getByText(s)).toBeInTheDocument());
+  });
+
+  it('marks only the current step with aria-current', () => {
+    render(<StepperTabs steps={STEPPER_STEPS} current="Верификация" />);
+    // Семантика «текущий шаг», а не имя CSS-класса: устойчиво к css:true.
+    expect(screen.getByText('Верификация').closest('[aria-current]')).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
+    expect(screen.getByText('Открыт').closest('[aria-current="step"]')).toBeNull();
   });
 });
 
