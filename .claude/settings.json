@@ -80,6 +80,14 @@
             "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-turn-hook.js"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/agent-changed-notify.js"
+          }
+        ]
       }
     ],
     "Stop": [
