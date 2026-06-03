@@ -1,0 +1,21 @@
+:root {
+  --cream:   #f5ede0;
+  --dark:    #1e1208;
+  --dark2:   #2e1a0a;
+  --accent:  #d4824a;
+  --brown:   #7a5030;
+  --brown2:  #9a6040;
+  --text:    #3d1f08;
+  --rule:    #d8c4a8;
+  --err:     #c84a2a;
+  --err-bg:  #fde8e4;
+  --green:   #4a8a50;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'EB Garamond', Georgia, serif;
+}
