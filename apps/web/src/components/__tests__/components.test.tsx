@@ -9,6 +9,8 @@ import { ProgressBar } from '../ProgressBar';
 import { EmptyCell } from '../EmptyCell';
 import { RefreshButton } from '../RefreshButton';
 import { AppShell } from '../AppShell';
+import { BackLink } from '../BackLink';
+import { StatusPill } from '../StatusPill';
 import { useRefreshDashboard } from '../../hooks/useRefreshDashboard';
 
 vi.mock('../../hooks/useRefreshDashboard', () => ({
@@ -38,6 +40,25 @@ describe('AppShell', () => {
     const link = screen.getByRole('link', { name: /Дашборд/i });
     // NavLink сам ставит aria-current="page" на активной ссылке — семантика, не имя класса.
     expect(link).toHaveAttribute('aria-current', 'page');
+  });
+});
+
+describe('BackLink', () => {
+  it('renders link with label and arrow', () => {
+    renderWithProviders(<BackLink to="/dashboard" label="Дашборд" />);
+    expect(screen.getByRole('link', { name: /← Дашборд/i })).toBeInTheDocument();
+  });
+});
+
+describe('StatusPill', () => {
+  it('renders gap variant', () => {
+    render(<StatusPill variant="gap">разрыв</StatusPill>);
+    expect(screen.getByText('разрыв')).toBeInTheDocument();
+  });
+
+  it('renders ok variant', () => {
+    render(<StatusPill variant="ok">в плане</StatusPill>);
+    expect(screen.getByText('в плане')).toBeInTheDocument();
   });
 });
 
