@@ -49,14 +49,14 @@
 - Create: `apps/web/src/styles/tokens.css`
 - Modify: `apps/web/src/main.tsx`
 
-- [ ] **Step 1: Обновить Google Fonts в `index.html`** — добавить weight 500 для EB Garamond
+- [x] **Step 1: Обновить Google Fonts в `index.html`** — добавить weight 500 для EB Garamond
 
 Заменить строку `<link href="https://fonts.googleapis.com/...">` на:
 ```html
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 ```
 
-- [ ] **Step 2: Создать `apps/web/src/styles/tokens.css`**
+- [x] **Step 2: Создать `apps/web/src/styles/tokens.css`**
 
 ```css
 :root {
@@ -82,13 +82,13 @@ body {
 }
 ```
 
-- [ ] **Step 3: Импортировать `tokens.css` в `main.tsx`** — добавить первой строкой импорта:
+- [x] **Step 3: Импортировать `tokens.css` в `main.tsx`** — добавить первой строкой импорта:
 
 ```tsx
 import './styles/tokens.css';
 ```
 
-- [ ] **Step 4: Убедиться, что тесты проходят**
+- [x] **Step 4: Убедиться, что тесты проходят**
 
 ```bash
 pnpm --filter @ccip/web test
@@ -96,7 +96,7 @@ pnpm --filter @ccip/web test
 
 Ожидание: все тесты зелёные.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/index.html apps/web/src/styles/tokens.css apps/web/src/main.tsx
@@ -112,7 +112,7 @@ git commit -m "feat(web): add Ledger design tokens and fonts"
 - Create: `apps/web/src/components/AppShell.module.css`
 - Modify: `apps/web/src/main.tsx`
 
-- [ ] **Step 1: Написать failing тест для AppShell**
+- [x] **Step 1: Написать failing тест для AppShell**
 
 Добавить в `apps/web/src/components/__tests__/components.test.tsx`:
 
@@ -153,7 +153,7 @@ function renderWithProviders(ui: React.ReactElement, { route = '/' } = {}) {
 }
 ```
 
-- [ ] **Step 2: Запустить тест — убедиться в FAIL**
+- [x] **Step 2: Запустить тест — убедиться в FAIL**
 
 ```bash
 pnpm --filter @ccip/web test -- components.test
@@ -161,7 +161,7 @@ pnpm --filter @ccip/web test -- components.test
 
 Ожидание: `Cannot find module '../AppShell'`
 
-- [ ] **Step 3: Создать `AppShell.module.css`**
+- [x] **Step 3: Создать `AppShell.module.css`**
 
 ```css
 .frame { display: flex; height: 100vh; overflow: hidden; }
@@ -220,7 +220,7 @@ pnpm --filter @ccip/web test -- components.test
 }
 ```
 
-- [ ] **Step 4: Создать `AppShell.tsx`**
+- [x] **Step 4: Создать `AppShell.tsx`**
 
 ```tsx
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
@@ -293,7 +293,7 @@ export function AppShell() {
 }
 ```
 
-- [ ] **Step 5: Подключить AppShell как layout route в `main.tsx`**
+- [x] **Step 5: Подключить AppShell как layout route в `main.tsx`**
 
 Заменить блок `<Routes>` на:
 
@@ -316,7 +316,7 @@ import { AppShell } from './components/AppShell';
 
 Примечание: `ProtectedRoute` теперь оборачивает `AppShell`, а не каждую страницу отдельно.
 
-- [ ] **Step 6: Запустить тесты**
+- [x] **Step 6: Запустить тесты**
 
 ```bash
 pnpm --filter @ccip/web test
@@ -324,7 +324,7 @@ pnpm --filter @ccip/web test
 
 Ожидание: AppShell тесты зелёные, остальные не сломаны.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/components/AppShell.tsx apps/web/src/components/AppShell.module.css apps/web/src/main.tsx apps/web/src/components/__tests__/components.test.tsx
@@ -342,7 +342,7 @@ git commit -m "feat(web): add AppShell layout with Ledger sidebar and topbar"
 - Create: `apps/web/src/components/StatusPill.module.css`
 - Modify: `apps/web/src/components/__tests__/components.test.tsx`
 
-- [ ] **Step 1: Написать failing тесты**
+- [x] **Step 1: Написать failing тесты**
 
 Добавить в `components.test.tsx`:
 
@@ -370,13 +370,13 @@ describe('StatusPill', () => {
 });
 ```
 
-- [ ] **Step 2: Run — убедиться в FAIL**
+- [x] **Step 2: Run — убедиться в FAIL**
 
 ```bash
 pnpm --filter @ccip/web test -- components.test
 ```
 
-- [ ] **Step 3: Создать `BackLink.module.css`**
+- [x] **Step 3: Создать `BackLink.module.css`**
 
 ```css
 .link {
@@ -396,7 +396,7 @@ pnpm --filter @ccip/web test -- components.test
 .link:hover { opacity: .75; }
 ```
 
-- [ ] **Step 4: Создать `BackLink.tsx`**
+- [x] **Step 4: Создать `BackLink.tsx`**
 
 ```tsx
 import { Link } from 'react-router-dom';
@@ -413,7 +413,7 @@ export function BackLink({ to, label }: Props) {
 }
 ```
 
-- [ ] **Step 5: Создать `StatusPill.module.css`**
+- [x] **Step 5: Создать `StatusPill.module.css`**
 
 ```css
 .pill {
@@ -433,7 +433,7 @@ export function BackLink({ to, label }: Props) {
 .err  { color: var(--err);    border-color: rgba(200,74,42,.4);  background: var(--err-bg); }
 ```
 
-- [ ] **Step 6: Создать `StatusPill.tsx`**
+- [x] **Step 6: Создать `StatusPill.tsx`**
 
 ```tsx
 import s from './StatusPill.module.css';
@@ -446,7 +446,7 @@ export function StatusPill({ variant, children }: Props) {
 }
 ```
 
-- [ ] **Step 7: Запустить тесты**
+- [x] **Step 7: Запустить тесты**
 
 ```bash
 pnpm --filter @ccip/web test -- components.test
@@ -454,7 +454,7 @@ pnpm --filter @ccip/web test -- components.test
 
 Ожидание: все зелёные.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/web/src/components/BackLink.tsx apps/web/src/components/BackLink.module.css apps/web/src/components/StatusPill.tsx apps/web/src/components/StatusPill.module.css apps/web/src/components/__tests__/components.test.tsx
@@ -469,7 +469,7 @@ git commit -m "feat(web): add BackLink and StatusPill Ledger components"
 - Create: `apps/web/src/components/ProgressBar.module.css`
 - Modify: `apps/web/src/components/ProgressBar.tsx`
 
-- [ ] **Step 1: Обновить существующий блок тестов `ProgressBar`**
+- [x] **Step 1: Обновить существующий блок тестов `ProgressBar`**
 
 ⚠️ `ProgressBar` уже импортирован в `components.test.tsx`, и `describe('ProgressBar', …)` уже существует — старые тесты ассертят формат `.toFixed(1)` (`'42.5%'`, `'100.0%'`). Новый дизайн рендерит **целое** число (`Math.round`), поэтому старые ассерты сломаются. НЕ добавлять второй `describe`/повторный import — **заменить** существующий блок на:
 
@@ -492,7 +492,7 @@ describe('ProgressBar', () => {
 });
 ```
 
-- [ ] **Step 2: Run — убедиться, что обновлённые тесты ПАДАЮТ (компонент пока старый)**
+- [x] **Step 2: Run — убедиться, что обновлённые тесты ПАДАЮТ (компонент пока старый)**
 
 ```bash
 pnpm --filter @ccip/web test -- components.test
@@ -500,7 +500,7 @@ pnpm --filter @ccip/web test -- components.test
 
 Ожидание: `'43%'` не найден — старый компонент рендерит `'42.5%'`. Ожидаемый FAIL перед правкой компонента (TDD red).
 
-- [ ] **Step 3: Создать `ProgressBar.module.css`**
+- [x] **Step 3: Создать `ProgressBar.module.css`**
 
 ```css
 .wrap { display: flex; align-items: center; gap: 9px; }
@@ -510,7 +510,7 @@ pnpm --filter @ccip/web test -- components.test
 .empty { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--rule); }
 ```
 
-- [ ] **Step 4: Обновить `ProgressBar.tsx`**
+- [x] **Step 4: Обновить `ProgressBar.tsx`**
 
 ```tsx
 import s from './ProgressBar.module.css';
@@ -531,7 +531,7 @@ export function ProgressBar({ value }: Props) {
 }
 ```
 
-- [ ] **Step 5: Запустить тесты**
+- [x] **Step 5: Запустить тесты**
 
 ```bash
 pnpm --filter @ccip/web test
@@ -539,7 +539,7 @@ pnpm --filter @ccip/web test
 
 Ожидание: все зелёные (включая существующие snapshot/RTL тесты ProgressBar).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/components/ProgressBar.tsx apps/web/src/components/ProgressBar.module.css apps/web/src/components/__tests__/components.test.tsx
@@ -555,7 +555,7 @@ git commit -m "feat(web): redesign ProgressBar with Ledger tokens"
 - Create: `apps/web/src/components/StepperTabs.module.css`
 - Modify: `apps/web/src/components/__tests__/components.test.tsx`
 
-- [ ] **Step 1: Написать failing тест**
+- [x] **Step 1: Написать failing тест**
 
 ```tsx
 import { StepperTabs } from '../StepperTabs';
@@ -579,13 +579,13 @@ describe('StepperTabs', () => {
 });
 ```
 
-- [ ] **Step 2: Run — убедиться в FAIL**
+- [x] **Step 2: Run — убедиться в FAIL**
 
 ```bash
 pnpm --filter @ccip/web test -- components.test
 ```
 
-- [ ] **Step 3: Создать `StepperTabs.module.css`**
+- [x] **Step 3: Создать `StepperTabs.module.css`**
 
 ```css
 .stepper { display: flex; border-bottom: 2px solid var(--dark); }
@@ -622,7 +622,7 @@ pnpm --filter @ccip/web test -- components.test
 .step.ahead .label { color: var(--rule); }
 ```
 
-- [ ] **Step 4: Создать `StepperTabs.tsx`**
+- [x] **Step 4: Создать `StepperTabs.tsx`**
 
 ```tsx
 import s from './StepperTabs.module.css';
@@ -661,7 +661,7 @@ export function StepperTabs<T extends string>({ steps, current }: Props<T>) {
 }
 ```
 
-- [ ] **Step 5: Запустить тесты**
+- [x] **Step 5: Запустить тесты**
 
 ```bash
 pnpm --filter @ccip/web test -- components.test
@@ -669,7 +669,7 @@ pnpm --filter @ccip/web test -- components.test
 
 Ожидание: все зелёные.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/components/StepperTabs.tsx apps/web/src/components/StepperTabs.module.css apps/web/src/components/__tests__/components.test.tsx
@@ -684,13 +684,13 @@ git commit -m "feat(web): add StepperTabs Ledger component"
 - Create: `apps/web/src/pages/DashboardPage.module.css`
 - Modify: `apps/web/src/pages/DashboardPage.tsx`
 
-- [ ] **Step 1: Запустить существующие тесты дашборда — убедиться, что они зелёные**
+- [x] **Step 1: Запустить существующие тесты дашборда — убедиться, что они зелёные**
 
 ```bash
 pnpm --filter @ccip/web test -- DashboardPage.test
 ```
 
-- [ ] **Step 2: Создать `DashboardPage.module.css`**
+- [x] **Step 2: Создать `DashboardPage.module.css`**
 
 ```css
 /* ── Page layout ── */
@@ -778,7 +778,7 @@ table.table { width: 100%; border-collapse: collapse; }
 .empty   { font-family: 'EB Garamond', serif; font-style: italic; font-size: 16px; color: var(--brown2); padding: 40px 0; text-align: center; }
 ```
 
-- [ ] **Step 3: Переписать `DashboardPage.tsx` с CSS Modules**
+- [x] **Step 3: Переписать `DashboardPage.tsx` с CSS Modules**
 
 ```tsx
 import React, { useState } from 'react';
@@ -986,7 +986,7 @@ export function DashboardPage() {
 }
 ```
 
-- [ ] **Step 4: Обновить `RefreshButton` и `StaleBanner` под новые контракты**
+- [x] **Step 4: Обновить `RefreshButton` и `StaleBanner` под новые контракты**
 
 `RefreshButton` сейчас не принимает `className` (хардкод inline-style), а `StaleBanner` объявлен `meta: StalenessMeta` (non-null) — дашборд же передаёт `meta={data?.meta ?? null}`. Обновить оба:
 
@@ -1019,7 +1019,7 @@ export function StaleBanner({ meta }: Props) {
 
 Примечание: inline-стиль баннера `StaleBanner` оставляем как есть в рамках этого pass (компонент в File Map помечен только под null-контракт; визуальный редизайн баннера — вне scope).
 
-- [ ] **Step 5: Запустить тесты**
+- [x] **Step 5: Запустить тесты**
 
 ```bash
 pnpm --filter @ccip/web test
@@ -1027,7 +1027,7 @@ pnpm --filter @ccip/web test
 
 Ожидание: все зелёные. Если тест проверяет старый className — обновить селектор на `getByRole`/`getByText`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/pages/DashboardPage.tsx apps/web/src/pages/DashboardPage.module.css apps/web/src/components/RefreshButton.tsx apps/web/src/components/StaleBanner.tsx
@@ -1042,13 +1042,13 @@ git commit -m "feat(web): redesign DashboardPage with Ledger CSS Modules"
 - Create: `apps/web/src/pages/ObjectDetailPage.module.css`
 - Modify: `apps/web/src/pages/ObjectDetailPage.tsx`
 
-- [ ] **Step 1: Запустить тесты ObjectDetailPage перед изменениями**
+- [x] **Step 1: Запустить тесты ObjectDetailPage перед изменениями**
 
 ```bash
 pnpm --filter @ccip/web test -- ObjectDetailPage.test
 ```
 
-- [ ] **Step 2: Создать `ObjectDetailPage.module.css`**
+- [x] **Step 2: Создать `ObjectDetailPage.module.css`**
 
 ```css
 .page { padding: 0 28px 28px; }
@@ -1110,7 +1110,7 @@ pnpm --filter @ccip/web test -- ObjectDetailPage.test
 .okMark     { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--green); }
 ```
 
-- [ ] **Step 3: Переписать `ObjectDetailPage.tsx` с CSS Modules**
+- [x] **Step 3: Переписать `ObjectDetailPage.tsx` с CSS Modules**
 
 ```tsx
 import React from 'react';
@@ -1303,13 +1303,13 @@ export function ObjectDetailPage() {
 }
 ```
 
-- [ ] **Step 4: Запустить тесты**
+- [x] **Step 4: Запустить тесты**
 
 ```bash
 pnpm --filter @ccip/web test
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/pages/ObjectDetailPage.tsx apps/web/src/pages/ObjectDetailPage.module.css
@@ -1324,7 +1324,7 @@ git commit -m "feat(web): redesign ObjectDetailPage with Ledger CSS Modules"
 - Create: `apps/web/src/pages/PeriodPage.module.css`
 - Modify: `apps/web/src/pages/PeriodPage.tsx`
 
-- [ ] **Step 1: Создать `PeriodPage.module.css`**
+- [x] **Step 1: Создать `PeriodPage.module.css`**
 
 ```css
 .page { padding: 0 28px 28px; }
@@ -1380,7 +1380,7 @@ git commit -m "feat(web): redesign ObjectDetailPage with Ledger CSS Modules"
 .errorBox   { padding: 20px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--err); }
 ```
 
-- [ ] **Step 2: Переписать `PeriodPage.tsx` с CSS Modules**
+- [x] **Step 2: Переписать `PeriodPage.tsx` с CSS Modules**
 
 ```tsx
 import React, { useState } from 'react';
@@ -1549,7 +1549,7 @@ export function PeriodPage() {
 }
 ```
 
-- [ ] **Step 3: Запустить все тесты**
+- [x] **Step 3: Запустить все тесты**
 
 ```bash
 pnpm --filter @ccip/web test
@@ -1557,7 +1557,7 @@ pnpm --filter @ccip/web test
 
 Ожидание: все зелёные.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/pages/PeriodPage.tsx apps/web/src/pages/PeriodPage.module.css
