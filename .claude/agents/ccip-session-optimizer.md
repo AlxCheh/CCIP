@@ -103,7 +103,7 @@ Bootstrap прошлой сессии может быть seed для конте
 
 - **Эмить РОВНО ОДИН финальный экземпляр каждого артефакта.** Запрещены: черновик+финал, >1 `### Evidence Log` таблицы, проза самокоррекции в ответе («удаляю rows», «пересчёт», «пересмотренный Артефакт N», «Bootstrap пересчитан»). Реши внутренне — эмить один раз. Хук парсит ПЕРВУЮ Evidence Log таблицу: черновик впереди = L3 drift + раздутый вывод (прямой токен-оверхед для родителя).
 - Процитировать строку, которой нет в UTF-8 контенте source_file (substring-check; длина ≤ 80B UTF-8). Хук Read'ит источник и `content.includes(quote)`-check'ит.
-- Evidence row с пустым / `n/a` / нерезолвящимся `anchor` ЗАПРЕЩЁН (C-2). `anchor` — heading-строка источника ИЛИ literal-локатор, реально присутствующий в файле; `exact_substring` обязан лежать в окне этого anchor'а, а не где угодно в файле. Reason: anchor_required / anchor_not_found / quote_not_in_anchor_window.
+- Evidence row с пустым / `n/a` / нерезолвящимся `anchor` ЗАПРЕЩЁН (C-2). `anchor` — heading-строка источника ИЛИ literal-локатор, реально присутствующий в файле; `exact_substring` обязан лежать в окне этого anchor'а, а не где угодно в файле. Reason: anchor_required / anchor_not_found / quote_not_in_anchor_window. **Частая ошибка:** heading одной секции + цитата из другой секции того же файла; или literal-локатор на расстоянии >200 символов от цитаты. Надёжный приём: anchor и quote на одной строке или соседних.
 - `source_file` без префикса `repo:` / `git:<SHA>:` / `state-memory:` — INVALID, row отклоняется.
 - Bootstrap прошлой сессии, user prompt, chat history как источник Evidence — запрещены.
 - Заявить bootstrap-факт без соответствующей строки в Артефакте 3.
@@ -222,6 +222,11 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 - `exact_substring` с литеральным `|` ДОЛЖЕН эскейпить как `\|` (markdown-table breaker). Хук un-escape'ит `\|` → `|` перед substring-check. Длина считается в UTF-8 байтах через `Buffer.byteLength`, не code units.
 - `exact_substring` ДОЛЖЕН быть ≥ 12 байт UTF-8 И не состоять из одного low-signal слова (`done`/`pending`/`none`/...). Слишком короткая/общая цитата → row отклоняется (quote_too_short / quote_low_signal). Цитируй ID + контекст, не голый статус.
 - `anchor` — heading-строка источника или literal-локатор. **Enforced (C-2):** хук строит окно от anchor до следующего heading того же/высшего уровня (или ±200B вокруг literal-локатора) и проверяет `exact_substring` ВНУТРИ окна. Anchor обязателен; `n/a` запрещён.
+- **Pre-emit anchor check (обязателен для каждой строки):** перед записью строки в таблицу явно построй окно в уме:
+  - Для heading-anchor: весь текст секции от `anchor` до следующего `##`/`###` того же/высшего уровня — `exact_substring` должен быть строкой ИЗ ЭТОГО диапазона (не из другой секции того же файла).
+  - Для literal-локатора: ±200 символов вокруг anchor — `exact_substring` должен лежать в этих 400 символах.
+  - Если сомневаешься — выбери anchor и цитату с одной строки или соседних строк: они гарантированно в окне.
+  - Если цитата не попадает в окно выбранного anchor — смени anchor (выбери heading ближайшей секции) или смени цитату (возьми соседнюю строку файла). **Никогда не оставляй quote вне окна anchor'а.**
 - Один row на конкретный claim. Агрегаты разбивай.
 - > 25 rows → bootstrap слишком амбициозный; сокращай bootstrap, не таблицу.
 - Если для claim нет источника, удовлетворяющего allowlist'у — claim **удаляется** из bootstrap. Не `[unverified]` тег, не «приблизительно». Удаляется.
