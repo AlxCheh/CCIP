@@ -16,16 +16,26 @@ model: claude-haiku-4-5-20251001
 
 ### Шаг 1 — Определить, нужен ли полный аудит
 
-Проверить изменения с момента последнего аудита:
+Проверить изменения с момента последнего аудита.
 
+Сначала найти SHA предыдущего аудита:
+```bash
+grep -m1 "Last-Audit-SHA:" docs/errors/errors_log.md | awk '{print $2}'
 ```
-git log --since="7 days ago" --name-only --pretty=format: -- \
-  docs/decisions/ \
-  .claude/agents/ \
-  docs/delivery/ \
-  docs/architecture/ \
-  CLAUDE.md
-```
+
+- Если SHA найден (`<sha>`) → использовать точный diff:
+  ```bash
+  git diff <sha>..HEAD --name-only -- docs/decisions/ .claude/agents/ docs/delivery/ docs/architecture/ CLAUDE.md
+  ```
+- Если SHA не найден (первый запуск) → использовать git log:
+  ```bash
+  git log --since="7 days ago" --name-only --pretty=format: -- \
+    docs/decisions/ \
+    .claude/agents/ \
+    docs/delivery/ \
+    docs/architecture/ \
+    CLAUDE.md
+  ```
 
 **Критерии полного аудита** (если за 7 дней появилось хотя бы одно):
 - новый файл `ADR-*.md`
@@ -56,6 +66,19 @@ ls .claude/agents/
 - агент есть в таблице, но файл удалён → удалить строку
 - описание агента не совпадает с `description:` в его файле → синхронизировать
 
+#### 2.2b Проверка обязательных полей frontmatter
+
+Для каждого `.claude/agents/*.md` читать `limit:10` строк:
+- `name:` — присутствует
+- `description:` — присутствует и непустой
+- `model:` — присутствует (`claude-haiku-4-5-20251001` или `claude-sonnet-4-6`)
+- `tools:` — присутствует
+- `summary:` — присутствует, ≤200 символов, без переносов строк
+
+Если поле отсутствует → добавить в `docs/errors/errors_log.md` с тегом `[MISSING-FRONTMATTER: <agent-name>.<field>]`. Не редактировать файл агента — только флагировать.
+
+---
+
 #### 2.3 Проверка ADR-ссылок
 
 ```
@@ -71,6 +94,15 @@ ls docs/architecture/
 ```
 Сравнить с секцией "Document Routing". Добавить новые модули.
 
+#### 2.5 Проверка backup-агентов
+
+Для каждой строки таблицы "Intent → Agent → Backup" в CLAUDE.md:
+- Backup == Agent (агент сам себе backup) → `[IDENTICAL-BACKUP: <intent>]` в errors_log
+- Backup == `general-purpose` при intent из `ARCH / SECURITY / SCHEMA` → `[WEAK-BACKUP: <intent>]` в errors_log
+- Backup-файл `.claude/agents/<backup-name>.md` не существует → `[MISSING-BACKUP-FILE: <backup-name>]` в errors_log
+
+Не изменять таблицу — только флагировать. Исправление backup требует явного подтверждения пользователя.
+
 ---
 
 ### Шаг 3 — Быстрая проверка (всегда)
@@ -79,7 +111,7 @@ ls docs/architecture/
 
 1. **Дублирование:** найти разделы с повторяющимися правилами. Оставить одно определяющее место, остальное удалить.
 2. **Мёртвые правила:** найти инструкции типа "не делать X" без контекста почему — если причина неясна, добавить или удалить.
-3. **Раздутые списки:** любой список > 7 пунктов — кандидат на сжатие.
+3. **Семантические дубли:** внутри одного списка найти пункты с одинаковым смыслом. Кандидат на слияние — два пункта, описывающих одно действие разными словами. Длина списка не является критерием для сжатия.
 4. **Устаревшие ссылки на версии:** `_v1_0`, `_v1_5` — проверить что версия актуальна.
 
 ---
@@ -107,6 +139,7 @@ ls docs/architecture/
 **Broken links найдено:** <N>
 **Новых агентов добавлено:** <N>
 **Удалено дублирований:** <N>
+**Last-Audit-SHA:** <результат `git rev-parse HEAD`>
 ```
 
 ---
@@ -127,7 +160,7 @@ ls docs/architecture/
 3. Если сомневаешься в необходимости изменения — не вносить.
 4. Одна запись в `errors_log.md` на каждый запуск.
 5. Минимум токенов на аудит — читать только то, что нужно для конкретной проверки.
-6. §15/§16 — норма EN машинно-компакт. Флагить RU-прозу в §15/§16 как drift. Инварианты валидатора (`tools/audit/state-contract-section.js`): заголовок `## §15`, строки `session-state.json` / `State Update` / `session-state.schema.json`, заголовок `## §16` — сохранять при любых правках.
+6. §15/§16 — норма EN машинно-компакт. Если в §15 или §16 появилась RU-проза (не машинно-читаемый блок) — добавить запись в `docs/errors/errors_log.md` с тегом `[DRIFT-§15]` или `[DRIFT-§16]`, не редактировать секцию самостоятельно. Инварианты валидатора (`tools/audit/state-contract-section.js`): заголовок `## §15`, строки `session-state.json` / `State Update` / `session-state.schema.json`, заголовок `## §16` — сохранять при любых правках.
 
 ## КРИТИЧЕСКИ ВАЖНО — защита от самомодификации
 
@@ -147,8 +180,15 @@ ls docs/architecture/
    Reason: <обоснование на основе метрик из feedback-loop.md>
    Status: PENDING_HUMAN_REVIEW
    ```
-2. Добавить запись в `errors_log.md` с тегом `[PENDING-REVIEW]`.
-3. **НЕ применять изменение** — ждать явного подтверждения пользователя.
+2. Добавить запись в `docs/errors/errors_log.md` с тегом `[PENDING-REVIEW]`:
+   ```markdown
+   ## PENDING-REVIEW — <YYYY-MM-DD>
+   **Файл:** docs/proposed-claude-md-changes.md
+   **Секция:** <название секции>
+   **Действие required:** явное подтверждение пользователя перед применением изменения
+   ```
+3. В блоке `## State Update` (handoff_notes) явно указать: `"PENDING: есть неподтверждённые изменения в docs/proposed-claude-md-changes.md"`.
+4. **НЕ применять изменение** — ждать явного подтверждения пользователя.
 
 **Разрешено редактировать напрямую (не влияет на routing):**
 - Секция "Document Routing" — только broken links, новые файлы
