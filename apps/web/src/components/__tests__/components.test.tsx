@@ -1,15 +1,45 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StaleBanner } from '../StaleBanner';
 import { ProgressBar } from '../ProgressBar';
 import { EmptyCell } from '../EmptyCell';
 import { RefreshButton } from '../RefreshButton';
+import { AppShell } from '../AppShell';
 import { useRefreshDashboard } from '../../hooks/useRefreshDashboard';
 
 vi.mock('../../hooks/useRefreshDashboard', () => ({
   useRefreshDashboard: vi.fn(),
 }));
+
+function renderWithProviders(ui: ReactElement, { route = '/' } = {}) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe('AppShell', () => {
+  it('renders sidebar brand and nav links', () => {
+    renderWithProviders(<AppShell />, { route: '/dashboard' });
+    expect(screen.getByText('CCIP')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Дашборд/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Объекты/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Периоды/i })).toBeInTheDocument();
+  });
+
+  it('marks dashboard link active on /dashboard route', () => {
+    renderWithProviders(<AppShell />, { route: '/dashboard' });
+    const link = screen.getByRole('link', { name: /Дашборд/i });
+    // NavLink сам ставит aria-current="page" на активной ссылке — семантика, не имя класса.
+    expect(link).toHaveAttribute('aria-current', 'page');
+  });
+});
 
 describe('StaleBanner', () => {
   it('renders nothing when not stale', () => {
