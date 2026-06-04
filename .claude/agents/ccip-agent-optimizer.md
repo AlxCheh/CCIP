@@ -21,6 +21,8 @@ ccip-agent-optimizer <agent-name>
 
 Если имя агента не передано — остановиться и запросить его у пользователя.
 
+**Шорткат `@@`:** при передаче `@@` вместо имени агент останавливается — режим выбора обрабатывается оркестратором: он собирает список `.claude/agents/*.md`, исключает защищённых (`ccip-agent-optimizer`, `ccip-claude-md-auditor`, `ccip-session-optimizer`) и предлагает двухступенчатый кликабельный выбор (домен → агент) через `AskUserQuestion`.
+
 ## Алгоритм
 
 ### Фаза 1 — Анализ (никаких изменений не вносить)
@@ -43,13 +45,14 @@ ccip-agent-optimizer <agent-name>
 Для каждого нарушенного правила сформировать находку в inline-формате:
 
 ```
-[ID] sev:<warning|info> auto:<yes|no> @ <секция> — <описание> | old: "<текст>" | new: "<текст>"
+[ID] sev:<critical|warning|info> auto:<yes|no> @ <секция> — <описание> | old: "<текст>" | new: "<текст>"
 ```
 
 Примеры:
 ```
 [S-01] sev:warning auto:yes @ frontmatter — summary отсутствует | old: null | new: "..."
 [Q-01] sev:info auto:no @ §Алгоритм — размытая формулировка "при необходимости" | old: "..." | new: null
+[R-01] sev:critical auto:no @ body — нет injection-guard при ingestion внешнего контента | old: null | new: "..."
 ```
 
 Если правило не нарушено — находку не создавать.
@@ -65,6 +68,8 @@ ccip-agent-optimizer <agent-name>
 | `auto_fixable: true` + правило `active` + поле не входит в `## Защищённые поля` | Edit напрямую в `.claude/agents/<agent-name>.md` |
 | `auto_fixable: false` + правило `active` | Append в `docs/proposed-agent-changes.md` |
 | Правило `draft` | Только запись в итоговый отчёт — без изменений файлов |
+
+**Block-поведение (`sev:critical`):** если есть находка `sev:critical` по правилу `active` — после записи всех находок ОСТАНОВИТЬСЯ: не применять auto-fix, вывести пользователю `BLOCK: <rule-id> — <описание>` и ждать явного подтверждения перед продолжением. Критические находки по правилам `draft` — только диагностика, block не активируется.
 
 **Перед записью в `docs/proposed-agent-changes.md` — проверить дубль:**
 
@@ -143,3 +148,5 @@ ccip-agent-optimizer <agent-name>
 }
 ```
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).
