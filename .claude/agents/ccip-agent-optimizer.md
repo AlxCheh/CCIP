@@ -64,7 +64,7 @@ ccip-agent-optimizer <agent-name>
 
 | Условие | Действие |
 |---|---|
-| `auto_fixable: true` + правило `active` + не защищённое поле | Edit напрямую в `.claude/agents/<agent-name>.md` |
+| `auto_fixable: true` + правило `active` + поле не входит в `## Защищённые поля` | Edit напрямую в `.claude/agents/<agent-name>.md` |
 | `auto_fixable: false` + правило `active` | Append в `docs/proposed-agent-changes.md` |
 | Правило `draft` | Только запись в итоговый отчёт — без изменений файлов |
 
