@@ -110,6 +110,17 @@ ccip-agent-optimizer <agent-name>
 - Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
 - Один запуск = один агент
 
+## Обработка ошибок
+
+| Ситуация | Действие |
+|---|---|
+| `rules.md` не найден | ABORT: `ERROR: Rules registry not found at .claude/audit/agent-optimizer/rules.md` |
+| Target файл не найден | ABORT: `ERROR: Agent file not found: .claude/agents/<name>.md` |
+| Edit завершился с ошибкой | Записать в `docs/errors/optimization-log.md` как `ERROR`, продолжить следующую находку |
+| `proposed-agent-changes.md` не существует | Write создать с заголовком `# Proposed Agent Changes\n\n---\n`, затем Append |
+
+---
+
 ## State Update
 
 Завершить вывод блоком:
