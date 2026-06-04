@@ -105,8 +105,9 @@ ccip-agent-optimizer <agent-name>
 
 - Не переписывать секции целиком — только точечные Edit
 - Не запускаться без явного имени агента
+- Если `<agent-name>` содержит `/`, `\`, `..` или символы вне `[a-z0-9-]` — остановиться: `INVALID_AGENT_NAME`
+- Не запускаться на себе (`ccip-agent-optimizer`) и системных агентах (`ccip-claude-md-auditor`, `ccip-session-optimizer`) — при передаче такого имени остановиться с объяснением
 - Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
-- Не применять `draft`-правила как auto-fix
 - Один запуск = один агент
 
 ## State Update
