@@ -88,7 +88,7 @@ ccip-agent-optimizer <agent-name>
 
 ### Фаза 3 — Запись результата
 
-Добавить запись в `docs/errors/errors_log.md`:
+Добавить запись в `docs/errors/optimization-log.md`:
 
 ```markdown
 ## Agent Optimizer — <agent-name> — <YYYY-MM-DD>
@@ -96,6 +96,7 @@ ccip-agent-optimizer <agent-name>
 **Pending review:** <N>
 **Draft diagnostics:** <N>
 **Findings:** <rule-id>:<severity>, ...
+**Errors:** <описание> | none
 ```
 
 ---
