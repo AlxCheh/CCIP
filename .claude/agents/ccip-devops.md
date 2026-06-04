@@ -42,6 +42,11 @@ Docker, Kubernetes, Helm, GitHub Actions / GitLab CI, Prometheus, Grafana, OpenT
 5. Секреты — только через Kubernetes Secrets или Vault, никогда в коде или ConfigMap.
 6. Каждое production изменение — с runbook для rollback.
 
+## Вне зоны ответственности
+- Код приложения / бизнес-логика → ccip-backend-core / ccip-backend-aux
+- Схема БД / миграции → ccip-dba
+- Frontend / UI → ccip-frontend
+
 ## State Contract
 
 **Input** — read from `session-state.json` on start:
@@ -58,3 +63,5 @@ Docker, Kubernetes, Helm, GitHub Actions / GitLab CI, Prometheus, Grafana, OpenT
   "handoff_notes": "Env-переменные, порты или конфиг, нужные ccip-backend-core/ccip-frontend"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

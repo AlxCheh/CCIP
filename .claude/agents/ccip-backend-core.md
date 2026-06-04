@@ -44,6 +44,12 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 5. Тест-таблица из Алгоритма Part 4 — обязательное покрытие для каждого реализованного кейса.
 6. Read архитектурных и алгоритмических файлов: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не читать файл целиком.
 
+## Вне зоны ответственности
+- Схема БД / миграции / RLS → ccip-dba
+- Auth / RBAC / Sync API / Notifications → ccip-backend-aux
+- Frontend / UI → ccip-frontend
+- Инфраструктура / Docker / K8s → ccip-devops
+
 ## State Contract (CLAUDE.md §15)
 
 **Input** — read from `session-state.json` on start:
@@ -62,3 +68,4 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 ```
 
 > If rerouted or partial — note it in `handoff_notes`; outcome will be set manually.
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

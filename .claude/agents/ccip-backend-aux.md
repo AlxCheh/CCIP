@@ -47,6 +47,12 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 4. GpToken — отдельный flow, не смешивать с основным JWT.
 5. tenant_id — проверять на уровне middleware до любой бизнес-логики.
 
+## Вне зоны ответственности
+- Схема БД / миграции / RLS → ccip-dba
+- Core domain (PeriodEngine / Dispute / Analytics) → ccip-backend-core
+- Frontend / UI → ccip-frontend
+- Инфраструктура / Docker / K8s → ccip-devops
+
 ## State Contract (CLAUDE.md §15)
 
 **Input** — read from `session-state.json` on start:
@@ -65,3 +71,4 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 ```
 
 > If the task was rerouted or partial — note it in `handoff_notes`.
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

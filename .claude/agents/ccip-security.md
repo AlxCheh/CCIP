@@ -48,6 +48,11 @@ CCIP хранит верифицированные данные о выполн�
 4. GpToken — scope должен быть минимально необходимым.
 5. Перед пилотом — обязательный security review отчёт.
 
+## Вне зоны ответственности
+- Реализация Auth / RBAC / Sync кода → ccip-backend-aux (security ревьюит, не пишет фичи)
+- Миграции / схема / RLS реализация → ccip-dba
+- Бизнес-логика домена → ccip-backend-core
+
 ## State Contract
 
 Emit this block at the end of your output (per CLAUDE.md §15):
@@ -62,3 +67,5 @@ Emit this block at the end of your output (per CLAUDE.md §15):
 }
 ```
 ````
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

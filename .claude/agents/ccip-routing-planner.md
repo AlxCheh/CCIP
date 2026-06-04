@@ -100,3 +100,18 @@ IF intents >= 3 OR risk == HIGH → planner
 2. Не читать лишние документы: если задача ясна из CLAUDE.md + project-state.md — не открывать arch.
 3. Все найденные противоречия фиксировать в `docs/errors/errors_log.md`.
 4. Если задача имеет < 3 intents и risk != HIGH — вернуть: `{ "routing": "direct", "reason": "insufficient complexity for planner" }`.
+
+## State Contract (CLAUDE.md §15)
+
+**Output** — после execution plan emit this block (read by PostToolUse hook):
+
+## State Update
+```json
+{
+  "summary": "≤ 3 предложения: построенный DAG, число шагов, назначенные агенты и co-agents",
+  "artifacts": [],
+  "handoff_notes": "Routing-решение, co-agents и зависимости для основного контекста"
+}
+```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

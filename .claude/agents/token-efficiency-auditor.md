@@ -117,6 +117,8 @@ Always emit at the end of your output:
 ```
 ````
 
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).
+
 Without this block, `post-agent-hook.js` sets a fallback and loses the updated-rules list.
 
 ## Запрещено

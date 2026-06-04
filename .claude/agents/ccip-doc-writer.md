@@ -66,6 +66,11 @@ model: claude-sonnet-4-6
 5. CLAUDE.md — проверять на дублирование каждые 2 недели.
 6. CLAUDE.md §15/§16 и State Contract блоки агентов — норма EN машинно-компакт. Не возвращать RU-прозу (RU остаётся только в JSON-плейсхолдерах `summary`/`handoff_notes`). Заголовки `## §15`/`## §16` и блок `## State Update` — инварианты, не трогать.
 
+## Вне зоны ответственности
+- Реализация кода → ccip-backend-core / ccip-backend-aux / ccip-frontend / ccip-mobile
+- Схема БД / миграции → ccip-dba
+- Routing-аудит CLAUDE.md → ccip-claude-md-auditor (doc-writer пишет контент, не аудитирует маршрутизацию)
+
 ## State Contract
 
 **Input** — read from `session-state.json` on start:
@@ -82,3 +87,5 @@ model: claude-sonnet-4-6
   "handoff_notes": "Обновлённые секции, влияющие на CLAUDE.md или связанные документы"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

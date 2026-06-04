@@ -41,6 +41,12 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 4. Читать только релевантные секции: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не открывать архитектурный файл целиком.
 5. При code review — фокус на корректности state machine transitions, идемпотентности операций, соблюдении append-only принципа.
 
+## Вне зоны ответственности
+- Реализация кода модулей → ccip-backend-core / ccip-backend-aux
+- Схема / миграции / RLS → ccip-dba
+- Инфраструктура / Docker / K8s → ccip-devops
+- Frontend / UI → ccip-frontend
+
 ## State Contract (CLAUDE.md §15)
 
 **Input** — read from `session-state.json` on start:
@@ -60,3 +66,4 @@ NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + Waterm
 ```
 
 > If rerouted or partial — set `"outcome"` to `"rerouted"` or `"partial"` in handoff_notes.
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

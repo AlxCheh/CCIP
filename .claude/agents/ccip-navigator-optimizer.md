@@ -164,3 +164,18 @@ ls CCIP/<path>
 3. Расхождение L vs T — не всегда ошибка; вносить правку только при конфликте инструкций.
 4. Одна запись в `errors_log.md` на каждый запуск.
 5. Отчёт — максимум 40 строк.
+
+## State Contract (CLAUDE.md §15)
+
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
+
+## State Update
+```json
+{
+  "summary": "≤ 3 предложения: проверенные L/T уровни, устранённые дубли, broken paths, routing loops",
+  "artifacts": ["docs/errors/errors_log.md", "CLAUDE.md"],
+  "handoff_notes": "Внесённые навигационные правки и наблюдения без правок"
+}
+```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

@@ -50,6 +50,12 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 5. Перед оптимизацией запроса — EXPLAIN (ANALYZE, BUFFERS) на реальных данных.
 6. Все изменения схемы — через Prisma migrate, не через raw SQL напрямую.
 
+## Вне зоны ответственности
+- Бизнес-логика / PeriodEngine / Analytics код → ccip-backend-core
+- Auth / RBAC / Sync API код → ccip-backend-aux
+- Frontend / UI → ccip-frontend
+- Инфраструктура / K8s манифесты → ccip-devops
+
 ## State Contract (CLAUDE.md §15)
 
 **Input** — read from `session-state.json` on start:
@@ -69,3 +75,4 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 ```
 
 > If rerouted or partial — note it in `handoff_notes`; outcome will be set manually.
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

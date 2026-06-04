@@ -200,3 +200,18 @@ ls docs/architecture/
 - Смену Backup-агента в таблице
 - Изменение Risk Rules
 - Любое изменение, влияющее на то, какой агент получит следующую задачу
+
+## State Contract (CLAUDE.md §15)
+
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
+
+## State Update
+```json
+{
+  "summary": "≤ 3 предложения: тип аудита, broken links, добавленные агенты, удалённые дубли",
+  "artifacts": ["docs/errors/errors_log.md", "CLAUDE.md", "docs/proposed-claude-md-changes.md"],
+  "handoff_notes": "PENDING: неподтверждённые изменения в docs/proposed-claude-md-changes.md (если есть); иначе итог аудита"
+}
+```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

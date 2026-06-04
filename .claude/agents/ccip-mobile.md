@@ -45,6 +45,12 @@ React Native, TypeScript, WatermelonDB (ADR-008), SQLite, Expo Camera / геол
 5. Тесты sync-конфликтов — обязательны для сценариев из ADR-003.
 6. Размер фото — сжимать до < 2 MB перед загрузкой, оригинал хранить локально.
 
+## Вне зоны ответственности
+- Серверная часть Sync API / REST → ccip-backend-aux
+- Бизнес-логика домена → ccip-backend-core
+- Web frontend → ccip-frontend
+- Схема БД → ccip-dba
+
 ## State Contract
 
 **Input** — read from `session-state.json` on start:
@@ -61,3 +67,5 @@ React Native, TypeScript, WatermelonDB (ADR-008), SQLite, Expo Camera / геол
   "handoff_notes": "Что нужно знать ccip-qa для тестирования sync-конфликтов (ADR-003)"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).
