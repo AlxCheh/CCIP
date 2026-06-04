@@ -68,6 +68,11 @@ ccip-agent-optimizer <agent-name>
 | `auto_fixable: false` + правило `active` | Append в `docs/proposed-agent-changes.md` |
 | Правило `draft` | Только запись в итоговый отчёт — без изменений файлов |
 
+**Перед записью в `docs/proposed-agent-changes.md` — проверить дубль:**
+
+Выполнить Grep на паттерн `<agent-name>.*<rule-id>` в `docs/proposed-agent-changes.md`.
+Если найдена запись со `Status: PENDING_HUMAN_REVIEW` — пропустить запись (дубль уже ожидает review).
+
 **Формат записи в `docs/proposed-agent-changes.md`:**
 
 ```markdown
