@@ -64,6 +64,10 @@ DEFAULT → direct agent of primary intent
 >
 > *Исключение:* факт, устаревший между прогоном и концом сессии (напр. сместившийся HEAD sha), помечается отдельной строкой без правки блока.
 
+> **ccip-agent-optimizer @@ (режим выбора):** при паттерне `ccip-agent-optimizer @@` — до спавна: `Glob(".claude/agents/*.md")`, исключить защищённых (`ccip-agent-optimizer`, `ccip-claude-md-auditor`, `ccip-session-optimizer`). Затем **двухступенчатый кликабельный выбор** через `AskUserQuestion` (лимит 4 опции/меню): шаг 1 — домен (Backend&Data / UI&Arch / Security&QA / Orchestration&Docs); шаг 2 — агент внутри домена (overflow >4 — через авто-`Other`). После выбора — спавн `ccip-agent-optimizer <name>`.
+>
+> *Домены:* Backend&Data = ccip-backend-core, ccip-backend-aux, ccip-dba, ccip-devops · UI&Arch = ccip-frontend, ccip-mobile, ccip-architect · Security&QA = ccip-security, security-reviewer, ccip-qa, consistency-checker · Orchestration&Docs = ccip-doc-writer, ccip-product-owner, ccip-routing-planner, ccip-navigator-optimizer, general-purpose, token-efficiency-auditor.
+
 ## Risk Rules
 ```
 HIGH          → add security-reviewer as co-agent
