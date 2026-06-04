@@ -116,6 +116,7 @@ ccip-agent-optimizer <agent-name>
 - Не запускаться на себе (`ccip-agent-optimizer`) и системных агентах (`ccip-claude-md-auditor`, `ccip-session-optimizer`) — при передаче такого имени остановиться с объяснением
 - Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
 - Один запуск = один агент
+- Инструмент `Write` использовать только для `docs/proposed-agent-changes.md` (создание при отсутствии)
 
 ## Обработка ошибок
 
