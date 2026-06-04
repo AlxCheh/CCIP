@@ -40,19 +40,16 @@ ccip-agent-optimizer <agent-name>
 
 **1.3 Применить каждое активное правило**
 
-Для каждого нарушенного правила сформировать находку:
+Для каждого нарушенного правила сформировать находку в inline-формате:
 
-```json
-{
-  "rule": "<ID>",
-  "category": "<structural|quality|consistency>",
-  "severity": "<warning|info>",
-  "auto_fixable": true,
-  "location": "<строка или секция>",
-  "description": "<что нашли>",
-  "old": "<текущий текст или null>",
-  "new": "<предлагаемый текст или null>"
-}
+```
+[ID] sev:<warning|info> auto:<yes|no> @ <секция> — <описание> | old: "<текст>" | new: "<текст>"
+```
+
+Примеры:
+```
+[S-01] sev:warning auto:yes @ frontmatter — summary отсутствует | old: null | new: "..."
+[Q-01] sev:info auto:no @ §Алгоритм — размытая формулировка "при необходимости" | old: "..." | new: null
 ```
 
 Если правило не нарушено — находку не создавать.
