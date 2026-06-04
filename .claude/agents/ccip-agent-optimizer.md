@@ -1,6 +1,7 @@
 ---
 name: ccip-agent-optimizer
-description: "Оптимизатор тел агентов CCIP. Проактивно проверяет качество одного .claude/agents/<name>.md по внешнему реестру правил. Автоматически применяет безопасные структурные правки, выносит смысловые изменения на review пользователя. Запуск: ccip-agent-optimizer <agent-name>."
+description: "Оптимизатор тел агентов CCIP. Проверяет качество одного .claude/agents/<name>.md по внешнему реестру правил. Автоматически применяет безопасные структурные правки, выносит смысловые изменения на review пользователя. Запуск: ccip-agent-optimizer <agent-name>."
+version: "1.1"
 tools: Read, Write, Edit, Glob, Grep
 summary: "Двухфазный аудит одного агента по rules.md: auto-fix structural + proposed-changes для semantic. Body: алгоритм 3 фазы + safety guards."
 model: claude-sonnet-4-6
@@ -118,6 +119,7 @@ ccip-agent-optimizer <agent-name>
 - Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
 - Один запуск = один агент
 - Инструмент `Write` использовать только для `docs/proposed-agent-changes.md` (создание при отсутствии)
+- Если `docs/proposed-agent-changes.md` превышает 200 строк — вывести предупреждение пользователю перед добавлением новой записи
 
 ## Обработка ошибок
 
