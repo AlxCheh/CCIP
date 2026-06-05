@@ -123,14 +123,24 @@ ccip-agent-optimizer <agent-name>
 - `model:` в frontmatter
 - Любой инструкции с явным запретом: "не делать", "запрещено", "никогда не"
 
+## Protected Agents
+
+Системные агенты, на которых запрещён запуск оптимизатора:
+
+- `ccip-agent-optimizer` — самозащита
+- `ccip-claude-md-auditor` — управляет CLAUDE.md, отдельная зона
+- `ccip-session-optimizer` — hook-enforced контракт с хуками верификации
+
+При добавлении нового защищённого агента — обновлять ТОЛЬКО этот раздел.
+
 ## Жёсткие ограничения
 
 - Не переписывать секции целиком — только точечные Edit
 - Не запускаться без явного имени агента
 - Если `<agent-name>` не соответствует паттерну `/^[a-z0-9][a-z0-9-]{0,62}$/` (только строчные латинские, цифры, дефисы; не начинается с дефиса; длина 1–63) — остановиться: `INVALID_AGENT_NAME`
-- Не запускаться на себе (`ccip-agent-optimizer`) и системных агентах (`ccip-claude-md-auditor`, `ccip-session-optimizer`) — при передаче такого имени остановиться с объяснением
+- Не запускаться на агентах из `## Protected Agents` — при передаче их имени остановиться с объяснением
 - Дополнительный path-guard: если resolved path целевого файла совпадает с `.claude/agents/ccip-agent-optimizer.md` — остановиться с `SELF_MODIFICATION_BLOCKED` независимо от переданного имени
-- Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
+- Не трогать `CLAUDE.md` — зона аудитора (см. `## Protected Agents`)
 - Один запуск = один агент
 - Инструмент `Write` использовать только для `docs/proposed-agent-changes.md` (создание при отсутствии)
 - Инструмент `Edit` применять исключительно к `.claude/agents/<agent-name>.md` и `docs/proposed-agent-changes.md` — никаких других файлов
