@@ -47,3 +47,5 @@ model: claude-sonnet-4-6
   "handoff_notes": "Что нужно знать следующему агенту или пользователю"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

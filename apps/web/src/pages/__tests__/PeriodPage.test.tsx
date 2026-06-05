@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { PeriodPage } from '../PeriodPage';
 import { usePeriodDetail } from '../../hooks/usePeriodDetail';
 import { useUpsertFact } from '../../hooks/useUpsertFact';
@@ -36,6 +37,15 @@ function mockPeriodReturn(over: Partial<UsePeriodReturn>) {
   return { data: undefined, isLoading: false, isError: false, ...over } as unknown as UsePeriodReturn;
 }
 
+// PeriodPage рендерит BackLink (<Link>) — нужен Router-контекст, как в ObjectDetailPage.test.
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <PeriodPage />
+    </MemoryRouter>,
+  );
+}
+
 function makeDetail(over: Partial<PeriodDetailResponse> = {}): PeriodDetailResponse {
   return {
     id: 1, periodNumber: 2, status: 'verification',
@@ -62,13 +72,13 @@ describe('PeriodPage', () => {
 
   it('renders loading state', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(mockPeriodReturn({ isLoading: true }));
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByText('Загрузка...')).toBeInTheDocument();
   });
 
   it('renders error state when not found', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(mockPeriodReturn({ isError: true }));
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByText(/Период не найден/)).toBeInTheDocument();
   });
 
@@ -76,13 +86,13 @@ describe('PeriodPage', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(
       mockPeriodReturn({ data: makeDetail({ status: 'gp_submitted' }) }),
     );
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByText('ГП подал данные')).toBeInTheDocument();
   });
 
   it('renders position row with name and volumes', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(mockPeriodReturn({ data: makeDetail() }));
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByText('Earthworks')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
     expect(screen.getByText('140')).toBeInTheDocument();
@@ -91,14 +101,14 @@ describe('PeriodPage', () => {
   it('shows SC input for stroycontrol in verification status', () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 'u1', email: 'a@b.c', role: 'stroycontrol' }));
     vi.mocked(usePeriodDetail).mockReturnValue(mockPeriodReturn({ data: makeDetail() }));
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByRole('spinbutton', { name: 'scVolume-7' })).toBeInTheDocument();
   });
 
   it('hides SC input for director', () => {
     localStorage.setItem('auth_user', JSON.stringify({ id: 'u1', email: 'a@b.c', role: 'director' }));
     vi.mocked(usePeriodDetail).mockReturnValue(mockPeriodReturn({ data: makeDetail() }));
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.queryByRole('spinbutton', { name: /scVolume/ })).not.toBeInTheDocument();
   });
 
@@ -107,7 +117,7 @@ describe('PeriodPage', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(
       mockPeriodReturn({ data: makeDetail({ openDiscrepancyCount: 1 }) }),
     );
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByRole('button', { name: 'Закрыть период' })).toBeDisabled();
   });
 
@@ -116,7 +126,7 @@ describe('PeriodPage', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(
       mockPeriodReturn({ data: makeDetail({ status: 'verification', openDiscrepancyCount: 0 }) }),
     );
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByRole('button', { name: 'Закрыть период' })).not.toBeDisabled();
   });
 
@@ -125,7 +135,7 @@ describe('PeriodPage', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(
       mockPeriodReturn({ data: makeDetail({ status: 'gp_submitted', openDiscrepancyCount: 0 }) }),
     );
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.getByRole('button', { name: 'Закрыть период' })).toBeDisabled();
   });
 
@@ -134,7 +144,7 @@ describe('PeriodPage', () => {
     vi.mocked(usePeriodDetail).mockReturnValue(
       mockPeriodReturn({ data: makeDetail({ status: 'verification', openDiscrepancyCount: 0 }) }),
     );
-    render(<PeriodPage />);
+    renderPage();
     expect(screen.queryByRole('button', { name: 'Закрыть период' })).not.toBeInTheDocument();
   });
 });

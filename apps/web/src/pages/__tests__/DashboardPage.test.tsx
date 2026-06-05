@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DashboardPage } from '../DashboardPage';
 import { useDashboard } from '../../hooks/useDashboard';
@@ -48,7 +48,9 @@ describe('DashboardPage', () => {
     vi.mocked(useDashboard).mockReturnValue(mockReturn({ data: dataWithRows() }));
     render(<DashboardPage />);
     expect(screen.getByText('Объект А')).toBeInTheDocument();
-    expect(screen.getByText('50.0%')).toBeInTheDocument();
+    // готовность 50% — внутри строки объекта, а не в KPI-бэнде (тот тоже показывает 50%)
+    const row = screen.getByText('Объект А').closest('tr')!;
+    expect(within(row).getByText('50%')).toBeInTheDocument();
   });
 
   it('renders the empty-state when there are no items', () => {

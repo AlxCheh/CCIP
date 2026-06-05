@@ -14,6 +14,7 @@ const AUDIT_DOC_ALLOWLIST = [
   'docs/audits/multi-agent-ecosystem-2026-05-07.md',
   'docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md', // plan doc — references future files (ADR-015, sub-plan scaffolds)
   'docs/plans/2026-06-01-gp-form.md', // plan doc — references files to be created during implementation
+  'docs/plans/2026-06-05-agent-optimizer-audit-fixes.md', // plan doc — bash examples reference .bak paths not meant to exist
 ];
 
 function stripCodeBlocks(md) {

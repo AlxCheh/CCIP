@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
 import { StaleBanner } from '../components/StaleBanner';
 import { ProgressBar } from '../components/ProgressBar';
-import { EmptyCell } from '../components/EmptyCell';
+import { StatusPill } from '../components/StatusPill';
 import { RoleGate } from '../components/RoleGate';
 import { RefreshButton } from '../components/RefreshButton';
 import type { DashboardQuery } from '../services/api';
+import s from './DashboardPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Активный',
@@ -16,8 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function formatRefreshed(iso: string | null): string {
   if (!iso) return 'нет данных';
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diffMs / 60_000);
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
   if (mins < 1) return 'только что';
   if (mins < 60) return `${mins} мин назад`;
   return `${Math.floor(mins / 60)} ч назад`;
@@ -33,133 +33,176 @@ export function DashboardPage() {
   }
 
   const totalPages = data ? Math.ceil(data.pagination.total / (query.pageSize ?? 50)) : 1;
+  const page = query.page ?? 1;
 
   return (
-    <div style={{ padding: 24, fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22 }}>Дашборд</h1>
-          {data && (
-            <span style={{ fontSize: 12, color: '#888' }}>
-              обновлено: {formatRefreshed(data.meta.refreshedAt)}
-            </span>
-          )}
+    <div className={s.page}>
+      <StaleBanner meta={data?.meta ?? null} />
+
+      <div className={s.hero}>
+        <div className={s.heroLeft}>
+          <div className={s.kick}>Портфель{data ? ` · ${data.pagination.total} объектов` : ''}</div>
+          <h1 className={s.h1}>Дашборд</h1>
+          {data && <div className={s.meta}>обновлено: {formatRefreshed(data.meta.refreshedAt)}</div>}
         </div>
         <RoleGate allow={['admin']}>
-          <RefreshButton />
+          <RefreshButton className={s.refreshBtn} />
         </RoleGate>
       </div>
 
-      {data && <StaleBanner meta={data.meta} />}
+      {data && (
+        <div className={s.kpis}>
+          <div className={s.kpi}>
+            <div className={s.kpiLabel}>Объектов всего</div>
+            <div className={s.kpiValue}>{data.pagination.total}</div>
+          </div>
+          <div className={s.kpi}>
+            <div className={s.kpiLabel}>С разрывом плана</div>
+            <div className={`${s.kpiValue} ${s.err}`}>
+              {String(data.items.filter((r) => r.gapFlag).length).padStart(2, '0')}
+            </div>
+          </div>
+          <div className={s.kpi}>
+            <div className={s.kpiLabel}>Средняя готовность</div>
+            <div className={s.kpiValue}>
+              {data.items.filter((r) => r.objReadinessPct != null).length > 0
+                ? Math.round(
+                    data.items
+                      .filter((r) => r.objReadinessPct != null)
+                      .reduce((a, r) => a + (r.objReadinessPct ?? 0), 0) /
+                      data.items.filter((r) => r.objReadinessPct != null).length,
+                  ) + '%'
+                : '—'}
+            </div>
+          </div>
+          <div className={s.kpi}>
+            <div className={s.kpiLabel}>Просрочка SLA</div>
+            <div className={`${s.kpiValue} ${s.acc}`}>—</div>
+          </div>
+        </div>
+      )}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input
-          placeholder="Поиск по названию"
-          value={query.search ?? ''}
-          onChange={(e) => setParam('search', e.target.value || undefined)}
-          style={{ padding: '4px 8px', fontSize: 13 }}
-        />
-        <select
-          value={query.status ?? ''}
-          onChange={(e) => setParam('status', (e.target.value as DashboardQuery['status']) || undefined)}
-          style={{ padding: '4px 8px', fontSize: 13 }}
-        >
-          <option value="">Все статусы</option>
-          <option value="active">Активный</option>
-          <option value="paused">Приостановлен</option>
-          <option value="closed">Завершён</option>
-        </select>
-        <select
-          value={query.sort ?? 'gapFirst'}
-          onChange={(e) => setParam('sort', e.target.value as DashboardQuery['sort'])}
-          style={{ padding: '4px 8px', fontSize: 13 }}
-        >
-          <option value="gapFirst">Сначала с разрывом</option>
-          <option value="readinessAsc">Готовность ↑</option>
-          <option value="readinessDesc">Готовность ↓</option>
-          <option value="forecastAsc">Прогноз ↑</option>
-          <option value="forecastDesc">Прогноз ↓</option>
-          <option value="nameAsc">Название А-Я</option>
-        </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
+      <div className={s.toolbar}>
+        <label className={s.checkLabel}>
           <input
             type="checkbox"
             checked={query.gapOnly ?? false}
             onChange={(e) => setParam('gapOnly', e.target.checked || undefined)}
           />
-          Только с разрывом плана
+          Только с разрывом
         </label>
+        <div className={s.sortWrap}>
+          <span className={s.sortLabel}>Сортировка</span>
+          <select
+            className={s.sortSelect}
+            value={query.sort ?? 'gapFirst'}
+            onChange={(e) => setParam('sort', e.target.value as DashboardQuery['sort'])}
+          >
+            <option value="gapFirst">Сначала с разрывом</option>
+            <option value="readinessAsc">Готовность ↑</option>
+            <option value="readinessDesc">Готовность ↓</option>
+            <option value="forecastAsc">Прогноз ↑</option>
+            <option value="forecastDesc">Прогноз ↓</option>
+            <option value="nameAsc">Название А–Я</option>
+          </select>
+        </div>
       </div>
 
-      {isLoading && <div>Загрузка...</div>}
-      {isError && <div style={{ color: 'red' }}>Ошибка загрузки данных.</div>}
+      {isLoading && <div className={s.loading}>Загрузка...</div>}
+      {isError && <div className={s.error}>Ошибка загрузки данных.</div>}
 
       {data && data.items.length === 0 && (
-        <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>
-          Нет объектов в организации
-        </div>
+        <div className={s.empty}>Нет объектов в организации</div>
       )}
 
       {data && data.items.length > 0 && (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #dee2e6', background: '#f8f9fa' }}>
-                <th style={th}>Название</th>
-                <th style={th}>Статус</th>
-                <th style={{ ...th, minWidth: 140 }}>Готовность</th>
-                <th style={th}>Прогноз (взвеш.)</th>
-                <th style={th}>Прогноз (крит. путь)</th>
-                <th style={th}>Разрыв</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((row) => (
-                <tr
-                  key={row.objectId}
-                  onClick={() => void navigate(`/objects/${row.objectId}`)}
-                  style={{ borderBottom: '1px solid #dee2e6', cursor: 'pointer' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#f8f9fa')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '')}
-                >
-                  <td style={td}>{row.name}</td>
-                  <td style={td}>{STATUS_LABELS[row.status] ?? row.status}</td>
-                  <td style={td}>
-                    {row.hasAnalytics
-                      ? <ProgressBar value={row.objReadinessPct} />
-                      : <span style={{ color: '#999' }}>—</span>}
-                  </td>
-                  <td style={td}>
-                    {row.hasAnalytics ? <EmptyCell value={row.weightedForecastDate} /> : <span style={{ color: '#999' }}>—</span>}
-                  </td>
-                  <td style={td}>
-                    {row.hasAnalytics ? <EmptyCell value={row.criticalPathForecastDate} /> : <span style={{ color: '#999' }}>—</span>}
-                  </td>
-                  <td style={td}>
-                    {row.hasAnalytics
-                      ? (row.gapFlag ? <span style={{ color: '#dc3545' }}>⚠ Есть</span> : <span style={{ color: '#28a745' }}>✓</span>)
-                      : <span style={{ color: '#999' }}>—</span>}
-                  </td>
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead>
+                <tr>
+                  <th>Объект</th>
+                  <th>Статус</th>
+                  <th>Готовность</th>
+                  <th className={s.r}>Прогноз</th>
+                  <th className={s.r}>Разрыв</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.items.map((row) => (
+                  <tr
+                    key={row.objectId}
+                    className={row.gapFlag ? s.hasGap : ''}
+                    onClick={() => void navigate(`/objects/${row.objectId}`)}
+                  >
+                    <td>
+                      <div className={s.objName}>{row.name}</div>
+                      <div className={s.objSub}>{row.objectClass ?? ''}</div>
+                    </td>
+                    <td>
+                      <span className={`${s.statusDot} ${s[row.status] ?? ''}`} />
+                      <span className={s.statusText}>{STATUS_LABELS[row.status] ?? row.status}</span>
+                    </td>
+                    <td>
+                      {row.hasAnalytics ? (
+                        <ProgressBar value={row.objReadinessPct} />
+                      ) : (
+                        <span className={s.cellEmpty}>—</span>
+                      )}
+                    </td>
+                    <td className={s.r}>
+                      {row.hasAnalytics && row.weightedForecastDate ? (
+                        <>
+                          <div className={`${s.forecast} ${row.gapFlag ? s.late : ''}`}>
+                            {new Date(row.weightedForecastDate).toLocaleDateString('ru-RU', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            })}
+                          </div>
+                          {row.criticalPathForecastDate && (
+                            <div className={s.forecastSub}>
+                              крит.&nbsp;
+                              {new Date(row.criticalPathForecastDate).toLocaleDateString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                              })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <span className={s.cellEmpty}>—</span>
+                      )}
+                    </td>
+                    <td className={s.r}>
+                      {row.hasAnalytics ? (
+                        row.gapFlag ? (
+                          <StatusPill variant="gap">разрыв</StatusPill>
+                        ) : (
+                          <StatusPill variant="ok">в плане</StatusPill>
+                        )
+                      ) : (
+                        <span className={s.cellEmpty}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, fontSize: 13 }}>
+          <div className={s.foot}>
             <button
-              disabled={(query.page ?? 1) <= 1}
+              className={s.pageBtn}
+              disabled={page <= 1}
               onClick={() => setQuery((q) => ({ ...q, page: (q.page ?? 1) - 1 }))}
-              style={{ padding: '4px 10px' }}
             >
               ← Назад
             </button>
-            <span>
-              Стр. {query.page ?? 1} из {totalPages} (всего {data.pagination.total})
-            </span>
             <button
-              disabled={(query.page ?? 1) >= totalPages}
+              className={`${s.pageBtn} ${s.dark}`}
+              disabled={page >= totalPages}
               onClick={() => setQuery((q) => ({ ...q, page: (q.page ?? 1) + 1 }))}
-              style={{ padding: '4px 10px' }}
             >
               Вперёд →
             </button>
@@ -169,6 +212,3 @@ export function DashboardPage() {
     </div>
   );
 }
-
-const th: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', fontWeight: 600 };
-const td: React.CSSProperties = { padding: '8px 12px', verticalAlign: 'middle' };

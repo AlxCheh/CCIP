@@ -1,17 +1,24 @@
-import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useOpenPeriod } from '../hooks/useOpenPeriod';
 import { getAuthUser } from '../store/auth';
 import { useObjectDetail } from '../hooks/useObjectDetail';
 import { StaleBanner } from '../components/StaleBanner';
 import { ProgressBar } from '../components/ProgressBar';
-import { EmptyCell } from '../components/EmptyCell';
+import { BackLink } from '../components/BackLink';
+import { StatusPill } from '../components/StatusPill';
+import s from './ObjectDetailPage.module.css';
 
 const PERIOD_STATUS_LABELS: Record<string, string> = {
-  open:         'Открыт',
-  gp_submitted: 'ГП подал данные',
+  open: 'Открыт',
+  gp_submitted: 'Генподрядчик подал данные',
   verification: 'Верификация',
-  closed:       'Закрыт',
+  closed: 'Закрыт',
+};
+
+const OBJ_STATUS_LABELS: Record<string, string> = {
+  active: 'Активный',
+  paused: 'Приостановлен',
+  closed: 'Завершён',
 };
 
 export function ObjectDetailPage() {
@@ -23,173 +30,215 @@ export function ObjectDetailPage() {
   const user = getAuthUser();
   const canAct = user?.role === 'stroycontrol' || user?.role === 'admin';
 
-  if (isLoading) return <div style={{ padding: 24 }}>Загрузка...</div>;
+  if (isLoading)
+    return (
+      <div className={s.page}>
+        <div className={s.loadingBox}>Загрузка...</div>
+      </div>
+    );
   if (isError || !data)
-    return <div style={{ padding: 24, color: 'red' }}>Объект не найден или нет доступа.</div>;
+    return (
+      <div className={s.page}>
+        <div className={s.errorBox}>Объект не найден.</div>
+      </div>
+    );
 
-  const { object: obj, participants, activeBoq, currentPeriod, hasAnalytics, current, history, meta } = data;
+  const { object: obj, participants, activeBoq, currentPeriod, hasAnalytics, current, history, meta } =
+    data;
 
   return (
-    <div style={{ padding: 24, fontFamily: 'sans-serif', maxWidth: 900 }}>
-      <div style={{ marginBottom: 12, fontSize: 13, color: '#888' }}>
-        <Link to="/dashboard">Дашборд</Link> › {obj.name}
+    <div className={s.page}>
+      <div className={s.back}>
+        <BackLink to="/dashboard" label="Дашборд" />
       </div>
 
       <StaleBanner meta={meta} />
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>{obj.name}</h1>
-        <span style={{ fontSize: 12, background: '#e9ecef', padding: '2px 8px', borderRadius: 10 }}>{obj.status}</span>
-      </div>
-      <div style={{ fontSize: 13, color: '#555', marginBottom: 20 }}>
-        {[obj.objectClass, obj.address, obj.permitNumber && `Разрешение: ${obj.permitNumber}`]
-          .filter(Boolean)
-          .join(' · ')}
+      <div className={s.hero}>
+        <h1 className={s.heroTitle}>
+          {obj.name}
+          <StatusPill variant={obj.status === 'active' ? 'ok' : 'done'}>
+            {OBJ_STATUS_LABELS[obj.status] ?? obj.status}
+          </StatusPill>
+        </h1>
+        <div className={s.heroMeta}>
+          {[obj.objectClass, obj.address, obj.permitNumber && `Разрешение: ${obj.permitNumber}`]
+            .filter(Boolean)
+            .join(' · ')}
+        </div>
       </div>
 
-      {/* KPI tiles */}
-      {!hasAnalytics ? (
-        <div style={{ padding: '16px 20px', background: '#f8f9fa', borderRadius: 6, marginBottom: 20, color: '#888' }}>
-          Нет данных аналитики — закройте первый период
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-          <KpiTile label="Готовность">
+      {/* KPI band */}
+      <div className={s.kpis}>
+        <div className={s.kpi}>
+          <div className={s.kpiLabel}>Готовность</div>
+          {hasAnalytics ? (
             <ProgressBar value={current?.objReadinessPct ?? null} />
-          </KpiTile>
-          <KpiTile label="Прогноз (взвеш.)">
-            <EmptyCell value={current?.weightedForecastDate} />
-          </KpiTile>
-          <KpiTile label="Прогноз (крит. путь)">
-            <EmptyCell value={current?.criticalPathForecastDate} />
-          </KpiTile>
-          <KpiTile label="Разрыв прогнозов">
-            {current?.gapFlag
-              ? <span style={{ color: '#dc3545', fontWeight: 600 }}>⚠ Есть</span>
-              : <span style={{ color: '#28a745' }}>✓ Нет</span>}
-          </KpiTile>
+          ) : (
+            <div className={s.kpiNoAnalytics}>Нет данных — закройте первый период</div>
+          )}
         </div>
-      )}
+        <div className={s.kpi}>
+          <div className={s.kpiLabel}>Прогноз (взвеш.)</div>
+          <div className={`${s.kpiValue} ${current?.gapFlag ? s.err : ''}`}>
+            {current?.weightedForecastDate
+              ? new Date(current.weightedForecastDate).toLocaleDateString('ru-RU')
+              : '—'}
+          </div>
+        </div>
+        <div className={s.kpi}>
+          <div className={s.kpiLabel}>Прогноз (крит. путь)</div>
+          <div className={`${s.kpiValue} ${current?.gapFlag ? s.err : ''}`}>
+            {current?.criticalPathForecastDate
+              ? new Date(current.criticalPathForecastDate).toLocaleDateString('ru-RU')
+              : '—'}
+          </div>
+        </div>
+        <div className={s.kpi}>
+          <div className={s.kpiLabel}>Разрыв прогнозов</div>
+          {current?.gapFlag ? (
+            <>
+              <div className={s.gapPill}>Разрыв есть</div>
+              <div className={s.gapSub}>Прогнозы расходятся</div>
+            </>
+          ) : (
+            <div className={s.noGap}>✓ Нет</div>
+          )}
+        </div>
+      </div>
 
       {/* Current period */}
       {currentPeriod && (
-        <Section title="Текущий период">
-          <div style={{ fontSize: 13 }}>
-            <span>Период #{currentPeriod.periodNumber} · </span>
-            <span>{PERIOD_STATUS_LABELS[currentPeriod.status] ?? currentPeriod.status} · </span>
-            <span>Открыт: {new Date(currentPeriod.openedAt).toLocaleDateString('ru-RU')} · </span>
-            <Link to={`/periods/${currentPeriod.id}`}>Открыть →</Link>
+        <div className={s.section}>
+          <div className={s.secHead}>
+            <span className={s.secTitle}>Текущий период</span>
           </div>
-        </Section>
+          <div className={s.periodRow}>
+            <div>
+              <div className={s.periodName}>Период № {currentPeriod.periodNumber}</div>
+              <div className={s.periodSub}>
+                Открыт: {new Date(currentPeriod.openedAt).toLocaleDateString('ru-RU')}
+              </div>
+            </div>
+            <div className={s.periodActions}>
+              <StatusPill variant="gap">
+                {PERIOD_STATUS_LABELS[currentPeriod.status] ?? currentPeriod.status}
+              </StatusPill>
+              <Link className={s.openLink} to={`/periods/${currentPeriod.id}`}>
+                Открыть →
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
 
       {!currentPeriod && canAct && (
-        <Section title="Период">
+        <div className={s.section}>
+          <div className={s.secHead}>
+            <span className={s.secTitle}>Период</span>
+          </div>
           <button
-            onClick={() =>
-              openPeriod.mutate(objectId, {
-                onSuccess: (p) => navigate(`/periods/${p.id}`),
-              })
-            }
+            className={s.openPeriodBtn}
+            onClick={() => openPeriod.mutate(objectId, { onSuccess: (p) => navigate(`/periods/${p.id}`) })}
             disabled={openPeriod.isPending}
-            style={{ padding: '4px 12px', fontSize: 13 }}
           >
             {openPeriod.isPending ? 'Открываем...' : 'Открыть период'}
           </button>
-        </Section>
+        </div>
       )}
 
       {/* Active BoQ */}
       {activeBoq && (
-        <Section title="Активный BoQ">
-          <div style={{ fontSize: 13 }}>
-            Версия {activeBoq.versionNumber} · {activeBoq.itemsCount} позиций
+        <div className={s.section}>
+          <div className={s.secHead}>
+            <span className={s.secTitle}>Активный BoQ</span>
           </div>
-        </Section>
+          <div className={s.boqRow}>
+            <span className={s.boqVersion}>Версия {activeBoq.versionNumber}</span>
+            <span className={s.boqCount}>{activeBoq.itemsCount} позиций</span>
+          </div>
+        </div>
       )}
 
       {/* Participants */}
       {participants.length > 0 && (
-        <Section title="Участники">
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <div className={s.section}>
+          <div className={s.secHead}>
+            <span className={s.secTitle}>Участники</span>
+          </div>
+          <table className={s.table}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #dee2e6' }}>
-                <th style={th}>Роль</th>
-                <th style={th}>Организация</th>
-                <th style={th}>Контакт</th>
-                <th style={th}>С</th>
+              <tr>
+                <th>Роль</th>
+                <th>Организация</th>
+                <th>Контакт</th>
+                <th>С</th>
               </tr>
             </thead>
             <tbody>
               {participants.map((p, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={td}>{p.role}</td>
-                  <td style={td}>{p.orgName}</td>
-                  <td style={td}><EmptyCell value={p.contactPerson} /></td>
-                  <td style={td}>{p.validFrom}</td>
+                <tr key={i}>
+                  <td>{p.role}</td>
+                  <td>{p.orgName}</td>
+                  <td>{p.contactPerson ?? <span className={s.emptyCell}>—</span>}</td>
+                  <td className={s.monoCell}>{p.validFrom}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </Section>
+        </div>
       )}
 
       {/* History */}
-      <Section title={`История периодов (${history.length})`}>
+      <div className={s.section}>
+        <div className={s.secHead}>
+          <span className={s.secTitle}>История периодов ({history.length})</span>
+        </div>
         {history.length === 0 ? (
-          <div style={{ fontSize: 13, color: '#888' }}>Нет закрытых периодов</div>
+          <div className={s.boqRow}>
+            <span className={s.boqCount}>Нет закрытых периодов</span>
+          </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table className={s.table}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #dee2e6' }}>
-                <th style={th}>Период</th>
-                <th style={th}>Закрыт</th>
-                <th style={th}>Готовность</th>
-                <th style={th}>Прогноз (взвеш.)</th>
-                <th style={th}>Разрыв</th>
-                <th style={th}>BoQ</th>
+              <tr>
+                <th>Период</th>
+                <th>Закрыт</th>
+                <th>Готовность</th>
+                <th>Прогноз (взвеш.)</th>
+                <th>Разрыв</th>
+                <th>BoQ</th>
               </tr>
             </thead>
             <tbody>
               {history.map((h) => (
-                <tr key={h.periodId} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={td}>#{h.periodNumber}</td>
-                  <td style={td}>{h.closedAt ? new Date(h.closedAt).toLocaleDateString('ru-RU') : '—'}</td>
-                  <td style={{ ...td, minWidth: 120 }}><ProgressBar value={h.objectReadinessPct} /></td>
-                  <td style={td}><EmptyCell value={h.weightedForecastDate} /></td>
-                  <td style={td}>
-                    {h.gapFlag
-                      ? <span style={{ color: '#dc3545' }}>⚠</span>
-                      : <span style={{ color: '#28a745' }}>✓</span>}
+                <tr key={h.periodId}>
+                  <td className={s.monoCell}>#{h.periodNumber}</td>
+                  <td className={s.monoCell}>
+                    {h.closedAt ? new Date(h.closedAt).toLocaleDateString('ru-RU') : '—'}
                   </td>
-                  <td style={td}>{h.boqVersionNumber}</td>
+                  <td>
+                    <ProgressBar value={h.objectReadinessPct} />
+                  </td>
+                  <td className={`${s.monoCell} ${h.gapFlag ? s.errCell : ''}`}>
+                    {h.weightedForecastDate
+                      ? new Date(h.weightedForecastDate).toLocaleDateString('ru-RU')
+                      : '—'}
+                  </td>
+                  <td>
+                    {h.gapFlag ? (
+                      <StatusPill variant="gap">⚠</StatusPill>
+                    ) : (
+                      <span className={s.okMark}>✓</span>
+                    )}
+                  </td>
+                  <td className={s.monoCell}>{h.boqVersionNumber}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-      </Section>
+      </div>
     </div>
   );
 }
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, borderBottom: '1px solid #dee2e6', paddingBottom: 6 }}>{title}</h3>
-      {children}
-    </div>
-  );
-}
-
-function KpiTile({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ padding: '12px 16px', border: '1px solid #dee2e6', borderRadius: 6 }}>
-      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 14 }}>{children}</div>
-    </div>
-  );
-}
-
-const th: React.CSSProperties = { padding: '6px 10px', textAlign: 'left', fontWeight: 600 };
-const td: React.CSSProperties = { padding: '6px 10px', verticalAlign: 'middle' };

@@ -47,6 +47,11 @@ Jest, Supertest, Playwright, TypeScript. Тестирование: unit, integra
 5. E2E тесты — запускать в CI на каждый PR к main.
 6. Performance тесты — фиксировать baseline в отчёте, регрессия > 20% — блокер.
 
+## Вне зоны ответственности
+- Production-код фич → ccip-backend-core / ccip-backend-aux / ccip-frontend (QA тестирует, не реализует)
+- Схема БД / миграции → ccip-dba
+- CI/CD пайплайны / инфра → ccip-devops
+
 ## State Contract
 
 **Input** — read from `session-state.json` on start:
@@ -63,3 +68,5 @@ Jest, Supertest, Playwright, TypeScript. Тестирование: unit, integra
   "handoff_notes": "Падающие тесты или пробелы покрытия, требующие внимания"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

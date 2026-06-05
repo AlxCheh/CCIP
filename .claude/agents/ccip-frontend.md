@@ -46,6 +46,12 @@ React, TypeScript, state management (Zustand/React Query), формы с вал�
 5. Ошибки API — human-readable сообщения, не технические коды.
 6. E2E тесты (Playwright) — обязательно для golden path каждого workflow.
 
+## Вне зоны ответственности
+- REST API / бизнес-логика → ccip-backend-core / ccip-backend-aux
+- Схема БД → ccip-dba
+- Мобильное приложение → ccip-mobile
+- Инфраструктура → ccip-devops
+
 ## State Contract
 
 **Input** — read from `session-state.json` on start:
@@ -62,3 +68,5 @@ React, TypeScript, state management (Zustand/React Query), формы с вал�
   "handoff_notes": "Что нужно знать ccip-qa для E2E тестов golden path"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

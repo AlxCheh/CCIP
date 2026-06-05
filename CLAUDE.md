@@ -57,11 +57,16 @@ DEFAULT → direct agent of primary intent
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
 | token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
+| ccip-agent-optimizer        | по запросу: 3+ повторных ошибки агента, новый агент, рефактор CLAUDE.md |
 | general-purpose             | fallback при DEGRADED specialist       |
 
 > **session-optimizer relay (жёсткое правило):** после прогона `ccip-session-optimizer` его `Next-Session Bootstrap` выводится пользователю ДОСЛОВНО (verbatim, в code-блоке) — не пересказывать.
 >
 > *Исключение:* факт, устаревший между прогоном и концом сессии (напр. сместившийся HEAD sha), помечается отдельной строкой без правки блока.
+
+> **ccip-agent-optimizer @@ (режим выбора):** при паттерне `ccip-agent-optimizer @@` — до спавна: `Glob(".claude/agents/*.md")`, исключить защищённых (`ccip-agent-optimizer`, `ccip-claude-md-auditor`, `ccip-session-optimizer`). Затем **двухступенчатый кликабельный выбор** через `AskUserQuestion` (лимит 4 опции/меню): шаг 1 — домен (Backend&Data / UI&Arch / Security&QA / Orchestration&Docs); шаг 2 — агент внутри домена (overflow >4 — через авто-`Other`). После выбора — спавн `ccip-agent-optimizer <name>`.
+>
+> *Домены:* Backend&Data = ccip-backend-core, ccip-backend-aux, ccip-dba, ccip-devops · UI&Arch = ccip-frontend, ccip-mobile, ccip-architect · Security&QA = ccip-security, security-reviewer, ccip-qa, consistency-checker · Orchestration&Docs = ccip-doc-writer, ccip-product-owner, ccip-routing-planner, ccip-navigator-optimizer, general-purpose, token-efficiency-auditor.
 
 ## Risk Rules
 ```
@@ -185,3 +190,12 @@ Token-saving rules for file reads. Goal: cut per-session token cost 30-50% with 
 **Agent frontmatter contract:** `name`,`description`,`tools`,`model` required; `summary` (opt) = operational TL;DR <=200 chars — what the agent READS/WRITES, body size, key ADR anchors. A reader with `limit:10` routes WITHOUT reading body.
 
 **Anti-patterns (forbidden):** reading `.claude/agents/X.md` in full for a routing decision (`limit:10` suffices) · re-reading the same file without an offset change · reading architecture docs in full (`docs/architecture/*.md`) · Read to check file existence (use Glob or Bash `ls`).
+
+## §17 Test Discipline
+
+Тестируй наблюдаемое поведение / семантику, не детали реализации.
+**Base rule:** ассерт по ARIA-роли / `aria-current` / accessible-name, не по имени CSS-класса или структуре текстовых узлов.
+
+**Зелёный ≠ закрытый риск:** тест, проходящий только из-за неявного дефолта среды (напр. Vitest `css:false` → CSS-модули как identity-прокси) или DOM-детали (иконка как голый текстовый узел) — отложенная поломка. Закрывай риск семантикой, не обходом: при необходимости добавь ARIA-атрибут в компонент (улучшает и a11y, и тестируемость).
+
+**Anti-patterns (forbidden):** `toHaveClass('active')` для проверки активности (используй `aria-current`) · `getByText`, склеенный с иконкой/обёрткой (используй `getByRole` + accessible-name) · принятие зелёного теста, чья зелёность держится на дефолте тест-раннера.

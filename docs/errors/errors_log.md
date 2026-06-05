@@ -521,3 +521,77 @@ file: `docs/errors/sessions/2026-06-01T19-02-38-243Z-067fe40.md`
 - L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/project-state.md]
 - L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:apps/api/src/modules/period/period.service.ts]
 - L2_EVIDENCE_ROW_5: quote_not_in_anchor_window [source=git:067fe40:apps/api/src/modules/period/period.service.ts]
+
+### 2026-06-03T18-08-48-836Z — VIOLATIONS detected (4)
+
+file: `docs/errors/sessions/2026-06-03T18-08-48-836Z-8147527.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=git:8147527:docs/plans/2026-06-02-m08-design-pass-impl.md]
+- L2_EVIDENCE_ROW_2: quote_not_in_anchor_window [source=repo:apps/web/src/pages/ObjectDetailPage.tsx]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:apps/web/src/pages/__tests__/DashboardPage.test.tsx]
+- L2_EVIDENCE_ROW_5: quote_not_in_anchor_window [source=repo:apps/web/src/components/ProgressBar.tsx]
+
+### 2026-06-03T18-11-16-404Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-03T18-11-16-404Z-8147527.md`
+
+- FIREWALL_SELF_ATTEST: "verified" найдена в bootstrap
+- L2_EVIDENCE_ROW_3: anchor_not_found [source=git:e1756d1:apps/web/src/components/BackLink.tsx]
+- L2_EVIDENCE_ROW_6: anchor_not_found [source=repo:packages/database/src/generated/client/package.json]
+
+---
+
+## CLAUDE.md Audit — 2026-06-03
+
+**Триггер:** полный (изменения в .claude/agents/ и CLAUDE.md за последние 7 дней)
+
+**Проверки:**
+
+### Шаг 2.1 — Document Routing
+- docs/project-state.md: EXISTS
+- docs/tasks/index.md: EXISTS
+- packages/database/prisma/schema.prisma: EXISTS
+- docs/architecture/* (14 файлов): все существуют
+- Broken links: 0
+
+### Шаг 2.2 — Таблица Intent → Agent → Backup
+- Все 10 интентов имеют агентов в файловой системе
+- Все backup-агенты существуют: general-purpose, ccip-backend-core, ccip-architect
+
+### Шаг 2.2b — Frontmatter контроль
+- 19 агентов в .claude/agents/: все имеют обязательные поля (name, description, tools, model, summary)
+- summary поля: все <= 200 символов, без переносов строк
+
+### Шаг 2.3 — ADR-ссылки
+- 16 ADR файлов в docs/decisions/
+- CLAUDE.md упоминает только ADR-016 (корректно — полный индекс в docs/decisions/index.md)
+
+### Шаг 2.4 — Architecture docs
+- 14 модулей в docs/architecture/
+- Все файлы в Document Routing актуальны
+
+### Шаг 2.5 — Backup-агенты
+- [WEAK-BACKUP: ARCH] — Intent ARCH имеет backup general-purpose (рекомендуется более специальный backup, но это информационный флаг)
+
+### Шаг 3 — Быстрая проверка
+- Дублирование: нет (правила разных контекстов)
+- Мёртвые правила: нет
+- Устаревшие версии: docs/architecture_v1_0.md актуален
+- Версионирование ADR: используются корректные ссылки (ADR-001..ADR-016)
+
+**Итоги:**
+- Broken links найдено: 0
+- Новых агентов добавлено: 0
+- Удалено дублирований: 0
+- Изменения в CLAUDE.md требуются: нет
+- Флаги в errors_log: 1 ([WEAK-BACKUP: ARCH])
+
+**Last-Audit-SHA:** e2234c9d5ea52baa85050be08809bd65754a4f8f
+
+---
+
+## Agent Optimizer — ccip-doc-writer — 2026-06-03
+**Rules applied (auto-fix):** 0
+**Pending review:** 2
+**Draft diagnostics:** 0
+**Findings:** Q-04:info, C-03:info

@@ -34,13 +34,30 @@ Docker, Kubernetes, Helm, GitHub Actions / GitLab CI, Prometheus, Grafana, OpenT
 - `docs/delivery/phase-8-13-infra-pilot.md` — этап 12 production infra
 - `docs/architecture_v1_0.md` §infrastructure — общая инфра-архитектура
 
+### Ключевые ADR
+- ADR-001: PgBouncer session mode — transaction mode запрещён (ломает advisory locks и RLS)
+- ADR-005: SLA Worker — replicas:1, strategy:Recreate, Redis AOF
+
 ## Правила работы
 1. SLA Worker — ВСЕГДА `replicas: 1` и `strategy: Recreate`. Нарушение ломает SLA гарантии (ADR-005).
 2. PgBouncer — ВСЕГДА session mode. Transaction mode запрещён (ADR-001).
 3. Redis — ВСЕГДА AOF. RDB-only недостаточно для гарантий BullMQ.
 4. Новые сервисы — сначала в Docker Compose, потом в K8s манифест.
-5. Секреты — только через Kubernetes Secrets или Vault, никогда в коде или ConfigMap.
+5. Секреты — только через Kubernetes Secrets или Vault, никогда в коде или ConfigMap. Никогда не выводить/логировать значения секретов, API-ключей, env-переменных (включая `echo $SECRET`, `env | grep`, `printenv`). Для диагностики наличия: `[SET]` / `[EMPTY]`.
 6. Каждое production изменение — с runbook для rollback.
+7. Bash — разрешён только для инфра-операций: `docker compose`, `kubectl`, `helm`, `pg_dump`, `aws s3`. Деструктивные команды (удаление namespaces, drop volumes, force-delete pods) требуют явного подтверждения в prompt. Bash вне инфра-домена — запрещён.
+
+## Критерии завершения
+- Docker Compose: все сервисы `healthy` (`docker compose ps`)
+- K8s: `kubectl rollout status` — ready, 0 unavailable
+- CI/CD: pipeline green, все gate'ы пройдены
+- Runbook: содержит шаги verify + rollback
+- Бэкап: pg_dump exit 0, файл на S3, контрольная сумма записана
+
+## Вне зоны ответственности
+- Код приложения / бизнес-логика → ccip-backend-core / ccip-backend-aux
+- Схема БД / миграции → ccip-dba
+- Frontend / UI → ccip-frontend
 
 ## State Contract
 
@@ -58,3 +75,5 @@ Docker, Kubernetes, Helm, GitHub Actions / GitLab CI, Prometheus, Grafana, OpenT
   "handoff_notes": "Env-переменные, порты или конфиг, нужные ccip-backend-core/ccip-frontend"
 }
 ```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

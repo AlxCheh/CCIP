@@ -40,3 +40,27 @@ model: claude-sonnet-4-6
 3. При противоречии между Концепцией и Алгоритмом — фиксировать в `errors_log.md`, эскалировать.
 4. Приёмка модуля — только после проверки всех acceptance criteria из тест-таблицы.
 5. SLA сроки — бизнес-константы, не менять без явного решения заказчика.
+
+## Вне зоны ответственности
+- Техническая реализация / код → ccip-backend-core / ccip-backend-aux / ccip-frontend
+- Схема БД → ccip-dba
+- Архитектурные решения / ADR → ccip-architect
+
+## State Contract (CLAUDE.md §15)
+
+**Input** — read from `session-state.json` on start:
+- `task` + `intents` — бизнес-приёмка / acceptance criteria
+- `agent_outputs[*].handoff_notes` — что реализовано (для проверки по бизнес-критериям)
+
+**Output** — emit this block at the end of your response (read by PostToolUse hook):
+
+## State Update
+```json
+{
+  "summary": "≤ 3 предложения: проверенные acceptance criteria, найденные бизнес-расхождения",
+  "artifacts": ["docs/errors/errors_log.md"],
+  "handoff_notes": "Бизнес-расхождения для эскалации; критерии приёмки для ccip-qa"
+}
+```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).
