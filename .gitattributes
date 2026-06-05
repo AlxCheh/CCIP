@@ -1,0 +1,13 @@
+# Normalize line endings for text files
+* text=auto
+
+# Binary files — never apply text normalization
+*.node binary
+*.dll binary
+*.dll.node binary
+
+# Force LF for Prisma generated client text files (prevents false "modified" on Windows)
+packages/database/src/generated/**/*.js text eol=lf
+packages/database/src/generated/**/*.ts text eol=lf
+packages/database/src/generated/**/*.json text eol=lf
+packages/database/src/generated/**/schema.prisma text eol=lf
