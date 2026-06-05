@@ -71,7 +71,15 @@ ccip-agent-optimizer <agent-name>
 | `auto_fixable: false` + правило `active` | Append в `docs/proposed-agent-changes.md` |
 | Правило `draft` | Только запись в итоговый отчёт — без изменений файлов |
 
-**Block-поведение (`sev:critical`):** если есть находка `sev:critical` по правилу `active` — после записи всех находок ОСТАНОВИТЬСЯ: не применять auto-fix, вывести пользователю `BLOCK: <rule-id> — <описание>` и ждать явного подтверждения перед продолжением. Критические находки по правилам `draft` — только диагностика, block не активируется.
+**Block-поведение (`sev:critical`):** если есть находка `sev:critical` по правилу `active`:
+1. Записать все находки в `docs/proposed-agent-changes.md` (Phase 2 продолжается для non-critical находок).
+2. Выполнить Phase 3 (запись в `docs/errors/optimization-log.md`) с пометкой `**Status:** BLOCKED`.
+3. Вывести пользователю: `BLOCK: <rule-id> — <описание>` для каждой critical-находки.
+4. Остановиться и ждать явного подтверждения.
+
+**Разблокировка:** следующий вызов с текстом `ACCEPT_CRITICAL: <rule-id>` (например: `ACCEPT_CRITICAL: R-01`) означает осознанное принятие риска. При получении — записать в `docs/proposed-agent-changes.md` строку `**Status:** ACCEPTED_RISK` для данного rule-id и продолжить без повторного BLOCK для этого правила в текущем прогоне. Для каждого `ACCEPT_CRITICAL` требуется отдельное упоминание rule-id.
+
+Критические находки по правилам `draft` — только диагностика, block не активируется.
 
 **Перед записью в `docs/proposed-agent-changes.md` — проверить дубль:**
 
@@ -102,6 +110,7 @@ ccip-agent-optimizer <agent-name>
 **Draft diagnostics:** <N>
 **Findings:** <rule-id>:<severity>, ...
 **Errors:** <описание> | none
+**Status:** COMPLETED | BLOCKED
 ```
 
 ---
@@ -133,7 +142,7 @@ ccip-agent-optimizer <agent-name>
 |---|---|
 | `rules.md` не найден | ABORT: `ERROR: Rules registry not found at .claude/audit/agent-optimizer/rules.md` |
 | Target файл не найден | ABORT: `ERROR: Agent file not found: .claude/agents/<name>.md` |
-| Edit завершился с ошибкой | Записать в `docs/errors/optimization-log.md` как `ERROR`, продолжить следующую находку |
+| Edit завершился с ошибкой | Записать в `docs/errors/optimization-log.md` как `ERROR`, продолжить следующую находку. Если Edit был частичным (файл изменён до ошибки), добавить в вывод `PARTIAL_APPLY_WARNING: <agent-name> — проверьте файл вручную` |
 | `proposed-agent-changes.md` не существует | Write создать с заголовком `# Proposed Agent Changes\n\n---\n`, затем Append |
 
 ---
