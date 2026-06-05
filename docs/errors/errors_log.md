@@ -595,3 +595,49 @@ file: `docs/errors/sessions/2026-06-03T18-11-16-404Z-8147527.md`
 **Pending review:** 2
 **Draft diagnostics:** 0
 **Findings:** Q-04:info, C-03:info
+
+### 2026-06-03T20-04-25-656Z — VIOLATIONS detected (7)
+
+file: `docs/errors/sessions/2026-06-03T20-04-25-656Z-43302ad.md`
+
+- L2_EVIDENCE_ROW_1: anchor_not_found [source=git:43302ad:.claude/runtime/agent-changed-notify.js]
+- L2_EVIDENCE_ROW_2: quote_too_long(87B) [source=repo:docs/plans/2026-06-03-ccip-agent-optimizer.md]
+- L2_EVIDENCE_ROW_4: quote_too_long(151B) [source=repo:CLAUDE.md]
+- L2_EVIDENCE_ROW_5: quote_not_in_anchor_window [source=repo:docs/proposed-agent-changes.md]
+- L2_EVIDENCE_ROW_6: anchor_not_found [source=repo:.claude/runtime/agent-changed-notify.js]
+- L2_EVIDENCE_ROW_7: quote_too_long(90B) [source=repo:.claude/audit/agent-optimizer/rules.md]
+- L2_EVIDENCE_ROW_8: anchor_not_found [source=git:43302ad:.claude/runtime/agent-changed-notify.js]
+
+### 2026-06-04T04-12-00-277Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-04T04-12-00-277Z-43302ad.md`
+
+- FIREWALL_BOOTSTRAP_MISSING
+- L2_EVIDENCE_ROW_7: quote_not_in_anchor_window [source=repo:.claude/audit/agent-optimizer/rules.md]
+
+---
+
+## CLAUDE.md Audit — 2026-06-04
+
+**Триггер:** полный (изменены ccip-agent-optimizer.md + ccip-doc-writer.md + CLAUDE.md после 10 коммитов hardening)
+
+**Проверки:**
+- Document Routing: все ссылки живые (docs/project-state.md, docs/tasks/index.md, docs/architecture/*, schema.prisma, ADR-*)
+- Intent → Agent → Backup: все агенты соответствуют реальным файлам в каталоге .claude/agents/
+- Auxiliary Agents: триггеры актуальны для ccip-agent-optimizer (security guards v1.1 не требуют изменения trigger'а)
+- Frontmatter agents: все обязательные поля (name, description, model, tools, summary ≤200 chars) в норме
+- Backup-агенты: все разумны (SECURITY → ccip-architect валиден)
+- ADR-ссылки: ADR-016 упомянут в token-efficiency контексте
+- §15 State Contract: структура сохранена, инварианты intact
+- §16 Reading Discipline: структура сохранена, инварианты intact
+- Дублирование: не найдено (Risk-правила в разных местах — структурно разные)
+- Устаревшие версионные ссылки: v1_0 актуален (docs/architecture_v1_0.md существует)
+
+**Результат:**
+- Broken links найдено: 0
+- Новых агентов добавлено: 0
+- Удалено дублирований: 0
+- Обнаружены проблемы: 0
+- Изменения в CLAUDE.md требуются: нет
+
+**Last-Audit-SHA:** 4925c2025ffb9f57827270d48a8459b6a0d4e411
