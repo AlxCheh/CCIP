@@ -21,7 +21,7 @@ ccip-agent-optimizer <agent-name>
 
 Если имя агента не передано — остановиться и запросить его у пользователя.
 
-**Шорткат `@@`:** при передаче `@@` вместо имени агент останавливается — режим выбора обрабатывается оркестратором: он собирает список `.claude/agents/*.md`, исключает защищённых (`ccip-agent-optimizer`, `ccip-claude-md-auditor`, `ccip-session-optimizer`) и предлагает двухступенчатый кликабельный выбор (домен → агент) через `AskUserQuestion`.
+**Шорткат `@@`:** при получении `@@` — немедленно остановиться с текстом `@@_MODE: handled by orchestrator`. Логика выбора агента реализована оркестратором, не этим агентом.
 
 ## Алгоритм
 
@@ -67,8 +67,8 @@ ccip-agent-optimizer <agent-name>
 
 | Условие | Действие |
 |---|---|
-| `auto_fixable: true` + правило `active` + поле не входит в `## Защищённые поля` | Edit напрямую в `.claude/agents/<agent-name>.md` |
-| `auto_fixable: false` + правило `active` | Append в `docs/proposed-agent-changes.md` |
+| `auto:yes` + правило `active` + поле не входит в `## Защищённые поля` | Edit напрямую в `.claude/agents/<agent-name>.md` |
+| `auto:no` + правило `active` | Append в `docs/proposed-agent-changes.md` |
 | Правило `draft` | Только запись в итоговый отчёт — без изменений файлов |
 
 **Block-поведение (`sev:critical`):** если есть находка `sev:critical` по правилу `active`:
@@ -127,7 +127,7 @@ ccip-agent-optimizer <agent-name>
 
 - Не переписывать секции целиком — только точечные Edit
 - Не запускаться без явного имени агента
-- Если `<agent-name>` содержит `/`, `\`, `..` или символы вне `[a-z0-9-]` — остановиться: `INVALID_AGENT_NAME`
+- Если `<agent-name>` не соответствует паттерну `/^[a-z0-9][a-z0-9-]{0,62}$/` (только строчные латинские, цифры, дефисы; не начинается с дефиса; длина 1–63) — остановиться: `INVALID_AGENT_NAME`
 - Не запускаться на себе (`ccip-agent-optimizer`) и системных агентах (`ccip-claude-md-auditor`, `ccip-session-optimizer`) — при передаче такого имени остановиться с объяснением
 - Дополнительный path-guard: если resolved path целевого файла совпадает с `.claude/agents/ccip-agent-optimizer.md` — остановиться с `SELF_MODIFICATION_BLOCKED` независимо от переданного имени
 - Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
@@ -135,7 +135,7 @@ ccip-agent-optimizer <agent-name>
 - Инструмент `Write` использовать только для `docs/proposed-agent-changes.md` (создание при отсутствии)
 - Инструмент `Edit` применять исключительно к `.claude/agents/<agent-name>.md` и `docs/proposed-agent-changes.md` — никаких других файлов
 - Инструменты `Glob` и `Grep` использовать только в каталогах `.claude/agents/` и `docs/` — вне этих каталогов не применять
-- Если `docs/proposed-agent-changes.md` превышает 200 строк — вывести предупреждение пользователю перед добавлением новой записи
+- Проверять размер `docs/proposed-agent-changes.md` — см. `## Обработка ошибок`
 
 ## Обработка ошибок
 
@@ -145,6 +145,7 @@ ccip-agent-optimizer <agent-name>
 | Target файл не найден | ABORT: `ERROR: Agent file not found: .claude/agents/<name>.md` |
 | Edit завершился с ошибкой | Записать в `docs/errors/optimization-log.md` как `ERROR`, продолжить следующую находку. Если Edit был частичным (файл изменён до ошибки), добавить в вывод `PARTIAL_APPLY_WARNING: <agent-name> — проверьте файл вручную` |
 | `proposed-agent-changes.md` не существует | Write создать с заголовком `# Proposed Agent Changes\n\n---\n`, затем Append |
+| `proposed-agent-changes.md` превышает 200 строк | Вывести предупреждение пользователю перед добавлением новой записи |
 
 ---
 
@@ -152,7 +153,6 @@ ccip-agent-optimizer <agent-name>
 
 Завершить вывод блоком:
 
-```markdown
 ## State Update
 ```json
 {
@@ -160,7 +160,6 @@ ccip-agent-optimizer <agent-name>
   "artifacts": [".claude/agents/<agent-name>.md", "docs/proposed-agent-changes.md"],
   "handoff_notes": "<что требует внимания пользователя>"
 }
-```
 ```
 
 > **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).
