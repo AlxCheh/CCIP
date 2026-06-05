@@ -17,6 +17,14 @@
 **Errors:** <описание> | none
 ```
 
+## Agent Optimizer — ccip-backend-aux — 2026-06-05
+**Rules applied (auto-fix):** 0
+**Pending review:** 5
+**Draft diagnostics:** 1 (R-03)
+**Findings:** R-01:critical, R-06:critical, R-05:warning, R-02:info, G-04:info, R-03:warning(draft)
+**Errors:** none
+**BLOCK:** R-01, R-06 — critical findings, ожидается явное подтверждение пользователя
+
 ---
 
 ## Agent Optimizer — ccip-backend-core — 2026-06-04
