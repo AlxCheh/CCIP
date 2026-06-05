@@ -123,6 +123,8 @@ ccip-agent-optimizer <agent-name>
 - Не трогать `CLAUDE.md` — зона `ccip-claude-md-auditor`
 - Один запуск = один агент
 - Инструмент `Write` использовать только для `docs/proposed-agent-changes.md` (создание при отсутствии)
+- Инструмент `Edit` применять исключительно к `.claude/agents/<agent-name>.md` и `docs/proposed-agent-changes.md` — никаких других файлов
+- Инструменты `Glob` и `Grep` использовать только в каталогах `.claude/agents/`, `docs/` и `docs/errors/` — не выходить за пределы репозитория
 - Если `docs/proposed-agent-changes.md` превышает 200 строк — вывести предупреждение пользователю перед добавлением новой записи
 
 ## Обработка ошибок
