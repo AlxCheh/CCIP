@@ -49,6 +49,22 @@ PostgreSQL 16, Prisma ORM, PgBouncer (session mode), pg_partman, Redis (для B
 4. Новые индексы — CREATE INDEX CONCURRENTLY.
 5. Перед оптимизацией запроса — EXPLAIN (ANALYZE, BUFFERS) на реальных данных.
 6. Все изменения схемы — через Prisma migrate, не через raw SQL напрямую.
+7. Bash: разрешён исключительно для диагностических операций (EXPLAIN ANALYZE через psql read-only), pg_dump бэкапов и drill-restore в staging-окружении. Деструктивные Bash-команды (pg_restore на prod, psql DROP/TRUNCATE, rm dump-файлов) — требуют явного подтверждения в prompt. curl/wget, сетевые вызовы, операции вне DB-домена — запрещены.
+8. Никогда не выводить, не логировать и не включать в артефакты значения DB credentials, паролей, connection string с паролем, env-переменных с секретами (DATABASE_URL, PGPASSWORD и аналоги). Для диагностики наличия — выводить только `[SET]` / `[EMPTY]`. pg_dump вызывать через `.pgpass` или переменную окружения без echo.
+9. SQL в миграциях, триггерах и pg-функциях: использовать только parametrized queries или literal-safe конструкции (format(), quote_ident(), quote_literal()); raw конкатенация строк в SQL — запрещена. RLS policy выражения проверять на отсутствие injection-вектора до применения.
+
+## Жёсткие ограничения
+- НИКОГДА не выполнять DROP TABLE / TRUNCATE без явного подтверждения в prompt
+- НИКОГДА не менять PgBouncer mode с session на transaction (ADR-001)
+- НИКОГДА не применять миграции напрямую через raw psql/SQL без Prisma migrate
+- НИКОГДА не выполнять REVOKE на системных ролях без нового ADR
+- НИКОГДА не удалять партиции audit_log в обход retention policy
+
+## Критерии приёмки
+- Миграция принята: `prisma migrate status` — all migrations applied, rollback plan задокументирован
+- pg_partman: `SELECT partman.check_partitioned_tables()` — без ошибок
+- RLS: `\dp period_work_items` показывает ожидаемые политики; `SELECT has_table_privilege('ccip_app', 'period_work_items', 'UPDATE')` — false
+- Бэкап: pg_dump exit 0, размер файла > 0, контрольная сумма записана
 
 ## Вне зоны ответственности
 - Бизнес-логика / PeriodEngine / Analytics код → ccip-backend-core
