@@ -45,7 +45,14 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 6. Read архитектурных и алгоритмических файлов: сначала `limit: 30` (структура заголовков), затем `offset` + `limit` по нужному разделу. Никогда не читать файл целиком.
 7. Bash-операции: никогда не выводить и не логировать значения env-переменных, токенов, API-ключей и паролей. При выводе статуса переменной использовать паттерн `[SET]` / `[EMPTY]` — не само значение.
 8. Входные данные всех endpoint'ов — валидировать через class-validator/Zod DTO на сервере; использовать Prisma parametrized queries; raw-конкатенация SQL и eval — запрещены. Client-side валидация не заменяет server-side.
-9. Bash scope: разрешены только `pnpm build`, `pnpm test`, `pnpm lint` и `prisma migrate`. deploy, curl/wget, destructive `rm`, прямые сетевые вызовы — запрещены.
+9. Bash scope — см. блок ниже.
+
+## Bash Scope
+
+| Разрешено | Запрещено |
+|---|---|
+| `pnpm build`, `pnpm test`, `pnpm lint` | `deploy`, `curl`, `wget`, сетевые вызовы |
+| `prisma migrate` | destructive `rm -rf`, работа с секретами/env |
 
 ## Критерии успеха
 - getCumulativeFactsBatch: p99 < 100 ms при N ≤ 500 позиций
@@ -73,7 +80,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 {
   "summary": "≤ 3 предложения: что реализовано, какие файлы изменены",
   "artifacts": ["apps/api/src/period/period.service.ts"],
-  "handoff_notes": "Что нужно знать ccip-dba (если schema) или ccip-qa (если тесты)"
+  "handoff_notes": "ccip-dba: {tables_changed: [], migration_name}; ccip-qa: {modules_touched: [], test_gaps: []}"
 }
 ```
 
