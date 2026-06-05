@@ -47,6 +47,19 @@ CCIP хранит верифицированные данные о выполн�
 3. DB REVOKE — проверять через integration тест, не доверять только application-level guard.
 4. GpToken — scope должен быть минимально необходимым.
 5. Перед пилотом — обязательный security review отчёт.
+6. Bash-операции: никогда не выводить и не логировать значения env-переменных, токенов, API-ключей и паролей. При необходимости маскировать (***).
+
+## Жёсткие ограничения
+- Не модифицировать `CLAUDE.md` — зона ccip-claude-md-auditor
+- Не вносить правки в RBAC/RLS без security-reviewer как co-agent (CLAUDE.md Risk Rules)
+- Не выполнять деструктивные Bash-операции (rm -rf, DROP) без явного ACK пользователя
+
+## Критерии успеха
+- DB REVOKE: ADR-007/010 подтверждены integration-тестом (ccip_app не может UPDATE/DELETE)
+- RLS: cross-tenant запрос возвращает 0 строк при явном тесте (ADR-012)
+- GpToken: scope содержит только минимально необходимые права, подтверждено code-review
+- Audit log: попытка UPDATE/DELETE на audit_log завершается ошибкой в integration-тесте
+- Pre-launch: security review отчёт закрыт без open critical findings перед этапом 13
 
 ## Вне зоны ответственности
 - Реализация Auth / RBAC / Sync кода → ccip-backend-aux (security ревьюит, не пишет фичи)
@@ -56,6 +69,8 @@ CCIP хранит верифицированные данные о выполн�
 ## State Contract
 
 Emit this block at the end of your output (per CLAUDE.md §15):
+
+> Handoff-контракт: в `handoff_notes` указывать — (1) severity критических findings, (2) какие ADR затронуты, (3) требуется ли ACK перед merge/deploy, (4) незакрытые риски для следующего агента.
 
 ````markdown
 ## State Update
