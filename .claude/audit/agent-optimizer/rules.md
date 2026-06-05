@@ -1,5 +1,9 @@
 # Agent Optimizer Rules Registry
 
+**rules_version:** 1.2
+**compatible_agent_versions:** 1.1+
+**last_updated:** 2026-06-05
+
 Реестр правил для `ccip-agent-optimizer`. Агент читает этот файл при каждом запуске.
 Только правила со статусом `active` применяются. `draft` — только диагностика. `deprecated` — игнорировать.
 
