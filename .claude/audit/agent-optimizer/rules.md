@@ -1,6 +1,6 @@
 # Agent Optimizer Rules Registry
 
-**rules_version:** 1.2
+**rules_version:** 1.3
 **compatible_agent_versions:** 1.1+
 **last_updated:** 2026-06-05
 
@@ -16,8 +16,8 @@
 Обновлять при каждом изменении статуса правила. Агент читает этот список для точечной загрузки активных правил.
 
 ```
-active:  S-01 S-02 S-03 S-04 Q-01 Q-02 Q-03 Q-04 C-01 C-02 C-03 R-01 R-02 R-04 R-05 R-06 G-01 G-02 G-03 G-04 G-05
-draft:   R-03
+active:  S-01 S-02 S-03 S-04 Q-01 Q-02 Q-03 Q-04 C-01 C-02 C-03 R-01 R-02 R-03 R-04 R-05 R-06 G-01 G-02 G-03 G-04 G-05
+draft:   (none)
 deprecated: (none)
 ```
 
@@ -148,7 +148,7 @@ deprecated: (none)
 
 ### R-03
 **Категория:** safety
-**Status:** draft
+**Status:** active
 **Auto-fix:** no
 **Проверка:** (a) [универсально] каждый write-capable агент (Write/Edit/Bash) имеет явный критерий завершения/стоп-условие;
 (b) [условно] ТОЛЬКО если агент выполняет повторяемые stateful/внешние операции (запись в БД, append в лог/файл, API-вызовы, publish в очередь) — требуется idempotency-guard (Grep-before-append, «если существует — пропустить», upsert). Для агентов с не-stateful правками (UI-компоненты) подпроверка (b) не применяется
