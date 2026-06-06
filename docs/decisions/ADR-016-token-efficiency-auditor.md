@@ -1,6 +1,6 @@
 ---
 adr: ADR-016
-status: Принято rev 3
+status: Принято rev 2
 impl_anchors:
   - .claude/agents/token-efficiency-auditor.md
   - .claude/audit/
@@ -13,7 +13,7 @@ impl_anchors:
 
 # ADR-016 — Token-Efficiency Auditor Agent
 
-**Статус:** Принято rev 3 (уточнён 2026-06-06 — добавлены baseline.lock, rules-changelog.jsonl, agent-optimizer/, antipatterns/ дир и version поле в agent frontmatter)
+**Статус:** Принято rev 2 (уточнён 2026-05-25 — см. «Уточнение (2026-05-25)»)
 **Закрывает:** Открытые вопросы из `docs/proposals/token-efficiency-auditor-draft.md` (п. 3, 5, 6)
 
 ## Решение
@@ -40,15 +40,12 @@ Per-session token cost является управляемым ресурсом 
 │   ├── active.yaml          # боевой набор R-001..R-NNN
 │   ├── quarantine.yaml      # испытательный срок 3 сессии; quarantined rules несут флаг requires_transcript_access
 │   ├── deprecated.yaml      # архив с причинами
-│   ├── baseline.yaml        # immutable seed (откат при катастрофе)
-│   └── baseline.lock        # lock-файл: hash последней применённой baseline
+│   └── baseline.yaml        # immutable seed (откат при катастрофе)
 ├── metrics/
 │   ├── history.jsonl        # append-only, 1 строка = 1 сессия
-│   ├── rolling-30.json      # производный агрегат
-│   └── rules-changelog.jsonl  # лог lifecycle-переходов правил
-├── agent-optimizer/         # рабочие артефакты ccip-agent-optimizer
+│   └── rolling-30.json      # производный агрегат
 ├── antipatterns/
-│   └── AP-NNN.md            # атомарные карточки (создаются агентом по мере обнаружения)
+│   └── AP-NNN.md            # атомарные карточки
 ├── evidence/
 │   └── <session-id>.json    # сырые findings + token-attribution
 └── reports/
@@ -58,7 +55,8 @@ Per-session token cost является управляемым ресурсом 
 ### YAML агента (`.claude/agents/token-efficiency-auditor.md`)
 
 Frontmatter-схема CCIP (`docs/schemas/agent-frontmatter.schema.json`) закрыта
-(`additionalProperties: false`) и допускает поля: `name / description / tools / model / summary / version` (version — опциональный semver, напр. `1.1`). Поэтому frontmatter — канонический:
+(`additionalProperties: false`) и допускает только `name / description / tools /
+model / summary`. Поэтому frontmatter — канонический:
 
 ```yaml
 name: token-efficiency-auditor

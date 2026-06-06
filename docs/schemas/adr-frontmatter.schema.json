@@ -12,7 +12,7 @@
     },
     "status": {
       "type": "string",
-      "enum": ["Draft", "Принято", "Принято rev 2", "Принято rev 3", "Superseded", "Deprecated"]
+      "enum": ["Draft", "Принято", "Принято rev 2", "Superseded", "Deprecated"]
     },
     "impl_anchors": {
       "type": "array",
