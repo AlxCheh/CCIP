@@ -11,7 +11,8 @@
  *   6. Dependency validation  — warn if handoff_notes missing before dependent step
  *
  * Usage:
- *   node execute-dag.js                      # run all pending steps
+ *   node execute-dag.js                      # run all pending steps (permission checks enabled)
+ *   node execute-dag.js --skip-permissions   # allow agents Write/Bash (was: hardcoded)
  *   node execute-dag.js --dry-run            # print plan, no subprocess calls
  *   node execute-dag.js --resume             # skip done, reset failed/running
  *   node execute-dag.js --resume --dry-run   # preview resume plan
@@ -36,10 +37,11 @@ const AGENTS_DIR = path.join(ROOT, '.claude/agents');
 const TIMEOUT_MS = 5 * 60 * 1000;
 const RETRY_BASE = 2000;             // ms — base for exponential backoff
 
-const DRY_RUN = process.argv.includes('--dry-run');
-const RESUME  = process.argv.includes('--resume');
-const CONFIRM = process.argv.includes('--confirm'); // show DAG + ask before run
-const AUTO    = process.argv.includes('--auto');    // skip DAG display entirely
+const DRY_RUN     = process.argv.includes('--dry-run');
+const RESUME      = process.argv.includes('--resume');
+const CONFIRM     = process.argv.includes('--confirm'); // show DAG + ask before run
+const AUTO        = process.argv.includes('--auto');    // skip DAG display entirely
+const SKIP_PERMS  = process.argv.includes('--skip-permissions');
 
 const MAX_RESUMES = 5;    // circuit breaker: --resume blocked after this many attempts
 const CONTEXT_WARN_BYTES = 50_000; // ~12k tokens; warn when previous agent outputs exceed this
@@ -196,7 +198,9 @@ function runStepAsync(state, step) {
   }
 
   return new Promise(resolve => {
-    const proc = cp.spawn('claude', ['--print', '--dangerously-skip-permissions'], {
+    const claudeArgs = ['--print'];
+    if (SKIP_PERMS) claudeArgs.push('--dangerously-skip-permissions');
+    const proc = cp.spawn('claude', claudeArgs, {
       cwd: ROOT,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -296,6 +300,14 @@ async function main() {
     process.exit(1);
   }
   if (warnings.length) console.log();
+
+  // ── permission mode ──────────────────────────────────────────────────────────
+  if (!SKIP_PERMS && !DRY_RUN) {
+    console.warn(
+      '[execute-dag] ℹ  Running with permission checks enabled. ' +
+      'Add --skip-permissions to bypass (required for agents needing Write/Bash).'
+    );
+  }
 
   // ── checkpoint / resume ───────────────────────────────────────────────────────
   const doneSteps    = state.dag.filter(s => s.status === 'done');
