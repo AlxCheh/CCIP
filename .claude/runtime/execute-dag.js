@@ -41,6 +41,8 @@ const RESUME  = process.argv.includes('--resume');
 const CONFIRM = process.argv.includes('--confirm'); // show DAG + ask before run
 const AUTO    = process.argv.includes('--auto');    // skip DAG display entirely
 
+const MAX_RESUMES = 5;    // circuit breaker: --resume blocked after this many attempts
+
 // ── atomic state I/O ──────────────────────────────────────────────────────────
 
 const readState = () => JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
@@ -294,6 +296,17 @@ async function main() {
   }
 
   if (RESUME) {
+    // ── circuit breaker: limit resume attempts ─────────────────────────────────
+    const resumeCount = (state.resume_count || 0) + 1;
+    if (resumeCount > MAX_RESUMES) {
+      console.error(
+        `[execute-dag] ✗ circuit breaker: --resume limit (${MAX_RESUMES}) reached for session ${state.session_id}.\n` +
+        `  Investigate root cause before retrying. Reset resume_count in session-state.json to override.`
+      );
+      process.exit(1);
+    }
+    state.resume_count = resumeCount;
+
     if (blockedSteps.length) {
       console.log(`[execute-dag] ↻ resetting ${blockedSteps.length} interrupted step(s) → pending`);
       blockedSteps.forEach(({ step }) => { state.dag.find(s => s.step === step).status = 'pending'; });

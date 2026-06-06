@@ -51,6 +51,11 @@
     },
     "status":     { "type": "string", "enum": ["init", "planning", "executing", "done", "blocked"] },
     "started_at": { "type": "string" },
+    "resume_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Сколько раз --resume был применён к этой сессии; circuit breaker при ≥ MAX_RESUMES"
+    },
     "observations": {
       "type": "array",
       "items": {
