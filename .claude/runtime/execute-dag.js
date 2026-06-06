@@ -67,13 +67,15 @@ function updateState(fn) {
 // Strips lines that look like prompt-injection attempts before injecting
 // handoff_notes from a previous agent into the next agent's prompt.
 const INJECTION_RE = /^\s*(ignore|disregard|forget|override|system\s*:|you\s+are\s+now|new\s+instruction|act\s+as\b)/i;
+// system: anywhere in the line — primary mid-line injection vector (audit C-05)
+const INLINE_SYSTEM_RE = /\bsystem\s*:/i;
 
 function sanitizeHandoff(notes) {
   if (!notes) return '—';
   if (typeof notes === 'object') return JSON.stringify(notes, null, 2);
   const cleaned = String(notes)
     .split('\n')
-    .filter(line => !INJECTION_RE.test(line))
+    .filter(line => !INJECTION_RE.test(line) && !INLINE_SYSTEM_RE.test(line))
     .join('\n')
     .trim();
   return cleaned || '—';
@@ -396,4 +398,8 @@ async function main() {
   console.log(`\n[execute-dag] ✓ all steps done — session ${readState().session_id}`);
 }
 
-main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
+if (require.main === module) {
+  main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
+} else {
+  module.exports = { sanitizeHandoff };
+}
