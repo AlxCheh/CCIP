@@ -16,6 +16,7 @@ const ACTIVE = path.join(RULES, 'active.yaml');
 const QUAR   = path.join(RULES, 'quarantine.yaml');
 const DEPR   = path.join(RULES, 'deprecated.yaml');
 const DELTA  = path.join(RULES, 'rules-delta.json');
+const BASELINE = path.join(RULES, 'baseline.yaml');
 const CHANGELOG = path.join(root, '.claude/audit/metrics/rules-changelog.jsonl');
 const FILES = [ACTIVE, QUAR, DEPR, DELTA, CHANGELOG];
 
@@ -30,28 +31,47 @@ function run() {
   const r = cp.spawnSync(process.execPath, [SCRIPT], { encoding: 'utf-8' });
   return { status: r.status, out: (r.stdout || '') + (r.stderr || '') };
 }
-// fixtures keeping all 17 baseline rules partitioned across the working sets
 const activeFlow = (ids) => '# active fixture\nversion: 1\nsynced_from_baseline: 2026-05-23\nactive:\n' +
   ids.map(id => `  - { id: ${id}, status: active, hit_count: 0, precision: null, sessions_observed: 0 }`).join('\n') + '\n';
 const quarBlock = (entries) => '# quarantine fixture\nversion: 1\nquarantine:\n' +
   entries.map(e => `  - id: ${e.id}\n    status: quarantine\n    requires_transcript_access: ${!!e.tr}\n    sessions_in_quarantine: ${e.s || 0}\n    hit_count: 0\n    precision: ${e.p == null ? 'null' : e.p}`).join('\n\n') + '\n';
-const ACTIVE_11 = ['R-002', 'R-003', 'R-004', 'R-005', 'R-006', 'R-008', 'R-010', 'R-011', 'R-013', 'R-014', 'R-015'];
-const QUAR_6 = [
-  { id: 'R-001', s: 3, p: 0.8 },
-  { id: 'R-007', tr: true },
-  { id: 'R-009', tr: true },
-  { id: 'R-012', tr: true },
-  { id: 'R-016', s: 1, p: 1.0 },
-  { id: 'R-017', s: 1, p: 1.0 },
-];
 const parse = (p) => require('gray-matter')('---\n' + fs.readFileSync(p, 'utf-8') + '\n---\n').data;
 const ids = (list) => list.map(e => e.id);
+
+// Fixtures are derived from baseline.yaml so adding a new baseline rule needs NO
+// edit here (the old hardcoded ACTIVE_11/QUAR_6 lists drifted and broke on R-016/R-017).
+// Partition rule:
+//   quarantine = every transcript-gated rule + PROMOTABLE (the one test 1 promotes)
+//   active     = everything else
+// Scenario anchors the partition must satisfy (asserted below — fail loud, not silent):
+//   PROMOTABLE    in quarantine, NOT transcript-gated → test 1 promote succeeds
+//   DEPRECATABLE  in active                            → tests 2/3 (deprecate + not-in-quarantine)
+//   ≥1 transcript-gated rule in quarantine            → test 4 G5 promote rejection
+const PROMOTABLE = 'R-001';
+const DEPRECATABLE = 'R-002';
+function loadBaselinePartition() {
+  const rules = (parse(BASELINE).rules || []).map(r => ({ id: r.id, tr: r.requires_transcript_access === true }));
+  const byId = (id) => rules.find(r => r.id === id);
+  assert.ok(byId(PROMOTABLE) && !byId(PROMOTABLE).tr,
+    `baseline anchor broken: ${PROMOTABLE} must exist and be non-transcript-gated`);
+  assert.ok(byId(DEPRECATABLE) && !byId(DEPRECATABLE).tr,
+    `baseline anchor broken: ${DEPRECATABLE} must exist and be non-transcript-gated`);
+  assert.ok(rules.some(r => r.tr),
+    'baseline anchor broken: need ≥1 transcript-gated rule for the G5 rejection scenario');
+
+  const quarIds = new Set([PROMOTABLE, ...rules.filter(r => r.tr).map(r => r.id)]);
+  const activeIds = rules.filter(r => !quarIds.has(r.id)).map(r => r.id);
+  const quarEntries = rules.filter(r => quarIds.has(r.id)).map(r =>
+    r.id === PROMOTABLE ? { id: r.id, s: 3, p: 0.8 } : { id: r.id, tr: true });
+  return { activeIds, quarEntries };
+}
+const { activeIds: ACTIVE_IDS, quarEntries: QUAR_ENTRIES } = loadBaselinePartition();
 
 test('promotes a quarantine rule into active and validates clean', () => {
   const restore = backup();
   try {
-    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_11));
-    fs.writeFileSync(QUAR, quarBlock(QUAR_6));
+    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_IDS));
+    fs.writeFileSync(QUAR, quarBlock(QUAR_ENTRIES));
     fs.writeFileSync(DEPR, '# dep\nversion: 1\ndeprecated: []\n');
     fs.writeFileSync(DELTA, JSON.stringify({ status: 'proposed', promote: [{ id: 'R-001', from: 'quarantine', to: 'active', reason: 'test' }], deprecate: [] }));
     const r = run();
@@ -67,8 +87,8 @@ test('promotes a quarantine rule into active and validates clean', () => {
 test('deprecates an active rule into deprecated', () => {
   const restore = backup();
   try {
-    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_11));
-    fs.writeFileSync(QUAR, quarBlock(QUAR_6));
+    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_IDS));
+    fs.writeFileSync(QUAR, quarBlock(QUAR_ENTRIES));
     fs.writeFileSync(DEPR, '# dep\nversion: 1\ndeprecated: []\n');
     fs.writeFileSync(DELTA, JSON.stringify({ status: 'proposed', promote: [], deprecate: [{ id: 'R-002', from: 'active', to: 'deprecated', reason: 'G9: stale' }] }));
     const r = run();
@@ -81,8 +101,8 @@ test('deprecates an active rule into deprecated', () => {
 test('rejects promote of a rule not in quarantine', () => {
   const restore = backup();
   try {
-    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_11));
-    fs.writeFileSync(QUAR, quarBlock(QUAR_6));
+    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_IDS));
+    fs.writeFileSync(QUAR, quarBlock(QUAR_ENTRIES));
     fs.writeFileSync(DEPR, '# dep\nversion: 1\ndeprecated: []\n');
     fs.writeFileSync(DELTA, JSON.stringify({ promote: [{ id: 'R-002', from: 'quarantine', to: 'active' }], deprecate: [] }));
     const r = run();
@@ -95,8 +115,8 @@ test('rejects promote of a rule not in quarantine', () => {
 test('rejects promote of a transcript-gated rule (G5)', () => {
   const restore = backup();
   try {
-    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_11));
-    fs.writeFileSync(QUAR, quarBlock(QUAR_6));
+    fs.writeFileSync(ACTIVE, activeFlow(ACTIVE_IDS));
+    fs.writeFileSync(QUAR, quarBlock(QUAR_ENTRIES));
     fs.writeFileSync(DEPR, '# dep\nversion: 1\ndeprecated: []\n');
     fs.writeFileSync(DELTA, JSON.stringify({ promote: [{ id: 'R-007', from: 'quarantine', to: 'active' }], deprecate: [] }));
     const r = run();
