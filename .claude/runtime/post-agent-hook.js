@@ -184,11 +184,17 @@ function run(raw) {
 
   // ── observations ───────────────────────────────────────────────────────────
   if (!state.observations) state.observations = [];
+
+  // Resolve dag_step: use step.step NUMBER (1-based) not array index (audit C-03).
+  const currentDagStep = Array.isArray(state.dag) && state.dag.length > 0
+      ? (state.dag[state.current_step ?? 0]?.step ?? null)
+      : null;
+
   state.observations.push({
     agent,
     session:        state.session_id || '',
     written_at:     new Date().toISOString(),
-    dag_step:       state.current_step ?? null,
+    dag_step:       currentDagStep,
     outcome,
     context_tokens: tokens,
     reason:         outcome === 'success' ? '' : (parsed?.handoff_notes?.slice(0, 200) || ''),
