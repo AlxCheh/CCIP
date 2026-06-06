@@ -46,17 +46,19 @@ DEFAULT → direct agent of primary intent
 | SECURITY | ccip-security      | ccip-architect    |
 | DOC      | ccip-doc-writer    | general-purpose   |
 
-## Auxiliary Agents (auto-triggered, not via Intent table)
+## Auxiliary Agents (condition/request-triggered, not via Intent table)
+> Триггеры — оркестрационная конвенция, не машинный enforcement: «по запросу» = ручной вызов, остальные срабатывают по условию (risk/intents/фраза-триггер). Хук НЕ авто-спавнит этих агентов.
 | Agent                       | Trigger                                |
 |-----------------------------|----------------------------------------|
 | security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
 | ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
-| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md §3–§6 или docs/tasks/index.md |
+| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md (Intent table, Agent Selection, Document Routing, Constraints) или docs/tasks/index.md |
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
-| token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
+| token-efficiency-auditor    | T-01,T-02,T-06..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike; T-03/T-04/T-05 в quarantine — нет API для raw token attribution; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
+| red-team-auditor            | по запросу: pre-pilot аудит, обнаружение архитектурного дрейфа, деструктивная проверка согласованности |
 | ccip-agent-optimizer        | по запросу: 3+ повторных ошибки агента, новый агент, рефактор CLAUDE.md |
 | general-purpose             | fallback при DEGRADED specialist       |
 

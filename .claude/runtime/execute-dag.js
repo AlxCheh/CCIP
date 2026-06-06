@@ -11,7 +11,8 @@
  *   6. Dependency validation  — warn if handoff_notes missing before dependent step
  *
  * Usage:
- *   node execute-dag.js                      # run all pending steps
+ *   node execute-dag.js                      # run all pending steps (permission checks enabled)
+ *   node execute-dag.js --skip-permissions   # allow agents Write/Bash (was: hardcoded)
  *   node execute-dag.js --dry-run            # print plan, no subprocess calls
  *   node execute-dag.js --resume             # skip done, reset failed/running
  *   node execute-dag.js --resume --dry-run   # preview resume plan
@@ -36,10 +37,14 @@ const AGENTS_DIR = path.join(ROOT, '.claude/agents');
 const TIMEOUT_MS = 5 * 60 * 1000;
 const RETRY_BASE = 2000;             // ms — base for exponential backoff
 
-const DRY_RUN = process.argv.includes('--dry-run');
-const RESUME  = process.argv.includes('--resume');
-const CONFIRM = process.argv.includes('--confirm'); // show DAG + ask before run
-const AUTO    = process.argv.includes('--auto');    // skip DAG display entirely
+const DRY_RUN     = process.argv.includes('--dry-run');
+const RESUME      = process.argv.includes('--resume');
+const CONFIRM     = process.argv.includes('--confirm'); // show DAG + ask before run
+const AUTO        = process.argv.includes('--auto');    // skip DAG display entirely
+const SKIP_PERMS  = process.argv.includes('--skip-permissions');
+
+const MAX_RESUMES = 5;    // circuit breaker: --resume blocked after this many attempts
+const CONTEXT_WARN_BYTES = 50_000; // ~12k tokens; warn when previous agent outputs exceed this
 
 // ── atomic state I/O ──────────────────────────────────────────────────────────
 
@@ -67,13 +72,15 @@ function updateState(fn) {
 // Strips lines that look like prompt-injection attempts before injecting
 // handoff_notes from a previous agent into the next agent's prompt.
 const INJECTION_RE = /^\s*(ignore|disregard|forget|override|system\s*:|you\s+are\s+now|new\s+instruction|act\s+as\b)/i;
+// system: anywhere in the line — primary mid-line injection vector (audit C-05)
+const INLINE_SYSTEM_RE = /\bsystem\s*:/i;
 
 function sanitizeHandoff(notes) {
   if (!notes) return '—';
   if (typeof notes === 'object') return JSON.stringify(notes, null, 2);
   const cleaned = String(notes)
     .split('\n')
-    .filter(line => !INJECTION_RE.test(line))
+    .filter(line => !INJECTION_RE.test(line) && !INLINE_SYSTEM_RE.test(line))
     .join('\n')
     .trim();
   return cleaned || '—';
@@ -82,11 +89,8 @@ function sanitizeHandoff(notes) {
 // ── agent loading ─────────────────────────────────────────────────────────────
 
 function loadAgent(name) {
-  for (const dir of [AGENTS_DIR, path.join(ROOT, '.claude', 'agents')]) {
-    const p = path.join(dir, `${name}.md`);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf-8');
-  }
-  return null;
+  const p = path.join(AGENTS_DIR, `${name}.md`);
+  return fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') : null;
 }
 
 // ── pre-flight validation ─────────────────────────────────────────────────────
@@ -148,6 +152,16 @@ function buildPrompt(state, step) {
     })
     .join('\n\n');
 
+  // Context overflow guard (audit C-18)
+  const prevBytes = Buffer.byteLength(prev, 'utf-8');
+  if (prevBytes > CONTEXT_WARN_BYTES) {
+    console.warn(
+      `[execute-dag] ⚠ agent_outputs context is ${Math.round(prevBytes / 1024)}KB` +
+      ` at step ${step.step} (${step.agent}) — context overflow risk (audit C-18).` +
+      ` Consider trimming handoff_notes in earlier agents.`
+    );
+  }
+
   return [
     loadAgent(step.agent) || `You are ${step.agent}, a specialised CCIP agent.`,
     '', '---', '',
@@ -177,6 +191,14 @@ function extractUpdate(text) {
 
 // ── async step runner — true parallelism ──────────────────────────────────────
 
+// Exported for testing — builds claude CLI args based on SKIP_PERMS flag.
+// --dangerously-skip-permissions is opt-in via --skip-permissions (audit T-15).
+function buildClaudeArgs() {
+  const args = ['--print'];
+  if (SKIP_PERMS) args.push('--dangerously-skip-permissions');
+  return args;
+}
+
 function runStepAsync(state, step) {
   if (DRY_RUN) {
     console.log(`     scope: ${(step.scope || '').slice(0, 80)}`);
@@ -184,7 +206,7 @@ function runStepAsync(state, step) {
   }
 
   return new Promise(resolve => {
-    const proc = cp.spawn('claude', ['--print', '--dangerously-skip-permissions'], {
+    const proc = cp.spawn('claude', buildClaudeArgs(), {
       cwd: ROOT,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -285,6 +307,14 @@ async function main() {
   }
   if (warnings.length) console.log();
 
+  // ── permission mode ──────────────────────────────────────────────────────────
+  if (!SKIP_PERMS && !DRY_RUN) {
+    console.warn(
+      '[execute-dag] ℹ  Running with permission checks enabled. ' +
+      'Add --skip-permissions to bypass (required for agents needing Write/Bash).'
+    );
+  }
+
   // ── checkpoint / resume ───────────────────────────────────────────────────────
   const doneSteps    = state.dag.filter(s => s.status === 'done');
   const blockedSteps = state.dag.filter(s => s.status === 'failed' || s.status === 'running');
@@ -295,6 +325,17 @@ async function main() {
   }
 
   if (RESUME) {
+    // ── circuit breaker: limit resume attempts ─────────────────────────────────
+    const resumeCount = (state.resume_count || 0) + 1;
+    if (resumeCount > MAX_RESUMES) {
+      console.error(
+        `[execute-dag] ✗ circuit breaker: --resume limit (${MAX_RESUMES}) reached for session ${state.session_id}.\n` +
+        `  Investigate root cause before retrying. Reset resume_count in session-state.json to override.`
+      );
+      process.exit(1);
+    }
+    state.resume_count = resumeCount;
+
     if (blockedSteps.length) {
       console.log(`[execute-dag] ↻ resetting ${blockedSteps.length} interrupted step(s) → pending`);
       blockedSteps.forEach(({ step }) => { state.dag.find(s => s.step === step).status = 'pending'; });
@@ -396,4 +437,8 @@ async function main() {
   console.log(`\n[execute-dag] ✓ all steps done — session ${readState().session_id}`);
 }
 
-main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
+if (require.main === module) {
+  main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
+} else {
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt };
+}

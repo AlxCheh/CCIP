@@ -3,7 +3,7 @@
   "$id": "https://ccip.local/schemas/session-state.json",
   "title": "CCIP Session State",
   "type": "object",
-  "required": ["session_id", "task", "intents", "risk", "confidence", "routing", "status"],
+  "required": ["session_id", "task", "intents", "risk", "confidence", "routing", "status", "started_at"],
   "properties": {
     "session_id": {
       "type": "string",
@@ -51,6 +51,11 @@
     },
     "status":     { "type": "string", "enum": ["init", "planning", "executing", "done", "blocked"] },
     "started_at": { "type": "string" },
+    "resume_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Сколько раз --resume был применён к этой сессии; circuit breaker при ≥ MAX_RESUMES"
+    },
     "observations": {
       "type": "array",
       "items": {

@@ -31,7 +31,14 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
 const crypto = require('crypto');
-const yaml = require('js-yaml');
+
+// Lazy load js-yaml with graceful fallback (audit C-11)
+let yaml;
+try {
+  yaml = require('js-yaml');
+} catch {
+  process.stderr.write('[verify-evidence-log] WARNING: js-yaml not installed — YAML manifest parsing unavailable. Run: npm install\n');
+}
 
 // @skill: portable — repo-root resolution pattern
 const ROOT = path.resolve(__dirname, '../..');
@@ -155,6 +162,10 @@ function extractSection(text, header) {
  */
 function parseManifest(yamlText) {
   if (!yamlText) return null;
+  if (!yaml) {
+    process.stderr.write('[verify-evidence-log] WARNING: skipping YAML parse — js-yaml unavailable\n');
+    return null;
+  }
   let doc;
   try { doc = yaml.load(yamlText); }
   catch { return null; }

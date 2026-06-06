@@ -72,5 +72,38 @@ process.stdin.on('end', () => {
   } catch (e) {
     process.stderr.write(`[audit-session-reset] FAIL: ${e.message}\n`);
   }
+
+  // Auto-init session-state.json: set session_id if currently empty (audit C-05).
+  // Idempotent — preserves existing session_id to avoid mid-session reset.
+  try {
+    const sRaw = fs.readFileSync(SSTATE, 'utf-8');
+    const sState = JSON.parse(sRaw);
+    if (!sState.session_id) {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const sessionId =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}` +
+        `-${pad(now.getHours())}${pad(now.getMinutes())}`;
+      sState.session_id = sessionId;
+      sState.started_at = now.toISOString();
+      sState.status = 'planning';
+      const sTmp = SSTATE + '.tmp.' + process.pid;
+      const sFd = fs.openSync(sTmp, 'w');
+      try {
+        fs.writeSync(sFd, JSON.stringify(sState, null, 2) + '\n');
+        fs.fsyncSync(sFd);
+      } finally {
+        fs.closeSync(sFd);
+      }
+      try {
+        fs.renameSync(sTmp, SSTATE);
+      } catch (e) {
+        try { fs.unlinkSync(sTmp); } catch {}
+      }
+    }
+  } catch (e) {
+    process.stderr.write(`[audit-session-reset] session-state init fail: ${e.message}\n`);
+  }
+
   process.exit(0);
 });

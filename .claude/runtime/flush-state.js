@@ -7,7 +7,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STATE_FILE = path.join(ROOT, '.claude/runtime/session-state.json');
-const FEEDBACK_FILE = path.join(ROOT, 'docs/tasks/feedback-loop.md');
+const FEEDBACK_FILE = process.env.CCIP_FEEDBACK_FILE
+  || path.join(ROOT, 'docs/tasks/feedback-loop.md');
 
 function run() {
   if (!fs.existsSync(STATE_FILE)) return;
@@ -69,12 +70,25 @@ function run() {
   ].join('\n');
 
   // Ensure §4 section exists in feedback-loop.md
-  let feedback = fs.readFileSync(FEEDBACK_FILE, 'utf-8');
   const SECTION_HEADER = '## 4. Routing Observations';
+
+  let feedback = '';
+  if (fs.existsSync(FEEDBACK_FILE)) {
+    try { feedback = fs.readFileSync(FEEDBACK_FILE, 'utf-8'); }
+    catch (e) {
+      process.stderr.write(`[flush-state] ⚠ cannot read feedback-loop.md: ${e.message} — creating fresh\n`);
+    }
+  }
 
   if (!feedback.includes(SECTION_HEADER)) {
     feedback += `\n\n---\n\n${SECTION_HEADER}\n\nJSON-записи routing observations (автофлаш при Stop):\n`;
-    fs.writeFileSync(FEEDBACK_FILE, feedback, 'utf-8');
+    try {
+      fs.mkdirSync(path.dirname(FEEDBACK_FILE), { recursive: true });
+      fs.writeFileSync(FEEDBACK_FILE, feedback, 'utf-8');
+    } catch (e) {
+      process.stderr.write(`[flush-state] ⚠ cannot write feedback-loop.md: ${e.message}\n`);
+      return;
+    }
   }
 
   fs.appendFileSync(FEEDBACK_FILE, block, 'utf-8');

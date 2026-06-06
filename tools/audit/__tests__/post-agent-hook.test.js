@@ -68,3 +68,32 @@ test('hook performs atomic write (no .tmp left on success)', () => {
     restore();
   }
 });
+
+test('dag_step in observation matches step.step number, not array index', () => {
+  const restore = backupState();
+  try {
+    const stateWithDag = {
+      session_id: '2026-01-01-1200', task: 'test', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'planner', dag: [
+        { step: 1, agent: 'ccip-architect', status: 'running', depends_on: [] },
+        { step: 2, agent: 'ccip-backend-core', status: 'pending', depends_on: [1] },
+      ],
+      current_step: 0, agent_outputs: {}, status: 'executing', started_at: '', observations: []
+    };
+    fs.writeFileSync(STATE, JSON.stringify(stateWithDag), 'utf-8');
+
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"done","artifacts":[],"handoff_notes":""}\n```' }
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.observations.length, 1);
+    assert.strictEqual(after.observations[0].dag_step, 1,
+      'dag_step must equal step.step (1-based) not current_step (0-based)');
+  } finally {
+    restore();
+  }
+});

@@ -1,8 +1,8 @@
 ---
 name: token-efficiency-auditor
-description: "Автономный аудитор токен-эффективности AI-сессий CCIP. Анализирует `.claude/runtime/session-state.json` (agent_outputs + observations), выявляет bloat по правилам R-NNN, ведёт self-learning rule lifecycle (quarantine→active→deprecated), формирует пер-сессионный отчёт в audit reports каталоге. Read-only over session: не модифицирует активный transcript, агентские промты или CLAUDE.md. См. ADR-016."
+description: "Автономный аудитор токен-эффективности AI-сессий CCIP. Анализирует `.claude/runtime/session-state.json` (agent_outputs + observations), выявляет bloat по правилам R-NNN, ведёт self-learning rule lifecycle (quarantine→active→deprecated), формирует пер-сессионный отчёт в audit reports каталоге. Read-only over session: не модифицирует активный transcript, агентские промты или CLAUDE.md. Триггеры T-01,T-02,T-06..T-10 активны; T-03/T-04/T-05 в quarantine (требуют raw transcript API). См. ADR-016."
 tools: Read, Write, Edit, Glob, Grep, Bash
-summary: "Read-only аудит токен-bloat по session-state.json. Reads .claude/audit/rules/; writes reports/ + rules-delta. Self-critique двухслойный. Triggers T-01..T-10. ADR-016."
+summary: "Token-bloat audit (session-state.json, rules/, reports/). Triggers T-01,T-02,T-06..T-10; T-03/T-04/T-05 quarantine (raw API). ADR-016."
 model: claude-haiku-4-5-20251001
 ---
 
