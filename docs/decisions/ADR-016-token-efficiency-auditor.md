@@ -63,7 +63,7 @@ name: token-efficiency-auditor
 description: "Автономный аудитор токен-эффективности... Read-only over session. См. ADR-016."
 tools: Read, Write, Edit, Glob, Grep, Bash
 model: claude-haiku-4-5-20251001
-summary: "Read-only аудит токен-bloat по session-state.json ... Triggers T-01,T-02,T-06..T-10 (T-03/T-04/T-05 quarantine — нет API для raw token attribution). ADR-016."
+summary: "Read-only аудит токен-bloat по session-state.json ... Triggers T-01..T-10. ADR-016."
 ```
 
 Контрактные поля (`primary_input`, `state_contract`, `model_override_allowed`,
