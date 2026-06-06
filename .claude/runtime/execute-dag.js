@@ -191,6 +191,14 @@ function extractUpdate(text) {
 
 // ── async step runner — true parallelism ──────────────────────────────────────
 
+// Exported for testing — builds claude CLI args based on SKIP_PERMS flag.
+// --dangerously-skip-permissions is opt-in via --skip-permissions (audit T-15).
+function buildClaudeArgs() {
+  const args = ['--print'];
+  if (SKIP_PERMS) args.push('--dangerously-skip-permissions');
+  return args;
+}
+
 function runStepAsync(state, step) {
   if (DRY_RUN) {
     console.log(`     scope: ${(step.scope || '').slice(0, 80)}`);
@@ -198,9 +206,7 @@ function runStepAsync(state, step) {
   }
 
   return new Promise(resolve => {
-    const claudeArgs = ['--print'];
-    if (SKIP_PERMS) claudeArgs.push('--dangerously-skip-permissions');
-    const proc = cp.spawn('claude', claudeArgs, {
+    const proc = cp.spawn('claude', buildClaudeArgs(), {
       cwd: ROOT,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -434,5 +440,5 @@ async function main() {
 if (require.main === module) {
   main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
 } else {
-  module.exports = { sanitizeHandoff };
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt };
 }
