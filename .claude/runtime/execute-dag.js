@@ -85,8 +85,7 @@ function sanitizeHandoff(notes) {
 
 function loadAgent(name) {
   const p = path.join(AGENTS_DIR, `${name}.md`);
-  if (fs.existsSync(p)) return fs.readFileSync(p, 'utf-8');
-  return null;
+  return fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') : null;
 }
 
 // ── pre-flight validation ─────────────────────────────────────────────────────
