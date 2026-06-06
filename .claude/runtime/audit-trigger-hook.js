@@ -27,7 +27,7 @@ const SSTATE = path.join(ROOT, '.claude/runtime/session-state.json');
 
 const AUDITOR        = 'token-efficiency-auditor';
 const T06_THRESHOLD  = 3;   // тот же (path,offset) прочитан ≥ 3 раз
-const T07_THRESHOLD  = 15;  // tool-calls в одном turn > 15
+const T07_BURST_FLOOR = 15; // T-07 fires when tool_calls_this_turn > T07_BURST_FLOOR (i.e., 16+)
 const T10_FAILURES   = 2;   // ≥ 2 сбоя агентов
 const FAILURE_WINDOW = 5;   // ...за последние 5 вызовов Agent
 const COOLDOWN_CALLS = 30;  // не повторять один триггер чаще, чем раз в N tool-calls
@@ -164,7 +164,7 @@ function run(raw) {
   }
 
   // T-07 — burst tool-calls в одном turn
-  if (st.tool_calls_this_turn > T07_THRESHOLD) {
+  if (st.tool_calls_this_turn > T07_BURST_FLOOR) {
     fireMaybe(st, fired, 'T-07', `${st.tool_calls_this_turn} tool-calls в turn`);
   }
 

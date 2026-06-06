@@ -84,10 +84,8 @@ function sanitizeHandoff(notes) {
 // ── agent loading ─────────────────────────────────────────────────────────────
 
 function loadAgent(name) {
-  for (const dir of [AGENTS_DIR, path.join(ROOT, '.claude', 'agents')]) {
-    const p = path.join(dir, `${name}.md`);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf-8');
-  }
+  const p = path.join(AGENTS_DIR, `${name}.md`);
+  if (fs.existsSync(p)) return fs.readFileSync(p, 'utf-8');
   return null;
 }
 
