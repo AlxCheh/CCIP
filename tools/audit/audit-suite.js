@@ -14,6 +14,7 @@ const PHASES = {
     'dead-refs.js',
     'agent-name-presence.js',
     'state-contract-section.js',
+    'phantom-section-refs.js',
   ],
   '§10.2 Schema integrity': [
     'agent-frontmatter.js',

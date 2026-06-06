@@ -1,6 +1,6 @@
 ---
 name: ccip-navigator-optimizer
-description: "Агент синхронизации навигационного слоя CCIP. Запускается по запросу после правок в CLAUDE.md §3–§6, docs/tasks/index.md или docs/decisions/index.md. Проверяет согласованность уровней L1–L4 и T1–T4, покрытие task categories, дублирование правил между routing-файлами и routing loops. Вносит точечные правки и фиксирует результат в errors_log."
+description: "Агент синхронизации навигационного слоя CCIP. Запускается по запросу после правок в CLAUDE.md (Intent→Agent table, Document Routing, Agent Selection), docs/tasks/index.md или docs/decisions/index.md. Проверяет согласованность уровней L1–L4 и T1–T4, покрытие task categories, дублирование правил между routing-файлами и routing loops. Вносит точечные правки и фиксирует результат в errors_log."
 tools: Read, Write, Edit, Glob, Grep, Bash
 summary: "Синхронизирует CLAUDE.md ↔ docs/tasks/index.md (L1-L4 vs T1-T4). Body: 8-шаговый алгоритм + правила (5)."
 model: claude-sonnet-4-6
@@ -11,13 +11,13 @@ model: claude-sonnet-4-6
 ## Цель
 
 Поддерживать согласованность между двумя системами маршрутизации:
-- `CLAUDE.md` — §3 Document Routing Map, §5 Context Loading Levels (L1–L4), §6 Delivery Routing
-- `docs/tasks/index.md` — §1 Task Categories, §11 Context Loading Matrix, §12 Task Loading Levels (T1–T4)
+- `CLAUDE.md` — Intent→Agent table, Document Routing section, Agent Selection rules (no formal §N numbers)
+- `docs/tasks/index.md` — §1.5 Module Routing, Task Categories at top, Routing contract references
 
 ## Триггер
 
 Запускать вручную (или по PR-review-чеклисту) после любого из событий:
-- изменение `CLAUDE.md` §3, §5 или §6
+- изменение Intent→Agent table, Document Routing, или Constraints в CLAUDE.md
 - изменение `docs/tasks/index.md`
 - создание `docs/decisions/index.md` или `docs/errors/index.md`
 - появление нового модуля в `docs/architecture/`
@@ -31,7 +31,7 @@ model: claude-sonnet-4-6
 Читать только routing-секции, не читать полные файлы:
 
 ```
-Read CLAUDE.md offset:40 limit:60        # §3–§6
+Read CLAUDE.md limit:100                 # Intent table, Document Routing, Agent Selection
 Read docs/tasks/index.md                 # полностью (routing-документ)
 Read docs/decisions/index.md limit:50   # только список модулей
 ```
@@ -51,10 +51,10 @@ Read docs/decisions/index.md limit:50   # только список модуле
 8. Security Update
 
 Для каждой категории проверить:
-- в `CLAUDE.md §3` есть хотя бы один routing path, релевантный этой категории
-- в `CLAUDE.md §5` есть соответствующий уровень L1–L4 для этого типа задачи
+- в Intent→Agent table CLAUDE.md есть хотя бы один routing path, релевантный этой категории
+- в Document Routing CLAUDE.md есть соответствующий уровень L1–L4 для этого типа задачи
 
-**Пробел** = категория задачи без routing path в CLAUDE.md → добавить строку в §3.
+**Пробел** = категория задачи без routing path в CLAUDE.md → добавить строку в Intent→Agent table.
 
 ---
 
@@ -88,11 +88,11 @@ Read docs/decisions/index.md limit:50   # только список модуле
 
 ### Шаг 5 — Проверка routing loops
 
-Для каждого файла, упомянутого в §3 CLAUDE.md, проверить:
+Для каждого файла, упомянутого в Intent→Agent table CLAUDE.md, проверить:
 - файл существует (`ls` путь)
-- файл не ссылается обратно на CLAUDE.md §3 как на следующий шаг (loop)
+- файл не ссылается обратно на CLAUDE.md Intent table как на следующий шаг (loop)
 
-Признак loop: `tasks/index.md §15` говорит "сначала читать docs/tasks/index.md", а CLAUDE.md говорит то же самое — это не loop, это согласованное entry point. Настоящий loop: файл A отсылает к B, B отсылает к A как обязательному шагу.
+Признак loop: `tasks/index.md` говорит "сначала читать docs/tasks/index.md", а CLAUDE.md говорит то же самое — это не loop, это согласованное entry point. Настоящий loop: файл A отсылает к B, B отсылает к A как обязательному шагу.
 
 ---
 
@@ -149,7 +149,7 @@ ls CCIP/<path>
 
 | Файл | Что читать |
 |---|---|
-| `CLAUDE.md` | только §3–§6 (offset: 40, limit: 60) |
+| `CLAUDE.md` | Intent table + Document Routing + Agent Selection (core routing sections) |
 | `docs/tasks/index.md` | полностью (это primary subject) |
 | `docs/decisions/index.md` | только §1 список модулей (limit: 50) |
 | `docs/errors/errors_log.md` | только для добавления записи в конец |

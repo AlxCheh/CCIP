@@ -53,7 +53,7 @@ DEFAULT → direct agent of primary intent
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
 | ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
-| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md §3–§6 или docs/tasks/index.md |
+| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md (Intent table, Agent Selection, Document Routing, Constraints) или docs/tasks/index.md |
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
 | token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
