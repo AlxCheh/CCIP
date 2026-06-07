@@ -103,6 +103,14 @@
         "hooks": [
           {
             "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/aggregate-telemetry.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/flush-state.js"
           }
         ]

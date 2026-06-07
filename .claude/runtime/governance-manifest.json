@@ -56,6 +56,15 @@
       "enforcement": "pre-agent-gate.js#INV-SECURITY-COAGENT",
       "kind": "block",
       "status": "shadow"
+    },
+    {
+      "id": "INV-TELEMETRY-AGGREGATE",
+      "claim": "Stop-time rollup folds observations + events.jsonl into per-session metrics",
+      "doc_anchor": "§15",
+      "enforcement": "aggregate-telemetry.js#INV-TELEMETRY-AGGREGATE",
+      "kind": "signal",
+      "telemetry": "feedback-loop.md:§5",
+      "status": "observed"
     }
   ]
 }
