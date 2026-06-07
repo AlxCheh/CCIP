@@ -20,7 +20,7 @@ function isFullRead(p) {
 function extractTarget(p) {
   const i = (p && p.tool_input) || {};
   if (i.file_path) return String(i.file_path);
-  if (i.command) return String(i.command).slice(0, 80);
+  if (i.command) return String(i.command).replace(/^(\w+=\S+\s+)+/, '').trim().split(/\s+/)[0] || '';
   if (i.pattern) return String(i.pattern).slice(0, 80);
   return '';
 }

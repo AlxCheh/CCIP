@@ -18,9 +18,11 @@ test('isFullRead true when Read has no offset/limit', () => {
   assert.strictEqual(isFullRead({ tool_name: 'Bash', tool_input: { command: 'ls' } }), false);
 });
 
-test('extractTarget returns file path or command head', () => {
+test('extractTarget returns file path or command argv[0] only (no args/credentials)', () => {
   assert.strictEqual(extractTarget({ tool_name: 'Read', tool_input: { file_path: '/x/a.md' } }), '/x/a.md');
-  assert.match(extractTarget({ tool_name: 'Bash', tool_input: { command: 'node foo.js --bar' } }), /^node foo\.js/);
+  // Only the program name — no arguments, no inline env-var credentials
+  assert.strictEqual(extractTarget({ tool_name: 'Bash', tool_input: { command: 'node foo.js --bar' } }), 'node');
+  assert.strictEqual(extractTarget({ tool_name: 'Bash', tool_input: { command: 'AUTH_TOKEN=ghp_xxx gh api repos' } }), 'gh');
   assert.match(extractTarget({ tool_name: 'Grep', tool_input: { pattern: 'needle' } }), /needle/);
 });
 
