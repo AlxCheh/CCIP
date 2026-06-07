@@ -17,6 +17,10 @@
           {
             "type": "command",
             "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/optimizer-gate.js"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/pre-agent-gate.js"
           }
         ]
       },
@@ -95,6 +99,14 @@
       }
     ],
     "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/aggregate-telemetry.js"
+          }
+        ]
+      },
       {
         "hooks": [
           {

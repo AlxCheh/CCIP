@@ -203,3 +203,52 @@ test('observation missing_state_update false when valid block present (ADR-017)'
     restore();
   }
 });
+
+test('contract_debt accumulates and alerts at threshold (RFC R3)', () => {
+  const restore = backupState();
+  try {
+    fs.writeFileSync(STATE, JSON.stringify({
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+    }), 'utf-8');
+    const payload = JSON.stringify({
+      tool_name: 'Agent', tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: 'no block here' },
+    });
+    const env = { ...process.env, CCIP_CONTRACT_DEBT_THRESHOLD: '2' };
+    // First miss → debt 1, no alert
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8', env });
+    let after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.contract_debt, 1);
+    assert.ok(!after.governance_alerts || after.governance_alerts.length === 0);
+    // Second miss → debt 2, alert raised
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8', env });
+    after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.contract_debt, 2);
+    assert.strictEqual(after.governance_alerts.length, 1);
+    assert.strictEqual(after.governance_alerts[0].kind, 'state_contract_degraded');
+  } finally {
+    restore();
+  }
+});
+
+test('valid block does not increment contract_debt (RFC R3)', () => {
+  const restore = backupState();
+  try {
+    fs.writeFileSync(STATE, JSON.stringify({
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+    }), 'utf-8');
+    const payload = JSON.stringify({
+      tool_name: 'Agent', tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"s","artifacts":[],"handoff_notes":""}\n```' },
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.ok(!after.contract_debt, 'debt stays falsy on a compliant call');
+  } finally {
+    restore();
+  }
+});

@@ -32,6 +32,39 @@
       "kind": "signal",
       "telemetry": "events.jsonl:tool_use",
       "status": "observed"
+    },
+    {
+      "id": "INV-CONTRACT-DEBT",
+      "claim": "repeated missing ## State Update accrues contract_debt; threshold raises a governance alert",
+      "doc_anchor": "§15",
+      "enforcement": "post-agent-hook.js#INV-CONTRACT-DEBT",
+      "kind": "signal",
+      "status": "observed"
+    },
+    {
+      "id": "INV-AGENT-BUDGET",
+      "claim": "max 2–3 agents total — 4th Agent spawn is denied (enforce) or flagged (shadow)",
+      "doc_anchor": "agents total",
+      "enforcement": "pre-agent-gate.js#INV-AGENT-BUDGET",
+      "kind": "block",
+      "status": "shadow"
+    },
+    {
+      "id": "INV-SECURITY-COAGENT",
+      "claim": "HIGH-risk security surface requires a security-reviewer co-agent",
+      "doc_anchor": "security-reviewer as co-agent",
+      "enforcement": "pre-agent-gate.js#INV-SECURITY-COAGENT",
+      "kind": "block",
+      "status": "shadow"
+    },
+    {
+      "id": "INV-TELEMETRY-AGGREGATE",
+      "claim": "Stop-time rollup folds observations + events.jsonl into per-session metrics",
+      "doc_anchor": "§15",
+      "enforcement": "aggregate-telemetry.js#INV-TELEMETRY-AGGREGATE",
+      "kind": "signal",
+      "telemetry": "feedback-loop.md:§5",
+      "status": "observed"
     }
   ]
 }

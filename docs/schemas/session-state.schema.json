@@ -56,6 +56,25 @@
       "minimum": 0,
       "description": "Сколько раз --resume был применён к этой сессии; circuit breaker при ≥ MAX_RESUMES"
     },
+    "contract_debt": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Счётчик пропусков ## State Update за сессию (ADR-017 Level 1 эскалация)"
+    },
+    "governance_alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind":  { "type": "string" },
+          "at":    { "type": "string" },
+          "debt":  { "type": "integer", "minimum": 0 },
+          "agent": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
     "observations": {
       "type": "array",
       "items": {

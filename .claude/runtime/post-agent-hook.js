@@ -208,6 +208,21 @@ function run(raw) {
     missing_state_update: missingBlock,
   });
 
+  // [INV-CONTRACT-DEBT] RFC R3 — Level 1 escalation: count contract misses, alert at threshold.
+  if (missingBlock) {
+    const threshold = parseInt(process.env.CCIP_CONTRACT_DEBT_THRESHOLD || '3', 10);
+    state.contract_debt = (state.contract_debt || 0) + 1;
+    if (state.contract_debt >= threshold) {
+      state.governance_alerts = state.governance_alerts || [];
+      state.governance_alerts.push({
+        kind: 'state_contract_degraded',
+        at: new Date().toISOString(),
+        debt: state.contract_debt,
+        agent,
+      });
+    }
+  }
+
   // ── DAG step advance ───────────────────────────────────────────────────────
   if (Array.isArray(state.dag) && state.dag.length > 0) {
     if (stepObj) stepObj.status = 'done';
