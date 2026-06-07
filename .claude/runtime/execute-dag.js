@@ -86,13 +86,18 @@ function updateState(fn) {
 const INJECTION_RE = /^\s*(ignore|disregard|forget|override|system\s*:|you\s+are\s+now|new\s+instruction|act\s+as\b)/i;
 // system: anywhere in the line — primary mid-line injection vector (audit C-05)
 const INLINE_SYSTEM_RE = /\bsystem\s*:/i;
+// Mid-line imperative — injection keywords anywhere, targeted to avoid over-blocking
+// benign mentions (F-RT-06).
+const MIDLINE_INJECTION_RE =
+  /\b(ignore|disregard|forget|override)\b[\s\S]{0,20}\b(previous|prior|above|earlier|all)\b[\s\S]{0,20}\b(instruction|instructions|prompt|prompts|context|rules?)\b/i;
 
 function sanitizeHandoff(notes) {
   if (!notes) return '—';
   if (typeof notes === 'object') return JSON.stringify(notes, null, 2);
   const cleaned = String(notes)
     .split('\n')
-    .filter(line => !INJECTION_RE.test(line) && !INLINE_SYSTEM_RE.test(line))
+    .filter(line => !INJECTION_RE.test(line) && !INLINE_SYSTEM_RE.test(line)
+      && !MIDLINE_INJECTION_RE.test(line))
     .join('\n')
     .trim();
   return cleaned || '—';
