@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STATE_FILE = path.join(ROOT, '.claude/runtime/session-state.json');
@@ -62,9 +63,12 @@ function run() {
     });
   }).filter(Boolean);
 
+  const batchHash = crypto.createHash('sha1')
+    .update(lines.join('\n')).digest('hex').slice(0, 8);
+  const idemKey = `flush:${sessionId}:${batchHash}`;
   const block = [
     '',
-    `<!-- flush: ${sessionId} | task: ${task.slice(0, 60)} -->`,
+    `<!-- ${idemKey} | task: ${task.slice(0, 60)} -->`,
     ...lines,
     ''
   ].join('\n');
@@ -91,7 +95,15 @@ function run() {
     }
   }
 
-  fs.appendFileSync(FEEDBACK_FILE, block, 'utf-8');
+  // Idempotent append: skip if this exact batch was already flushed (crash-window
+  // re-run leaves observations uncleared in state — F-RT-03).
+  const already = fs.existsSync(FEEDBACK_FILE)
+    && fs.readFileSync(FEEDBACK_FILE, 'utf-8').includes(idemKey);
+  if (!already) {
+    fs.appendFileSync(FEEDBACK_FILE, block, 'utf-8');
+  } else {
+    process.stderr.write(`[flush-state] ⏭ batch ${idemKey} already flushed — skip (idempotent)\n`);
+  }
 
   // Clear observations from state; use atomic tmp→fsync→rename.
   state.observations = [];

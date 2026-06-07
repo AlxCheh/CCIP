@@ -97,3 +97,66 @@ test('dag_step in observation matches step.step number, not array index', () => 
     restore();
   }
 });
+
+test('dag_step is resolved by agent name, not current_step index (F-RT-09)', () => {
+  const restore = backupState();
+  try {
+    // Agent ccip-backend-core is step 2 but current_step still points at index 0.
+    const state = {
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'planner',
+      dag: [
+        { step: 1, agent: 'ccip-architect',    status: 'pending', depends_on: [] },
+        { step: 2, agent: 'ccip-backend-core', status: 'pending', depends_on: [] },
+      ],
+      current_step: 0, agent_outputs: {}, status: 'executing', started_at: '',
+      observations: [],
+    };
+    fs.writeFileSync(STATE, JSON.stringify(state), 'utf-8');
+
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { subagent_type: 'ccip-backend-core' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"x","artifacts":[],"handoff_notes":""}\n```' },
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.observations[0].dag_step, 2,
+      'dag_step must equal the step.step of the agent that ran (2), not dag[current_step].step (1)');
+    const step2 = after.dag.find(s => s.step === 2);
+    assert.strictEqual(step2.status, 'done', 'the agent\'s own step must be marked done');
+    const step1 = after.dag.find(s => s.step === 1);
+    assert.strictEqual(step1.status, 'pending', 'a different step must NOT be marked done');
+  } finally {
+    restore();
+  }
+});
+
+test('resolveAgent returns null when prompt mentions multiple agent names (F-RT-10)', () => {
+  const restore = backupState();
+  try {
+    const state = {
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+    };
+    fs.writeFileSync(STATE, JSON.stringify(state), 'utf-8');
+
+    // No subagent_type; prompt names TWO real agents → ambiguous → no record.
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { prompt: 'coordinate ccip-architect and ccip-backend-core for this' },
+      tool_response: { content: 'done' },
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.observations.length, 0,
+      'ambiguous agent mention must produce no observation (null resolve)');
+    assert.deepEqual(after.agent_outputs, {},
+      'ambiguous agent mention must not write agent_outputs');
+  } finally {
+    restore();
+  }
+});

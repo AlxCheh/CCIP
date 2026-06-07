@@ -51,9 +51,21 @@ const CONTEXT_WARN_BYTES = 50_000; // ~12k tokens; warn when previous agent outp
 const readState = () => JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
 
 function writeState(state) {
-  const tmp = STATE_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2) + '\n', 'utf-8');
-  fs.renameSync(tmp, STATE_FILE);              // atomic on Windows + POSIX
+  const tmp = STATE_FILE + '.tmp.' + process.pid;
+  const data = JSON.stringify(state, null, 2) + '\n';
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.renameSync(tmp, STATE_FILE);            // rename is atomic; tmp is PID-scoped
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
 }
 
 // Serialised write lock — chains all read-modify-write ops so parallel steps
@@ -74,13 +86,28 @@ function updateState(fn) {
 const INJECTION_RE = /^\s*(ignore|disregard|forget|override|system\s*:|you\s+are\s+now|new\s+instruction|act\s+as\b)/i;
 // system: anywhere in the line — primary mid-line injection vector (audit C-05)
 const INLINE_SYSTEM_RE = /\bsystem\s*:/i;
+// Mid-line imperative — injection keywords anywhere, targeted to avoid over-blocking
+// benign mentions (F-RT-06).
+const MIDLINE_INJECTION_RE =
+  /\b(ignore|disregard|forget|override)\b[\s\S]{0,20}\b(previous|prior|above|earlier|all)\b[\s\S]{0,20}\b(instruction|instructions|prompt|prompts|context|rules?)\b/i;
+
+// Strip zero-width and bidi-control chars, then NFKC-fold compatibility homoglyphs
+// (fullwidth, etc.) before injection matching (F-RT-07). Cross-script confusables
+// (e.g. Cyrillic look-alikes) are NOT covered — see Deferred note in plan.
+function normalizeForScan(line) {
+  return line.replace(/[​-‏‪-‮⁠﻿]/g, '').normalize('NFKC');
+}
 
 function sanitizeHandoff(notes) {
   if (!notes) return '—';
   if (typeof notes === 'object') return JSON.stringify(notes, null, 2);
   const cleaned = String(notes)
-    .split('\n')
-    .filter(line => !INJECTION_RE.test(line) && !INLINE_SYSTEM_RE.test(line))
+    .split(/\r\n|\r|\n/)
+    .filter(line => {
+      const scan = normalizeForScan(line);
+      return !INJECTION_RE.test(scan) && !INLINE_SYSTEM_RE.test(scan)
+        && !MIDLINE_INJECTION_RE.test(scan);
+    })
     .join('\n')
     .trim();
   return cleaned || '—';
@@ -440,5 +467,5 @@ async function main() {
 if (require.main === module) {
   main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
 } else {
-  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt };
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState };
 }

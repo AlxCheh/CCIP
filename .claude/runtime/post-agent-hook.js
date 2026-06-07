@@ -76,12 +76,11 @@ function resolveAgent(toolInput) {
     return agents.has(toolInput.subagent_type) ? toolInput.subagent_type : null;
   }
   // Scan description and prompt for whole-word mentions of real agent names.
+  // Require EXACTLY ONE match — ambiguous (or zero) mentions resolve to null so a
+  // non-deterministic first-hit can't misattribute the call (F-RT-10).
   const haystack = `${toolInput.description || ''} ${toolInput.prompt || ''}`;
-  for (const name of agents) {
-    const re = new RegExp(`\\b${name}\\b`);
-    if (re.test(haystack)) return name;
-  }
-  return null;
+  const matches = [...agents].filter(name => new RegExp(`\\b${name}\\b`).test(haystack));
+  return matches.length === 1 ? matches[0] : null;
 }
 
 /** Flatten Claude tool_response to a plain string */
@@ -185,10 +184,13 @@ function run(raw) {
   // ── observations ───────────────────────────────────────────────────────────
   if (!state.observations) state.observations = [];
 
-  // Resolve dag_step: use step.step NUMBER (1-based) not array index (audit C-03).
-  const currentDagStep = Array.isArray(state.dag) && state.dag.length > 0
-      ? (state.dag[state.current_step ?? 0]?.step ?? null)
+  // Resolve dag_step by THIS agent's step, not by current_step index — robust to
+  // parallel/out-of-order completion (F-RT-09). First match wins if an agent
+  // appears in multiple steps (acceptable; multi-step same-agent is out of scope).
+  const stepObj = Array.isArray(state.dag)
+      ? state.dag.find(s => s.agent === agent)
       : null;
+  const currentDagStep = stepObj?.step ?? null;
 
   state.observations.push({
     agent,
@@ -202,12 +204,10 @@ function run(raw) {
 
   // ── DAG step advance ───────────────────────────────────────────────────────
   if (Array.isArray(state.dag) && state.dag.length > 0) {
-    const idx = state.current_step ?? 0;
-    if (state.dag[idx]) state.dag[idx].status = 'done';
-    state.current_step = idx + 1;
-
-    // Mark session done when all steps completed
-    if (state.current_step >= state.dag.length) {
+    if (stepObj) stepObj.status = 'done';
+    // current_step tracks how many steps are done (consistent with execute-dag.js).
+    state.current_step = state.dag.filter(s => s.status === 'done').length;
+    if (state.dag.every(s => s.status === 'done')) {
       state.status = 'done';
     }
   }
