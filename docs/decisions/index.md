@@ -41,6 +41,7 @@
 
 ### Orchestration / Agent Runtime
 - [ADR-016-token-efficiency-auditor.md](ADR-016-token-efficiency-auditor.md) — token-efficiency auditor: read-only агент анализа bloat + self-learning rule lifecycle
+- [ADR-017-state-update-observability.md](ADR-017-state-update-observability.md) — видимость пропуска ## State Update: флаг missing_state_update + сводка на Stop
 
 ---
 

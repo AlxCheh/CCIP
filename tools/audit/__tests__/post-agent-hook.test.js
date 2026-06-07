@@ -160,3 +160,46 @@ test('resolveAgent returns null when prompt mentions multiple agent names (F-RT-
     restore();
   }
 });
+
+test('observation flags missing_state_update when no block (ADR-017)', () => {
+  const restore = backupState();
+  try {
+    fs.writeFileSync(STATE, JSON.stringify({
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+    }), 'utf-8');
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: 'did the work but forgot the block' },
+    });
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.observations[0].missing_state_update, true);
+    assert.ok(res.stderr.includes('no valid ## State Update'), 'must warn on stderr');
+  } finally {
+    restore();
+  }
+});
+
+test('observation missing_state_update false when valid block present (ADR-017)', () => {
+  const restore = backupState();
+  try {
+    fs.writeFileSync(STATE, JSON.stringify({
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+    }), 'utf-8');
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"s","artifacts":[],"handoff_notes":""}\n```' },
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.observations[0].missing_state_update, false);
+  } finally {
+    restore();
+  }
+});

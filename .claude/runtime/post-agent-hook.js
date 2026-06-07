@@ -166,6 +166,10 @@ function run(raw) {
   const text    = responseText(payload.tool_response);
   const tokens  = estimateTokens(text);
   const parsed  = extractStructured(text);
+  const missingBlock = parsed === null;
+  if (missingBlock) {
+    process.stderr.write(`[post-agent-hook] ⚠ ${agent}: no valid ## State Update block\n`);
+  }
 
   // Outcome detection: agent-emitted "outcome" wins, else tool error → failed, else success.
   let outcome = 'success';
@@ -200,6 +204,7 @@ function run(raw) {
     outcome,
     context_tokens: tokens,
     reason:         outcome === 'success' ? '' : (parsed?.handoff_notes?.slice(0, 200) || ''),
+    missing_state_update: missingBlock,
   });
 
   // ── DAG step advance ───────────────────────────────────────────────────────
