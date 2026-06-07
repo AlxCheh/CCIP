@@ -91,13 +91,23 @@ const INLINE_SYSTEM_RE = /\bsystem\s*:/i;
 const MIDLINE_INJECTION_RE =
   /\b(ignore|disregard|forget|override)\b[\s\S]{0,20}\b(previous|prior|above|earlier|all)\b[\s\S]{0,20}\b(instruction|instructions|prompt|prompts|context|rules?)\b/i;
 
+// Strip zero-width and bidi-control chars, then NFKC-fold compatibility homoglyphs
+// (fullwidth, etc.) before injection matching (F-RT-07). Cross-script confusables
+// (e.g. Cyrillic look-alikes) are NOT covered — see Deferred note in plan.
+function normalizeForScan(line) {
+  return line.replace(/[​-‏‪-‮⁠﻿]/g, '').normalize('NFKC');
+}
+
 function sanitizeHandoff(notes) {
   if (!notes) return '—';
   if (typeof notes === 'object') return JSON.stringify(notes, null, 2);
   const cleaned = String(notes)
-    .split('\n')
-    .filter(line => !INJECTION_RE.test(line) && !INLINE_SYSTEM_RE.test(line)
-      && !MIDLINE_INJECTION_RE.test(line))
+    .split(/\r\n|\r|\n/)
+    .filter(line => {
+      const scan = normalizeForScan(line);
+      return !INJECTION_RE.test(scan) && !INLINE_SYSTEM_RE.test(scan)
+        && !MIDLINE_INJECTION_RE.test(scan);
+    })
     .join('\n')
     .trim();
   return cleaned || '—';
