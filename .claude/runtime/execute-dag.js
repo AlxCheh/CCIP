@@ -51,9 +51,21 @@ const CONTEXT_WARN_BYTES = 50_000; // ~12k tokens; warn when previous agent outp
 const readState = () => JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
 
 function writeState(state) {
-  const tmp = STATE_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2) + '\n', 'utf-8');
-  fs.renameSync(tmp, STATE_FILE);              // atomic on Windows + POSIX
+  const tmp = STATE_FILE + '.tmp.' + process.pid;
+  const data = JSON.stringify(state, null, 2) + '\n';
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.renameSync(tmp, STATE_FILE);            // rename is atomic; tmp is PID-scoped
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
 }
 
 // Serialised write lock — chains all read-modify-write ops so parallel steps
@@ -440,5 +452,5 @@ async function main() {
 if (require.main === module) {
   main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
 } else {
-  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt };
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState };
 }
