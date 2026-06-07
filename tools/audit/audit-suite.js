@@ -37,6 +37,9 @@ const PHASES = {
     'delivery-paths.js',
     'memory-fs-sync.js',
   ],
+  '§10.8 Semantic integrity': [
+    'trigger-integrity.js',
+  ],
 };
 
 const HERE = __dirname;
