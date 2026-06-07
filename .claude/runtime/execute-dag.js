@@ -276,6 +276,7 @@ function validateDependencyOutputs(state, step) {
 
 function applyStepResult(state, step, output) {
   const upd = extractUpdate(output);
+  // [INV-STATE-CONTRACT-DAG] ADR-017 — DAG-writer parity
   if (upd === null) {
     console.error(`[execute-dag] ⚠ ${step.agent}: no valid ## State Update block`);
   }

@@ -166,6 +166,7 @@ function run(raw) {
   const text    = responseText(payload.tool_response);
   const tokens  = estimateTokens(text);
   const parsed  = extractStructured(text);
+  // [INV-STATE-CONTRACT] ADR-017 — observability of missing ## State Update
   const missingBlock = parsed === null;
   if (missingBlock) {
     process.stderr.write(`[post-agent-hook] ⚠ ${agent}: no valid ## State Update block\n`);

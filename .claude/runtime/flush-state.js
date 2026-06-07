@@ -76,6 +76,7 @@ function run() {
 
   // ADR-017: surface agents that skipped the ## State Update block. Counted from the
   // kept set so N/M matches the records actually written.
+  // [INV-OBSERVABILITY-ROLLUP] ADR-017 — Stop-time rollup
   const missing = kept.filter(o => o.missing_state_update === true);
   const rollup = missing.length > 0
     ? [`> ⚠ ${sessionId.slice(0, 10)}: ${missing.length}/${kept.length} agents без ## State Update (${missing.map(o => o.agent).join(', ')})`]
