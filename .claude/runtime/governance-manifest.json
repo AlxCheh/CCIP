@@ -75,6 +75,14 @@
       "status": "shadow"
     },
     {
+      "id": "INV-CONTRACT-CORRECTION",
+      "claim": "when contract_debt > 0, a State Update reminder is injected at UserPromptSubmit to correct recurring omissions",
+      "doc_anchor": "State Contract",
+      "enforcement": "contract-debt-injector.js#INV-CONTRACT-CORRECTION",
+      "kind": "signal",
+      "status": "observed"
+    },
+    {
       "id": "INV-FAILURE-DETECTOR",
       "claim": "Stop-time detectors surface SSC degradation, telemetry blackout, handoff decay, contract collapse, fallback degradation into governance_alerts[]",
       "doc_anchor": "observations[]",
