@@ -65,6 +65,14 @@
       "kind": "signal",
       "telemetry": "feedback-loop.md:§5",
       "status": "observed"
+    },
+    {
+      "id": "INV-READING-DISCIPLINE",
+      "claim": "full read of a protected large file is denied (enforce) or flagged (shadow) — use offset/limit",
+      "doc_anchor": "Reading Discipline",
+      "enforcement": "read-gate.js#INV-READING-DISCIPLINE",
+      "kind": "block",
+      "status": "shadow"
     }
   ]
 }
