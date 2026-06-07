@@ -1,0 +1,37 @@
+{
+  "invariants": [
+    {
+      "id": "INV-STATE-CONTRACT",
+      "claim": "agent MUST end with ## State Update; пропуск помечается missing_state_update",
+      "doc_anchor": "§15",
+      "enforcement": "post-agent-hook.js#INV-STATE-CONTRACT",
+      "kind": "signal",
+      "status": "observed"
+    },
+    {
+      "id": "INV-STATE-CONTRACT-DAG",
+      "claim": "autonomous DAG writer flags missing ## State Update identically",
+      "doc_anchor": "§15",
+      "enforcement": "execute-dag.js#INV-STATE-CONTRACT-DAG",
+      "kind": "signal",
+      "status": "observed"
+    },
+    {
+      "id": "INV-OBSERVABILITY-ROLLUP",
+      "claim": "Stop-time rollup surfaces agents that missed the block",
+      "doc_anchor": "§15",
+      "enforcement": "flush-state.js#INV-OBSERVABILITY-ROLLUP",
+      "kind": "signal",
+      "status": "observed"
+    },
+    {
+      "id": "INV-TOOL-TELEMETRY",
+      "claim": "every tool call emits a telemetry event (inline-session coverage)",
+      "doc_anchor": "§15",
+      "enforcement": "tool-telemetry.js#INV-TOOL-TELEMETRY",
+      "kind": "signal",
+      "telemetry": "events.jsonl:tool_use",
+      "status": "observed"
+    }
+  ]
+}

@@ -68,6 +68,10 @@
           {
             "type": "command",
             "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-trigger-hook.js"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/tool-telemetry.js"
           }
         ]
       }

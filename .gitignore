@@ -43,6 +43,8 @@ infra/docker/data/
 # Session optimizer runtime artifacts (PostToolUse hook output, regenerated per session)
 docs/errors/sessions/
 .claude/runtime/optimizer.lock
+.claude/runtime/events.jsonl
+.claude/runtime/events.jsonl.1
 
 # Per-machine Claude Code permissions (allow-list Bash commands etc.)
 .claude/settings.local.json
