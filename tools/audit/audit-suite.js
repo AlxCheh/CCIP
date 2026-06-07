@@ -40,6 +40,7 @@ const PHASES = {
   ],
   '§10.8 Semantic integrity': [
     'trigger-integrity.js',
+    'rgs.js',
   ],
 };
 
