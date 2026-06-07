@@ -68,7 +68,8 @@
           "dag_step":       { "type": ["integer", "null"] },
           "outcome":        { "type": "string", "enum": ["success", "rerouted", "partial", "failed"] },
           "context_tokens": { "type": "integer", "minimum": 0 },
-          "reason":         { "type": "string" }
+          "reason":         { "type": "string" },
+          "missing_state_update": { "type": "boolean" }
         },
         "additionalProperties": false
       }
