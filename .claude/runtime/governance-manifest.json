@@ -40,6 +40,22 @@
       "enforcement": "post-agent-hook.js#INV-CONTRACT-DEBT",
       "kind": "signal",
       "status": "observed"
+    },
+    {
+      "id": "INV-AGENT-BUDGET",
+      "claim": "max 2–3 agents total — 4th Agent spawn is denied (enforce) or flagged (shadow)",
+      "doc_anchor": "agents total",
+      "enforcement": "pre-agent-gate.js#INV-AGENT-BUDGET",
+      "kind": "block",
+      "status": "shadow"
+    },
+    {
+      "id": "INV-SECURITY-COAGENT",
+      "claim": "HIGH-risk security surface requires a security-reviewer co-agent",
+      "doc_anchor": "security-reviewer as co-agent",
+      "enforcement": "pre-agent-gate.js#INV-SECURITY-COAGENT",
+      "kind": "block",
+      "status": "shadow"
     }
   ]
 }

@@ -17,7 +17,7 @@
           "enforcement": { "type": "string", "pattern": "^[\\w.-]+#[\\w-]+$" },
           "kind":        { "type": "string", "enum": ["block", "signal", "advisory"] },
           "telemetry":   { "type": "string" },
-          "status":      { "type": "string", "enum": ["enforced", "observed", "advisory", "planned"] }
+          "status":      { "type": "string", "enum": ["enforced", "observed", "advisory", "planned", "shadow"] }
         },
         "additionalProperties": false
       }
