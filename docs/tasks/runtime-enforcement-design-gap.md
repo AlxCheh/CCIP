@@ -3,7 +3,7 @@
 **ID:** TASK-2026-06-06-runtime-enforcement-design
 **Task Type:** Architecture Change (правит State Contract §15 + рантайм-хуки)
 **Routing:** `brainstorming` (skill, обязательно первым) → `ccip-architect` (lead, T4); co-agent при реализации — `ccip-backend-aux` (хуки)
-**Status:** open · backlog — требуется brainstorming-сессия по выбору scope (пункт 1 ИЛИ 2)
+**Status:** design ready · RFC опубликован — `docs/plans/specs/2026-06-07-machine-enforced-runtime-governance-design.md`. Системный план enforcement (3 plane: enforcement/telemetry/semantic) покрывает оба пункта как частные случаи. Первый имплементационный PR (R1+R2) расписан в `docs/plans/2026-06-07-runtime-governance-foundation.md`.
 **Raised:** 2026-06-06 (runtime-focused Red Team аудит, runtime integrity score 61/100)
 
 ---
@@ -63,6 +63,8 @@ TBD — формулируются на выходе brainstorming.
 
 ## Ссылки
 
+- **RFC (системный дизайн):** `docs/plans/specs/2026-06-07-machine-enforced-runtime-governance-design.md` — Machine-Enforced Runtime Governance, закрывает оба пункта системно
+- **План реализации R1+R2:** `docs/plans/2026-06-07-runtime-governance-foundation.md` — governance-manifest + trigger-integrity audit + tool-telemetry (TDD)
 - Runtime Red Team аудит — сессия 2026-06-06 (runtime integrity 61/100, H-RT-1/H-RT-2 CONFIRMED)
 - State Contract — `CLAUDE.md §15`
 - Хуки — `.claude/runtime/{post-agent-hook,flush-state,execute-dag}.js`
