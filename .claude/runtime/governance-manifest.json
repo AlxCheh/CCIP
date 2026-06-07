@@ -65,6 +65,22 @@
       "kind": "signal",
       "telemetry": "feedback-loop.md:§5",
       "status": "observed"
+    },
+    {
+      "id": "INV-READING-DISCIPLINE",
+      "claim": "full read of a protected large file is denied (enforce) or flagged (shadow) — use offset/limit",
+      "doc_anchor": "Reading Discipline",
+      "enforcement": "read-gate.js#INV-READING-DISCIPLINE",
+      "kind": "block",
+      "status": "shadow"
+    },
+    {
+      "id": "INV-FALLBACK-PROFILE",
+      "claim": "fallback step injects the degraded specialist's domain invariants into the prompt",
+      "doc_anchor": "fallback при DEGRADED",
+      "enforcement": "execute-dag.js#INV-FALLBACK-PROFILE",
+      "kind": "advisory",
+      "status": "observed"
     }
   ]
 }

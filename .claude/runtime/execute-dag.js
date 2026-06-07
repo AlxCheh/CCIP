@@ -28,6 +28,7 @@ const fs   = require('fs');
 const path = require('path');
 const cp   = require('child_process');
 const rl   = require('readline');
+const { buildFallbackContext } = require('./fallback-context');
 
 // ── config ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,11 @@ const STATE_FILE = path.join(ROOT, '.claude/runtime/session-state.json');
 const AGENTS_DIR = path.join(ROOT, '.claude/agents');
 const TIMEOUT_MS = 5 * 60 * 1000;
 const RETRY_BASE = 2000;             // ms — base for exponential backoff
+
+function loadFallbackProfiles() {
+  try { return JSON.parse(fs.readFileSync(path.join(ROOT, '.claude/runtime/fallback-profiles.json'), 'utf-8')); }
+  catch { return {}; }
+}
 
 const DRY_RUN     = process.argv.includes('--dry-run');
 const RESUME      = process.argv.includes('--resume');
@@ -189,8 +195,12 @@ function buildPrompt(state, step) {
     );
   }
 
+  // [INV-FALLBACK-PROFILE] RFC R8 — inject domain invariants when this step is a fallback.
+  const fallbackCtx = step.fallback_for
+    ? buildFallbackContext(step.fallback_for, loadFallbackProfiles()) : '';
   return [
     loadAgent(step.agent) || `You are ${step.agent}, a specialised CCIP agent.`,
+    fallbackCtx,
     '', '---', '',
     '## Session Context',
     `Task: ${state.task}`,

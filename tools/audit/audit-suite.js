@@ -36,9 +36,11 @@ const PHASES = {
     'orphan-dirs.js',
     'delivery-paths.js',
     'memory-fs-sync.js',
+    'fallback-profiles.js',
   ],
   '§10.8 Semantic integrity': [
     'trigger-integrity.js',
+    'rgs.js',
   ],
 };
 

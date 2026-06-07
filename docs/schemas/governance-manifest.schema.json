@@ -14,7 +14,7 @@
           "id":          { "type": "string", "pattern": "^INV-[A-Z0-9-]+$" },
           "claim":       { "type": "string" },
           "doc_anchor":  { "type": "string" },
-          "enforcement": { "type": "string", "pattern": "^[\\w.-]+#[\\w-]+$" },
+          "enforcement": { "type": "string", "pattern": "^[a-zA-Z0-9][\\w.-]*#[\\w-]+$" },
           "kind":        { "type": "string", "enum": ["block", "signal", "advisory"] },
           "telemetry":   { "type": "string" },
           "status":      { "type": "string", "enum": ["enforced", "observed", "advisory", "planned", "shadow"] }
