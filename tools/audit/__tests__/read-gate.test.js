@@ -43,3 +43,30 @@ test('non-Read tool → allow', () => {
   const r = evaluateReadGate({ tool_name: 'Bash', tool_input: {} }, { enforce: true });
   assert.strictEqual(r.decision, 'allow');
 });
+
+const fs = require('node:fs');
+const cp = require('node:child_process');
+const HOOK = path.join(root, '.claude/runtime/read-gate.js');
+
+test('main: enforce mode emits permissionDecision deny on protected full read', () => {
+  const payload = JSON.stringify({ tool_name: 'Read', tool_input: { file_path: 'docs/architecture/x.md' } });
+  const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
+    env: { ...process.env, CCIP_READGATE_ENFORCE: '1' } });
+  assert.strictEqual(res.status, 0);
+  const out = JSON.parse(res.stdout);
+  assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'deny');
+});
+
+test('main: shadow mode (default) allows but warns on stderr', () => {
+  const payload = JSON.stringify({ tool_name: 'Read', tool_input: { file_path: 'docs/architecture/x.md' } });
+  const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+  assert.strictEqual(res.status, 0);
+  assert.strictEqual(res.stdout.trim(), '');
+  assert.match(res.stderr, /would-deny/i);
+});
+
+test('main: fail-open on malformed payload', () => {
+  const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
+  assert.strictEqual(res.status, 0);
+  assert.strictEqual(res.stdout.trim(), '');
+});

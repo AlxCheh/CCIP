@@ -29,3 +29,24 @@ function evaluateReadGate(payload, opts = {}) {
 }
 
 module.exports = { evaluateReadGate, isFullRead, DEFAULT_PROTECTED };
+
+// ── main (PreToolUse[Read] entrypoint) ──────────────────────────────────────────
+if (require.main === module) {
+  const ENFORCE = process.env.CCIP_READGATE_ENFORCE === '1';
+  const deny = (reason) => process.stdout.write(JSON.stringify({
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason },
+  }));
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', c => { raw += c; });
+  process.stdin.on('end', () => {
+    try {
+      const r = evaluateReadGate(JSON.parse(raw), { enforce: ENFORCE });
+      if (r.wouldDeny) process.stderr.write(`[read-gate] SHADOW would-deny: ${r.reason}\n`);
+      if (r.decision === 'deny') { process.stderr.write(`[read-gate] DENY: ${r.reason}\n`); deny(r.reason); }
+    } catch (e) {
+      process.stderr.write(`[read-gate] ${e.message}\n`); // fail-open
+    }
+    process.exit(0);
+  });
+}
