@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/event.json",
+  "title": "CCIP Tool Telemetry Event",
+  "type": "object",
+  "required": ["ts", "session", "tool", "outcome"],
+  "properties": {
+    "ts":        { "type": "string" },
+    "session":   { "type": "string" },
+    "tool":      { "type": "string" },
+    "target":    { "type": "string" },
+    "bytes":     { "type": "integer", "minimum": 0 },
+    "full_read": { "type": "boolean" },
+    "outcome":   { "type": "string", "enum": ["ok", "error"] }
+  },
+  "additionalProperties": false
+}
