@@ -40,3 +40,38 @@ function buildEvent(p, session) {
 }
 
 module.exports = { isFullRead, extractTarget, buildEvent };
+
+// ── main (PostToolUse entrypoint) ──────────────────────────────────────────────
+if (require.main === module) {
+  const fs = require('fs');
+  const path = require('path');
+  const ROOT = path.resolve(__dirname, '../..');
+  const EVENTS = process.env.CCIP_EVENTS_FILE
+    || path.join(ROOT, '.claude/runtime/events.jsonl');
+  const STATE = path.join(ROOT, '.claude/runtime/session-state.json');
+  const MAX_BYTES = 5 * 1024 * 1024;
+
+  const sessionId = () => {
+    try { return JSON.parse(fs.readFileSync(STATE, 'utf-8')).session_id || ''; }
+    catch { return ''; }
+  };
+  const rotate = () => {
+    try { if (fs.statSync(EVENTS).size > MAX_BYTES) fs.renameSync(EVENTS, EVENTS + '.1'); }
+    catch {}
+  };
+
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', c => { raw += c; });
+  process.stdin.on('end', () => {
+    try {
+      const payload = JSON.parse(raw);
+      rotate();
+      // [INV-TOOL-TELEMETRY] RFC R2 — one event per tool call, inline-session coverage
+      fs.appendFileSync(EVENTS, JSON.stringify(buildEvent(payload, sessionId())) + '\n', 'utf-8');
+    } catch (e) {
+      process.stderr.write(`[tool-telemetry] ${e.message}\n`);
+    }
+    process.exit(0); // fail-open — governance must never break the session
+  });
+}

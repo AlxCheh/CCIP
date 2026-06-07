@@ -53,3 +53,24 @@ test('event schema validates a built event', () => {
     tool_response: { content: 'x' } }, 'sess-1');
   assert.equal(validate(ev), true, JSON.stringify(validate.errors));
 });
+
+test('hook appends one JSONL line per tool call into CCIP_EVENTS_FILE', () => {
+  const tmp = path.join(os.tmpdir(), `events-${Date.now()}-a.jsonl`);
+  const payload = JSON.stringify({ tool_name: 'Read',
+    tool_input: { file_path: 'a.md' }, tool_response: { content: 'x' } });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
+      env: { ...process.env, CCIP_EVENTS_FILE: tmp } });
+    assert.strictEqual(res.status, 0);
+    const lines = fs.readFileSync(tmp, 'utf-8').trim().split('\n').filter(Boolean);
+    assert.strictEqual(lines.length, 1);
+    const ev = JSON.parse(lines[0]);
+    assert.strictEqual(ev.tool, 'Read');
+    assert.strictEqual(ev.full_read, true);
+  } finally { fs.rmSync(tmp, { force: true }); }
+});
+
+test('hook is fail-open on malformed payload (exit 0, no throw)', () => {
+  const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
+  assert.strictEqual(res.status, 0);
+});
