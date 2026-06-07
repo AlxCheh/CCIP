@@ -1,0 +1,10 @@
+{
+  "ccip-backend-core": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "PeriodEngine — state machine; не мутировать period после lock",
+      "BullMQ workers идемпотентны; Transactional Outbox обязателен для внешних эффектов"
+    ],
+    "forbidden": ["прямой UPDATE на immutable period"]
+  }
+}

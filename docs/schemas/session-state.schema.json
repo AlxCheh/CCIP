@@ -30,7 +30,8 @@
           "scope":      { "type": "string" },
           "status":     { "type": "string", "enum": ["pending", "running", "done", "failed"] },
           "depends_on": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
-          "retries":    { "type": "integer", "minimum": 0 }
+          "retries":    { "type": "integer", "minimum": 0 },
+          "fallback_for": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
         },
         "additionalProperties": false
       }
