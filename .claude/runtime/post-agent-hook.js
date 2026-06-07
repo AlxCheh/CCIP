@@ -76,12 +76,11 @@ function resolveAgent(toolInput) {
     return agents.has(toolInput.subagent_type) ? toolInput.subagent_type : null;
   }
   // Scan description and prompt for whole-word mentions of real agent names.
+  // Require EXACTLY ONE match — ambiguous (or zero) mentions resolve to null so a
+  // non-deterministic first-hit can't misattribute the call (F-RT-10).
   const haystack = `${toolInput.description || ''} ${toolInput.prompt || ''}`;
-  for (const name of agents) {
-    const re = new RegExp(`\\b${name}\\b`);
-    if (re.test(haystack)) return name;
-  }
-  return null;
+  const matches = [...agents].filter(name => new RegExp(`\\b${name}\\b`).test(haystack));
+  return matches.length === 1 ? matches[0] : null;
 }
 
 /** Flatten Claude tool_response to a plain string */

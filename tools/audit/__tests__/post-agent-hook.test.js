@@ -132,3 +132,31 @@ test('dag_step is resolved by agent name, not current_step index (F-RT-09)', () 
     restore();
   }
 });
+
+test('resolveAgent returns null when prompt mentions multiple agent names (F-RT-10)', () => {
+  const restore = backupState();
+  try {
+    const state = {
+      session_id: '2026-01-01-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+    };
+    fs.writeFileSync(STATE, JSON.stringify(state), 'utf-8');
+
+    // No subagent_type; prompt names TWO real agents → ambiguous → no record.
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { prompt: 'coordinate ccip-architect and ccip-backend-core for this' },
+      tool_response: { content: 'done' },
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    assert.strictEqual(after.observations.length, 0,
+      'ambiguous agent mention must produce no observation (null resolve)');
+    assert.deepEqual(after.agent_outputs, {},
+      'ambiguous agent mention must not write agent_outputs');
+  } finally {
+    restore();
+  }
+});
