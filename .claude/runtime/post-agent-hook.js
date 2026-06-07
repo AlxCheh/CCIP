@@ -185,10 +185,13 @@ function run(raw) {
   // ── observations ───────────────────────────────────────────────────────────
   if (!state.observations) state.observations = [];
 
-  // Resolve dag_step: use step.step NUMBER (1-based) not array index (audit C-03).
-  const currentDagStep = Array.isArray(state.dag) && state.dag.length > 0
-      ? (state.dag[state.current_step ?? 0]?.step ?? null)
+  // Resolve dag_step by THIS agent's step, not by current_step index — robust to
+  // parallel/out-of-order completion (F-RT-09). First match wins if an agent
+  // appears in multiple steps (acceptable; multi-step same-agent is out of scope).
+  const stepObj = Array.isArray(state.dag)
+      ? state.dag.find(s => s.agent === agent)
       : null;
+  const currentDagStep = stepObj?.step ?? null;
 
   state.observations.push({
     agent,
@@ -202,12 +205,10 @@ function run(raw) {
 
   // ── DAG step advance ───────────────────────────────────────────────────────
   if (Array.isArray(state.dag) && state.dag.length > 0) {
-    const idx = state.current_step ?? 0;
-    if (state.dag[idx]) state.dag[idx].status = 'done';
-    state.current_step = idx + 1;
-
-    // Mark session done when all steps completed
-    if (state.current_step >= state.dag.length) {
+    if (stepObj) stepObj.status = 'done';
+    // current_step tracks how many steps are done (consistent with execute-dag.js).
+    state.current_step = state.dag.filter(s => s.status === 'done').length;
+    if (state.dag.every(s => s.status === 'done')) {
       state.status = 'done';
     }
   }
