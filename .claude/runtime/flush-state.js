@@ -40,40 +40,48 @@ function run() {
     );
   } catch {}
 
-  const lines = observations.map(obs => {
+  // Keep only observations that survive validation, so the rollup denominator and
+  // the persisted JSON records agree on the same set (no phantom/unnamed skew — F-03).
+  const kept = observations.filter(obs => {
     if (!obs.agent) {
       process.stderr.write('[flush-state] ⚠ observation without agent — skipped\n');
-      return null;
+      return false;
     }
     if (realAgents.size > 0 && !realAgents.has(obs.agent)) {
       process.stderr.write(`[flush-state] ✗ phantom agent "${obs.agent}" — skipped (not in .claude/agents/)\n`);
-      return null;
+      return false;
     }
     if (dagAgents.size > 0 && !dagAgents.has(obs.agent)) {
       process.stderr.write(`[flush-state] ⚠ observation from non-DAG agent "${obs.agent}" — kept (co-agent semantics) but flagged\n`);
     }
-    return JSON.stringify({
-      agent:          obs.agent,
-      session:        obs.session        || sessionId.slice(0, 10),
-      written_at:     obs.written_at     || new Date().toISOString(),
-      dag_step:       obs.dag_step       ?? null,
-      outcome:        obs.outcome        || '',
-      context_tokens: obs.context_tokens || 0,
-      reason:         obs.reason         || '',
-    });
-  }).filter(Boolean);
+    return true;
+  });
+
+  const lines = kept.map(obs => JSON.stringify({
+    agent:          obs.agent,
+    session:        obs.session        || sessionId.slice(0, 10),
+    written_at:     obs.written_at     || new Date().toISOString(),
+    dag_step:       obs.dag_step       ?? null,
+    outcome:        obs.outcome        || '',
+    context_tokens: obs.context_tokens || 0,
+    reason:         obs.reason         || '',
+    // ADR-017: persist the contract flag so feedback-loop.md stays machine-observable.
+    // Default false for legacy records that predate the field (backward-compat).
+    missing_state_update: obs.missing_state_update === true,
+  }));
 
   const batchHash = crypto.createHash('sha1')
     .update(lines.join('\n')).digest('hex').slice(0, 8);
   const idemKey = `flush:${sessionId}:${batchHash}`;
 
-  // ADR-017: surface agents that skipped the ## State Update block.
-  const missing = observations.filter(o => o.missing_state_update === true);
+  // ADR-017: surface agents that skipped the ## State Update block. Counted from the
+  // kept set so N/M matches the records actually written.
+  const missing = kept.filter(o => o.missing_state_update === true);
   const rollup = missing.length > 0
-    ? [`> ⚠ ${sessionId.slice(0, 10)}: ${missing.length}/${observations.length} agents без ## State Update (${missing.map(o => o.agent).join(', ')})`]
+    ? [`> ⚠ ${sessionId.slice(0, 10)}: ${missing.length}/${kept.length} agents без ## State Update (${missing.map(o => o.agent).join(', ')})`]
     : [];
   if (missing.length > 0) {
-    process.stderr.write(`[flush-state] ⚠ ${missing.length}/${observations.length} observations missing ## State Update\n`);
+    process.stderr.write(`[flush-state] ⚠ ${missing.length}/${kept.length} observations missing ## State Update\n`);
   }
 
   const block = [

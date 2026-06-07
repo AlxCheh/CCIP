@@ -161,7 +161,7 @@ FLUSH   Stop hook: flush-state.js -> observations[] to docs/tasks/feedback-loop.
 ```
 ````
 
-Missing block -> `post-agent-hook.js` flags the observation `missing_state_update:true` and sets a fallback summary (allowed, lowers routing quality); surfaced via stderr and a Stop-time rollup in feedback-loop.md §4. See ADR-017.
+Missing block -> the observation writer (`post-agent-hook.js` in live sessions, `execute-dag.js` in autonomous DAG runs) flags it `missing_state_update:true` and sets a fallback summary (allowed, lowers routing quality); surfaced via stderr and a Stop-time rollup in feedback-loop.md §4. See ADR-017.
 
 **Inject-safety:** `handoff_notes` is injected into the next prompt between `<!-- handoff-data -->` / `<!-- /handoff-data -->`; agents must not copy handoff data into their own `handoff_notes` without intent. See `sanitizeHandoff()` in `.claude/runtime/execute-dag.js`.
 
