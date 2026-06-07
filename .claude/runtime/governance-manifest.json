@@ -75,6 +75,14 @@
       "status": "shadow"
     },
     {
+      "id": "INV-FAILURE-DETECTOR",
+      "claim": "Stop-time detectors surface SSC degradation, telemetry blackout, handoff decay, contract collapse, fallback degradation into governance_alerts[]",
+      "doc_anchor": "observations[]",
+      "enforcement": "failure-detectors.js#INV-FAILURE-DETECTOR",
+      "kind": "signal",
+      "status": "observed"
+    },
+    {
       "id": "INV-FALLBACK-PROFILE",
       "claim": "fallback step injects the degraded specialist's domain invariants into the prompt",
       "doc_anchor": "fallback при DEGRADED",
