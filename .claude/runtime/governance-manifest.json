@@ -32,6 +32,14 @@
       "kind": "signal",
       "telemetry": "events.jsonl:tool_use",
       "status": "observed"
+    },
+    {
+      "id": "INV-CONTRACT-DEBT",
+      "claim": "repeated missing ## State Update accrues contract_debt; threshold raises a governance alert",
+      "doc_anchor": "§15",
+      "enforcement": "post-agent-hook.js#INV-CONTRACT-DEBT",
+      "kind": "signal",
+      "status": "observed"
     }
   ]
 }
