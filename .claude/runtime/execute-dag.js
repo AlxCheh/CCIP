@@ -276,6 +276,9 @@ function validateDependencyOutputs(state, step) {
 
 function applyStepResult(state, step, output) {
   const upd = extractUpdate(output);
+  if (upd === null) {
+    console.error(`[execute-dag] ⚠ ${step.agent}: no valid ## State Update block`);
+  }
   state.agent_outputs = state.agent_outputs || {};
   state.agent_outputs[step.agent] = {
     summary:       upd?.summary       || `${step.agent} completed`,
@@ -291,6 +294,7 @@ function applyStepResult(state, step, output) {
     outcome:        'success',
     context_tokens: Math.round(output.length / 4),
     reason:         '',
+    missing_state_update: upd === null,
   });
   state.dag.find(s => s.step === step.step).status = 'done';
   state.current_step = (state.current_step || 0) + 1;
@@ -467,5 +471,5 @@ async function main() {
 if (require.main === module) {
   main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
 } else {
-  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState };
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState, applyStepResult };
 }
