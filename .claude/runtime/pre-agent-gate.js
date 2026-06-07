@@ -43,3 +43,39 @@ function evaluateGate(state, payload, opts = {}) {
 }
 
 module.exports = { evaluateGate };
+
+// ── main (PreToolUse[Agent] entrypoint) ─────────────────────────────────────────
+if (require.main === module) {
+  const fs = require('fs');
+  const path = require('path');
+  const ROOT = path.resolve(__dirname, '../..');
+  const STATE = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
+  const ENFORCE = process.env.CCIP_GATE_ENFORCE === '1';
+  const MAX = parseInt(process.env.CCIP_MAX_AGENTS || '3', 10);
+
+  const readState = () => {
+    try { return JSON.parse(fs.readFileSync(STATE, 'utf-8')); } catch { return {}; }
+  };
+  const deny = (reason) => process.stdout.write(JSON.stringify({
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason },
+  }));
+
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', c => { raw += c; });
+  process.stdin.on('end', () => {
+    try {
+      const payload = JSON.parse(raw);
+      const r = evaluateGate(readState(), payload, { enforce: ENFORCE, maxAgents: MAX });
+      if (r.overridden) process.stderr.write('[pre-agent-gate] budget override used (audited)\n');
+      if (r.wouldDeny) process.stderr.write(`[pre-agent-gate] SHADOW would-deny: ${r.reason}\n`);
+      if (r.decision === 'deny') {
+        process.stderr.write(`[pre-agent-gate] DENY: ${r.reason}\n`);
+        deny(r.reason);
+      }
+    } catch (e) {
+      process.stderr.write(`[pre-agent-gate] ${e.message}\n`); // fail-open: allow
+    }
+    process.exit(0);
+  });
+}

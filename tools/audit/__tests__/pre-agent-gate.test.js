@@ -53,3 +53,46 @@ test('non-Agent payload → allow (gate is Agent-only)', () => {
   const r = evaluateGate({ risk: 'HIGH' }, { tool_name: 'Bash', tool_input: {} }, { enforce: true });
   assert.strictEqual(r.decision, 'allow');
 });
+
+const fs = require('node:fs');
+const os = require('node:os');
+const cp = require('node:child_process');
+const HOOK = path.join(root, '.claude/runtime/pre-agent-gate.js');
+
+function writeTmpState(obj) {
+  const tmp = path.join(os.tmpdir(), `gate-state-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  fs.writeFileSync(tmp, JSON.stringify(obj), 'utf-8');
+  return tmp;
+}
+
+test('main: enforce mode emits permissionDecision deny over budget', () => {
+  const stateFile = writeTmpState({ session_id: 's', risk: 'LOW',
+    observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }], dag: [] });
+  const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+    assert.strictEqual(res.status, 0);
+    const out = JSON.parse(res.stdout);
+    assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'deny');
+  } finally { fs.rmSync(stateFile, { force: true }); }
+});
+
+test('main: shadow mode (default) allows but warns on stderr', () => {
+  const stateFile = writeTmpState({ session_id: 's', risk: 'LOW',
+    observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }], dag: [] });
+  const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
+      env: { ...process.env, CCIP_STATE_FILE: stateFile } });
+    assert.strictEqual(res.status, 0);
+    assert.strictEqual(res.stdout.trim(), '', 'shadow must not emit a deny decision');
+    assert.match(res.stderr, /would-deny/i);
+  } finally { fs.rmSync(stateFile, { force: true }); }
+});
+
+test('main: fail-open on malformed payload (exit 0, empty stdout)', () => {
+  const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
+  assert.strictEqual(res.status, 0);
+  assert.strictEqual(res.stdout.trim(), '');
+});
