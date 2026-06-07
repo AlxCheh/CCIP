@@ -66,10 +66,21 @@ function run() {
   const batchHash = crypto.createHash('sha1')
     .update(lines.join('\n')).digest('hex').slice(0, 8);
   const idemKey = `flush:${sessionId}:${batchHash}`;
+
+  // ADR-017: surface agents that skipped the ## State Update block.
+  const missing = observations.filter(o => o.missing_state_update === true);
+  const rollup = missing.length > 0
+    ? [`> ⚠ ${sessionId.slice(0, 10)}: ${missing.length}/${observations.length} agents без ## State Update (${missing.map(o => o.agent).join(', ')})`]
+    : [];
+  if (missing.length > 0) {
+    process.stderr.write(`[flush-state] ⚠ ${missing.length}/${observations.length} observations missing ## State Update\n`);
+  }
+
   const block = [
     '',
     `<!-- ${idemKey} | task: ${task.slice(0, 60)} -->`,
     ...lines,
+    ...rollup,
     ''
   ].join('\n');
 
