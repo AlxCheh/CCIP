@@ -39,6 +39,20 @@ test('full read of a non-protected path → allow', () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
+test('offset-only read of a protected path is still unbounded (no limit) → deny', () => {
+  // offset without limit can read the rest of the file — still a full/unbounded read.
+  const r = evaluateReadGate(readPayload({ file_path: 'docs/architecture/x.md', offset: 5 }),
+    { enforce: true });
+  assert.strictEqual(r.decision, 'deny');
+});
+
+test('subdocs-decoy: path with different prefix does NOT match protected dir', () => {
+  // "other-docs/architecture/x.md" must NOT trigger the "docs/architecture/" guard.
+  const r = evaluateReadGate(readPayload({ file_path: 'other-docs/architecture/x.md' }),
+    { enforce: true });
+  assert.strictEqual(r.decision, 'allow');
+});
+
 test('non-Read tool → allow', () => {
   const r = evaluateReadGate({ tool_name: 'Bash', tool_input: {} }, { enforce: true });
   assert.strictEqual(r.decision, 'allow');

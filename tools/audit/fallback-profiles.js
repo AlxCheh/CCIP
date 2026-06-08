@@ -17,6 +17,7 @@ catch (e) { fail(`cannot read ${FILE}: ${e.message}`); }
 for (const [agent, p] of Object.entries(profiles)) {
   for (const anchor of (p.domain_anchors || [])) {
     const file = String(anchor).split('#')[0];
+    if (!file) fail(`${agent}: domain_anchor has no file path — "${anchor}"`);
     if (!fs.existsSync(path.join(root, file)))
       fail(`${agent}: domain_anchor file missing — ${file}`);
   }

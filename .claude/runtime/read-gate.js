@@ -12,7 +12,7 @@ const DEFAULT_PROTECTED = ['docs/architecture/', '.claude/agents/'];
 function isFullRead(p) {
   if (!p || p.tool_name !== 'Read') return false;
   const i = p.tool_input || {};
-  return i.offset == null && i.limit == null;
+  return i.limit == null;
 }
 
 /** Pure decision: { decision:'allow'|'deny', reason?, wouldDeny? }. */
@@ -21,7 +21,7 @@ function evaluateReadGate(payload, opts = {}) {
   if (!payload || payload.tool_name !== 'Read') return { decision: 'allow' };
   if (!isFullRead(payload)) return { decision: 'allow' };
   const fp = String((payload.tool_input || {}).file_path || '').replace(/\\/g, '/').replace(/\/\/+/g, '/');
-  const hit = protectedPaths.find(g => fp.includes(g));
+  const hit = protectedPaths.find(g => fp === g.replace(/\/$/, '') || fp.startsWith(g) || fp.includes('/' + g));
   if (!hit) return { decision: 'allow' };
   const reason = `[read-gate] full read of protected path "${hit}" — use offset/limit `
     + `(CLAUDE.md §16 Reading Discipline)`;

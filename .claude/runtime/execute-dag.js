@@ -198,6 +198,8 @@ function buildPrompt(state, step) {
   // [INV-FALLBACK-PROFILE] RFC R8 — inject domain invariants when this step is a fallback.
   const fallbackCtx = step.fallback_for
     ? buildFallbackContext(step.fallback_for, loadFallbackProfiles()) : '';
+  if (step.fallback_for && !fallbackCtx)
+    console.warn(`[execute-dag] ⚠ fallback_for="${step.fallback_for}" has no profile — domain context missing.`);
   return [
     loadAgent(step.agent) || `You are ${step.agent}, a specialised CCIP agent.`,
     fallbackCtx,

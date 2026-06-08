@@ -70,5 +70,7 @@ function main() {
   process.exit(0);
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+  try { main(); } catch (e) { process.stderr.write(`[RGS] ${e.message}\n`); process.exit(0); }
+}
 module.exports = { computeEC, computeCCR, computeFC };

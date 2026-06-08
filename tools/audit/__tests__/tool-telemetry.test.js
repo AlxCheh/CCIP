@@ -72,6 +72,14 @@ test('hook appends one JSONL line per tool call into CCIP_EVENTS_FILE', () => {
   } finally { fs.rmSync(tmp, { force: true }); }
 });
 
+test('extractTarget trims leading whitespace before stripping env-var assignments', () => {
+  // Leading spaces must not prevent the env-var prefix regex from matching.
+  assert.strictEqual(
+    extractTarget({ tool_name: 'Bash', tool_input: { command: '  AUTH_TOKEN=ghp_xxx gh api repos' } }),
+    'gh',
+  );
+});
+
 test('hook is fail-open on malformed payload (exit 0, no throw)', () => {
   const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
   assert.strictEqual(res.status, 0);
