@@ -16,6 +16,7 @@ const CROSS_DOC_ALLOWLIST = [
   'docs/plans/archive/2026-05-12-zero-drift-compliance-section10.md',
   'docs/team_roles_v1_0.md',
   'docs/plans/2026-06-07-runtime-governance-phase3.md',
+  'docs/decisions/ADR-018-machine-enforced-runtime-governance.md',
 ];
 
 function stripCodeBlocks(md) {
