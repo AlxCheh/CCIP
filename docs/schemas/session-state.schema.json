@@ -68,10 +68,16 @@
         "type": "object",
         "required": ["kind"],
         "properties": {
-          "kind":  { "type": "string" },
-          "at":    { "type": "string" },
-          "debt":  { "type": "integer", "minimum": 0 },
-          "agent": { "type": "string" }
+          "kind":      { "type": "string" },
+          "at":        { "type": "string" },
+          "session":   { "type": "string" },
+          "debt":      { "type": "integer", "minimum": 0 },
+          "agent":     { "type": "string" },
+          "ssc":       { "type": "number", "minimum": 0, "maximum": 1 },
+          "threshold": { "type": "number", "minimum": 0 },
+          "ratio":     { "type": "number", "minimum": 0, "maximum": 1 },
+          "agents":    { "type": "integer", "minimum": 0 },
+          "steps":     { "type": "array", "items": { "type": "integer", "minimum": 1 } }
         },
         "additionalProperties": false
       }
