@@ -94,6 +94,14 @@
         "hooks": [
           {
             "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/contract-debt-injector.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-turn-hook.js"
           }
         ]
@@ -113,6 +121,14 @@
           {
             "type": "command",
             "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/aggregate-telemetry.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/failure-detectors.js"
           }
         ]
       },
