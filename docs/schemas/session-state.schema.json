@@ -62,6 +62,11 @@
       "minimum": 0,
       "description": "Счётчик пропусков ## State Update за сессию (ADR-017 Level 1 эскалация)"
     },
+    "contract_debt_agents": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Агенты с missing_state_update=true, перенесённые из observations при flush (D-05)"
+    },
     "governance_alerts": {
       "type": "array",
       "items": {
