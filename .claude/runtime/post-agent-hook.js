@@ -15,7 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { sanitizeHandoff } = require('./sanitize-utils'); // D-04: sanitize in live-session path
+const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/UU-4
 
 const ROOT        = path.resolve(__dirname, '../..');
 const STATE       = path.join(ROOT, '.claude/runtime/session-state.json');
@@ -94,28 +94,6 @@ function responseText(toolResponse) {
   return JSON.stringify(toolResponse);
 }
 
-/**
- * Look for the agent-emitted structured block:
- *
- *   ## State Update
- *   ```json
- *   { "summary": "...", "artifacts": [...], "handoff_notes": "..." }
- *   ```
- */
-function extractStructured(text) {
-  const re = /##\s*State\s*Update\s*```(?:json)?\s*(\{[\s\S]*?\})\s*```/i;
-  const m = text.match(re);
-  if (!m) return null;
-  try {
-    const obj = JSON.parse(m[1]);
-    return {
-      summary:        (typeof obj.summary       === 'string' ? obj.summary.trim()       : '') || '',
-      artifacts:      (Array.isArray(obj.artifacts)           ? obj.artifacts            : []),
-      handoff_notes:  (typeof obj.handoff_notes === 'string' ? obj.handoff_notes.trim() : '') || '',
-    };
-  } catch { return null; }
-}
-
 /** Rough token estimate: ~4 chars per token */
 function estimateTokens(text) {
   return Math.round((text || '').length / 4);
@@ -166,7 +144,7 @@ function run(raw) {
 
   const text    = responseText(payload.tool_response);
   const tokens  = estimateTokens(text);
-  const parsed  = extractStructured(text);
+  const parsed  = parseStateUpdate(text); // UU-4: brace-balanced, last-match semantics
   // [INV-STATE-CONTRACT] ADR-017 — observability of missing ## State Update
   const missingBlock = parsed === null;
   if (missingBlock) {

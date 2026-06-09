@@ -87,7 +87,7 @@ function updateState(fn) {
 }
 
 // ── sanitize handoff ──────────────────────────────────────────────────────────
-const { sanitizeHandoff } = require('./sanitize-utils'); // D-04/D-13: extracted to shared module
+const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/D-13/UU-5
 
 // ── agent loading ─────────────────────────────────────────────────────────────
 
@@ -190,14 +190,6 @@ function buildPrompt(state, step) {
   ].join('\n');
 }
 
-// ── output extraction ─────────────────────────────────────────────────────────
-
-function extractUpdate(text) {
-  const m = text.match(/##\s*State\s*Update\s*```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
-  if (!m) return null;
-  try { return JSON.parse(m[1]); } catch { return null; }
-}
-
 // ── async step runner — true parallelism ──────────────────────────────────────
 
 // Exported for testing — builds claude CLI args based on SKIP_PERMS flag.
@@ -257,7 +249,7 @@ function validateDependencyOutputs(state, step) {
 // ── state mutation helpers ────────────────────────────────────────────────────
 
 function applyStepResult(state, step, output) {
-  const upd = extractUpdate(output);
+  const upd = parseStateUpdate(output); // UU-5: brace-balanced, last-match semantics
   // [INV-STATE-CONTRACT-DAG] ADR-017 — DAG-writer parity
   if (upd === null) {
     console.error(`[execute-dag] ⚠ ${step.agent}: no valid ## State Update block`);
