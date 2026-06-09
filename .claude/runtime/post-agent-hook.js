@@ -15,6 +15,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { sanitizeHandoff } = require('./sanitize-utils'); // D-04: sanitize in live-session path
 
 const ROOT        = path.resolve(__dirname, '../..');
 const STATE       = path.join(ROOT, '.claude/runtime/session-state.json');
@@ -183,7 +184,7 @@ function run(raw) {
   state.agent_outputs[agent] = {
     summary:       parsed?.summary       || `${agent} completed (no structured block)`,
     artifacts:     parsed?.artifacts     || [],
-    handoff_notes: parsed?.handoff_notes || '',
+    handoff_notes: sanitizeHandoff(parsed?.handoff_notes || ''), // D-04: sanitize in live-session path
   };
 
   // ── observations ───────────────────────────────────────────────────────────

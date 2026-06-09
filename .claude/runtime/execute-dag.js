@@ -87,37 +87,7 @@ function updateState(fn) {
 }
 
 // ── sanitize handoff ──────────────────────────────────────────────────────────
-// Strips lines that look like prompt-injection attempts before injecting
-// handoff_notes from a previous agent into the next agent's prompt.
-const INJECTION_RE = /^\s*(ignore|disregard|forget|override|system\s*:|you\s+are\s+now|new\s+instruction|act\s+as\b)/i;
-// system: anywhere in the line — primary mid-line injection vector (audit C-05)
-const INLINE_SYSTEM_RE = /\bsystem\s*:/i;
-// Mid-line imperative — injection keywords anywhere, targeted to avoid over-blocking
-// benign mentions (F-RT-06).
-const MIDLINE_INJECTION_RE =
-  /\b(ignore|disregard|forget|override)\b[\s\S]{0,20}\b(previous|prior|above|earlier|all)\b[\s\S]{0,20}\b(instruction|instructions|prompt|prompts|context|rules?)\b/i;
-
-// Strip zero-width and bidi-control chars, then NFKC-fold compatibility homoglyphs
-// (fullwidth, etc.) before injection matching (F-RT-07). Cross-script confusables
-// (e.g. Cyrillic look-alikes) are NOT covered — see Deferred note in plan.
-function normalizeForScan(line) {
-  return line.replace(/[​-‏‪-‮⁠﻿]/g, '').normalize('NFKC');
-}
-
-function sanitizeHandoff(notes) {
-  if (!notes) return '—';
-  if (typeof notes === 'object') return JSON.stringify(notes, null, 2);
-  const cleaned = String(notes)
-    .split(/\r\n|\r|\n/)
-    .filter(line => {
-      const scan = normalizeForScan(line);
-      return !INJECTION_RE.test(scan) && !INLINE_SYSTEM_RE.test(scan)
-        && !MIDLINE_INJECTION_RE.test(scan);
-    })
-    .join('\n')
-    .trim();
-  return cleaned || '—';
-}
+const { sanitizeHandoff } = require('./sanitize-utils'); // D-04/D-13: extracted to shared module
 
 // ── agent loading ─────────────────────────────────────────────────────────────
 
