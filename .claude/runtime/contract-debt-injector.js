@@ -39,7 +39,7 @@ if (require.main === module) {
       const msg = buildInjection(state);
       if (msg) {
         process.stdout.write(JSON.stringify({
-          hookSpecificOutput: { additionalSystemPrompt: msg },
+          hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalSystemPrompt: msg },
         }));
       }
     } catch (e) {
