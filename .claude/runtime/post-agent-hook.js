@@ -18,7 +18,7 @@ const path = require('path');
 const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/UU-4
 
 const ROOT        = path.resolve(__dirname, '../..');
-const STATE       = path.join(ROOT, '.claude/runtime/session-state.json');
+const STATE       = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
 const AGENTS_DIR  = path.join(ROOT, '.claude/agents');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
