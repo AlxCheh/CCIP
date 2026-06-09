@@ -359,6 +359,29 @@ ADR-010-audit-log-partitioning
 
 ---
 
+### ERROR-SECURITY-001
+
+Module: Security / Audit Tooling
+Severity: major
+Status: open
+
+Issue:
+`.claude/settings.local.json` contains wildcard Bash allowlist entries (`Bash(git *)`, `Bash(node *)`, `Bash(pnpm test *)`, etc.) that fail the `allowlist-literal.js` pre-commit check. The file is gitignored but is still read by the audit suite.
+
+Impact:
+Blocks `git commit` via pre-commit hook (audit-suite exit 1) on this machine. Commits to the repo cannot be completed without `--no-verify`.
+
+Root Cause:
+Wildcard entries were added to `settings.local.json` over successive sessions to grant broad Bash tool permissions. The allowlist-literal check (added later) flags any entry with a `*` suffix as a security risk.
+
+Resolution:
+Replace wildcard entries in `.claude/settings.local.json` with specific literal allowlist entries, or add the affected wildcards to an explicit allowlist exception with justification. See `tools/audit/allowlist-literal.js` for exact rules.
+
+Related ADR:
+None (local machine configuration)
+
+---
+
 ## 12. Error Routing Rules
 
 При работе с ошибкой:
@@ -595,3 +618,86 @@ file: `docs/errors/sessions/2026-06-03T18-11-16-404Z-8147527.md`
 **Pending review:** 2
 **Draft diagnostics:** 0
 **Findings:** Q-04:info, C-03:info
+
+### 2026-06-05T20-59-28-967Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-05T20-59-28-967Z-8858fd0.md`
+
+- L2_EVIDENCE_ROW_1: quote_too_long(86B) [source=git:8858fd0:HEAD]
+- L2_EVIDENCE_ROW_2: quote_too_long(118B) [source=repo:.claude/audit/agent-optimizer/rules.md]
+
+### 2026-06-05T21-01-54-610Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-05T21-01-54-610Z-8858fd0.md`
+
+- L2_EVIDENCE_ROW_1: anchor_not_found [source=git:8858fd0:.gitattributes]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-03-ccip-agent-optimizer.md]
+
+### 2026-06-06T17-41-26-958Z — VIOLATIONS detected (4)
+
+file: `docs/errors/sessions/2026-06-06T17-41-26-958Z-f02d7d2.md`
+
+- FIREWALL_SELF_ATTEST: "verified" найдена в bootstrap
+- L2_EVIDENCE_ROW_1: git_show_fail(f02d7d2:COMMIT) [source=git:f02d7d2:COMMIT]
+- L2_EVIDENCE_ROW_2: quote_too_long(89B) [source=repo:CLAUDE.md]
+- L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:tools/audit/__tests__/token-rules-apply.test.js]
+
+---
+
+## Navigator Optimization — 2026-06-06
+
+**Триггер:** Red Team audit remediation — CLAUDE.md Auxiliary Agents table: триггер token-efficiency-auditor изменён с «T-01..T-10» на «T-01,T-02,T-06..T-10 (T-03/T-04/T-05 quarantine)»; заголовок секции изменён на «condition/request-triggered»; добавлено примечание об оркестрационной конвенции; ADR-016 frontmatter-пример приведён к актуальному.
+
+**Покрытие task categories:** 8/8 покрыто (без изменений, задача — дельта-анализ)
+**Расхождения L vs T уровней:** нет (правки не затронули Context/Document Routing)
+**Дублирований устранено:** 0
+**Broken paths:** 0 (все 21 агент-файл в .claude/agents/ существуют, включая red-team-auditor.md)
+**Routing loops:** нет
+
+**Внесённые правки:** нет — навигационный слой согласован.
+
+**Наблюдения (без правок):**
+- Согласованность триггеров: CLAUDE.md строка token-efficiency-auditor («T-01,T-02,T-06..T-10; T-03/T-04/T-05 в quarantine; см. ADR-016»), frontmatter агента (description + summary: идентичная формулировка), ADR-016 §Seed-правила (R-007/R-009/R-012 = quarantine; T-03/T-04/T-05 соответствуют им) — три источника согласованы.
+- Заголовок «(condition/request-triggered, not via Intent table)» + примечание не создают конфликта с Risk Rules: security-reviewer по-прежнему описан в обоих местах (Risk Rules = «add as co-agent»; Auxiliary table = «risk:HIGH или JWT/…»), формулировки дополняют, не противоречат.
+- ADR-016 упомянут в CLAUDE.md в строке token-efficiency-auditor и в §15 State Contract; в docs/decisions/index.md присутствует под «Orchestration / Agent Runtime». Ссылки согласованы.
+- Различие T03/T04/T05: в ADR-016 Trigger-таблице T-03=context≥70%, T-04=token-spike, T-05=single_assistant_tokens>4000 — все три в quarantine. CLAUDE.md строка упоминает «context≥70%, token-spike» в скобках как пояснение триггеров (не routing-инструкция), расхождения маршрутизации нет.
+
+### 2026-06-07T08-09-17-486Z — VIOLATIONS detected (5)
+
+file: `docs/errors/sessions/2026-06-07T08-09-17-486Z-acf5a64.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-07-state-update-observability.md]
+- L2_EVIDENCE_ROW_2: quote_too_long(82B) [source=repo:docs/plans/2026-06-07-state-update-observability.md]
+- L2_EVIDENCE_ROW_9: quote_too_long(83B) [source=repo:docs/plans/specs/2026-06-07-state-update-observability-design.md]
+- L2_EVIDENCE_ROW_10: quote_too_long(116B) [source=repo:docs/plans/specs/2026-06-07-state-update-observability-design.md]
+- L2_EVIDENCE_ROW_11: quote_too_long(136B) [source=repo:docs/plans/specs/2026-06-07-state-update-observability-design.md]
+
+### 2026-06-08T18-14-40-328Z — VIOLATIONS detected (10)
+
+file: `docs/errors/sessions/2026-06-08T18-14-40-328Z-a68cb78.md`
+
+- L2_EVIDENCE_ROW_1: quote_too_long(95B) [source=git:a68cb78:.]
+- L2_EVIDENCE_ROW_2: git_show_fail(f6632ba:.) [source=git:f6632ba:.]
+- L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:docs/schemas/session-state.schema.json]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/schemas/session-state.schema.json]
+- L2_EVIDENCE_ROW_5: quote_too_long(84B) [source=repo:.claude/runtime/tool-telemetry.js]
+- L2_EVIDENCE_ROW_7: quote_not_in_anchor_window [source=repo:.claude/runtime/read-gate.js]
+- L2_EVIDENCE_ROW_8: quote_too_long(92B) [source=repo:tools/audit/rgs.js]
+- L2_EVIDENCE_ROW_9: quote_not_in_anchor_window [source=repo:.claude/runtime/fallback-context.js]
+- L2_EVIDENCE_ROW_11: quote_not_in_anchor_window [source=repo:tools/audit/fallback-profiles.js]
+- L2_EVIDENCE_ROW_12: quote_too_long(113B) [source=repo:.claude/runtime/execute-dag.js]
+
+### 2026-06-09T03-54-19-495Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-09T03-54-19-495Z-3fb9fe1.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-08-defect-remediation.md]
+- L2_EVIDENCE_ROW_2: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-08-defect-remediation.md]
+- L2_EVIDENCE_ROW_8: quote_too_long(115B) [source=repo:docs/plans/2026-06-08-defect-remediation.md]
+
+### 2026-06-09T04-27-52-795Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-09T04-27-52-795Z-122597f.md`
+
+- L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-08-defect-remediation.md]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-08-defect-remediation.md]

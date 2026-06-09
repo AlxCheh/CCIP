@@ -1,46 +1,41 @@
-# quarantine.yaml — правила на испытательном сроке (shadow-режим).
-# Логируют hit'ы, НЕ влияют на отчёт-рекомендации, пока не промотированы.
-# Промоушен → active: 3 сессии в quarantine AND ΔT≥+5% AND ΔQ≥0 AND precision≥0.7.
-# Правила с requires_transcript_access:true НЕ промотируются на текущем runtime
-# (raw transcript недоступен — см. ADR-016).
-# Полные определения см. baseline.yaml.
-
 version: 1
 quarantine:
   - id: R-007
     status: quarantine
     requires_transcript_access: true
-    blocked_reason: "raw transcript недоступен в runtime; промоушен невозможен до его реализации"
+    blocked_reason: >-
+      raw transcript недоступен в runtime; промоушен невозможен до его
+      реализации
     sessions_in_quarantine: 0
     hit_count: 0
     precision: null
-
   - id: R-009
     status: quarantine
     requires_transcript_access: true
-    blocked_reason: "raw transcript недоступен в runtime; промоушен невозможен до его реализации"
+    blocked_reason: >-
+      raw transcript недоступен в runtime; промоушен невозможен до его
+      реализации
     sessions_in_quarantine: 0
     hit_count: 0
     precision: null
-
   - id: R-012
     status: quarantine
     requires_transcript_access: true
-    blocked_reason: "raw transcript недоступен в runtime; промоушен невозможен до его реализации"
+    blocked_reason: >-
+      raw transcript недоступен в runtime; промоушен невозможен до его
+      реализации
     sessions_in_quarantine: 0
     hit_count: 0
     precision: null
-
   - id: R-016
     status: quarantine
     requires_transcript_access: false
-    sessions_in_quarantine: 1
+    sessions_in_quarantine: 8
     hit_count: 1
-    precision: 1.0
-
+    precision: 1
   - id: R-017
     status: quarantine
     requires_transcript_access: false
-    sessions_in_quarantine: 1
+    sessions_in_quarantine: 8
     hit_count: 2
-    precision: 1.0
+    precision: 1

@@ -233,3 +233,31 @@
 **Current:** SLA-критерии присутствуют для MV (`getCumulativeFactsBatch < 100 ms`, `staleness ≤ 5 мин`). Однако нет критериев приёмки для: миграций (когда считается успешно применённой), pg_partman setup (проверка partitions created), RLS (проверка policy applied + REVOKE applied), бэкапа (pg_dump завершён + файл валиден).
 **Proposed:** Добавить секцию `## Критерии приёмки` или расширить §Правила работы: "Миграция принята: `prisma migrate status` — all migrations applied, rollback plan задокументирован. pg_partman: `SELECT partman.check_partitioned_tables()` — без ошибок. RLS: `\dp period_work_items` показывает ожидаемые политики; `SELECT has_table_privilege('ccip_app', 'period_work_items', 'UPDATE')` — false. Бэкап: pg_dump exit 0, размер файла > 0, контрольная сумма записана."
 **Status:** APPLIED 2026-06-05
+
+## red-team-auditor — 2026-06-06
+**Rule:** Q-04 · **Severity:** info
+**Location:** body — ADR-016 referenced (Слой 3, п.5) but no `## Ключевые ADR` section
+**Current:** Тело ссылается на ADR-016 (token-audit: триггеры T-03/T-04/T-05) без сводной секции ADR.
+**Proposed:** Добавить в конец тела (перед `## State Update`) секцию: `## Ключевые ADR` / `- ADR-016 — Token Efficiency Auditor: T-03/T-04/T-05 в quarantine; триггеры T-01/T-02/T-06..T-10 активны.`
+**Status:** PENDING_HUMAN_REVIEW
+
+## red-team-auditor — 2026-06-06
+**Rule:** R-05 · **Severity:** warning
+**Location:** Правила — правило 6 (Bash scope)
+**Current:** Bash ограничен `ls/dir/поиск`, но явного запрета на вывод env-переменных и секретов нет — правило 6 описывает только допустимые команды, не запрещает логировать env/токены явно.
+**Proposed:** Добавить в `## Правила` строку: `7. **Секреты не выводить.** Bash не используется для чтения и вывода значений env-переменных, токенов, credentials — даже в целях аудита.`
+**Status:** PENDING_HUMAN_REVIEW
+
+## red-team-auditor — 2026-06-06
+**Rule:** G-02 · **Severity:** info
+**Location:** Слой 4, п.1 — `.claude/runtime/state-protocol.md` читается без offset/limit
+**Current:** "Прочитать `.claude/runtime/state-protocol.md`" — без указания limit/offset нарушает Reading Discipline §16 (`offset+limit` by § anchor для runtime-файлов).
+**Proposed:** Уточнить инструкцию: "Прочитать `.claude/runtime/state-protocol.md` (offset по разделу `## FLUSH` или `## UPDATE`, limit:40) — зафиксировать задекларированные гарантии."
+**Status:** PENDING_HUMAN_REVIEW
+
+## red-team-auditor — 2026-06-06
+**Rule:** Q-01 · **Severity:** info
+**Location:** body — Порядок выполнения, вводная строка (строка 24)
+**Current:** "Не читать файлы повторно без необходимости." — формулировка "без необходимости" не имеет измеримого критерия.
+**Proposed:** Заменить на: "Не читать файлы повторно — если файл уже прочитан в текущем слое, использовать данные из памяти. Повторное чтение допустимо только при переходе к другому слою с другим offset/limit."
+**Status:** PENDING_HUMAN_REVIEW
