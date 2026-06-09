@@ -30,7 +30,10 @@ function evaluateGate(state, payload, opts = {}) {
     violations.push(`agent budget ${maxAgents} reached (${active} active) — CLAUDE.md §Execution`);
 
   // INVARIANT 2 — [INV-SECURITY-COAGENT]
-  const securitySurface = (state.intents || []).includes('SECURITY') || SECURITY_RE.test(target);
+  const scopeText = (state.dag || []).map(s => (s && s.scope) || '').join(' ');
+  const securitySurface = (state.intents || []).includes('SECURITY')
+    || SECURITY_RE.test(target)
+    || SECURITY_RE.test(scopeText);
   const roster = [
     ...((state.dag || []).map(s => s && s.agent)),
     ...((state.observations || []).map(o => o && o.agent)),

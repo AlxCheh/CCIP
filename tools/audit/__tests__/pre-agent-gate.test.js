@@ -49,6 +49,22 @@ test('HIGH risk + security surface + co-agent present → allow', () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
+// D-19: SECURITY_RE must also check DAG step scope, not only subagent_type
+test('HIGH risk + auth scope in DAG step + no security-reviewer → deny', () => {
+  const state = {
+    risk: 'HIGH',
+    intents: ['BACKEND'],
+    observations: [],
+    dag: [{ agent: 'ccip-backend-core', scope: 'implement JWT auth guards for RBAC' }],
+    agent_outputs: {},
+  };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-backend-core' } };
+  const r = evaluateGate(state, payload, { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny',
+    'HIGH risk + auth in DAG scope must require security-reviewer');
+  assert.match(r.reason, /security-reviewer/i);
+});
+
 test('non-Agent payload → allow (gate is Agent-only)', () => {
   const r = evaluateGate({ risk: 'HIGH' }, { tool_name: 'Bash', tool_input: {} }, { enforce: true });
   assert.strictEqual(r.decision, 'allow');
