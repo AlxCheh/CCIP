@@ -36,11 +36,16 @@
 | `2026-06-07-runtime-governance-enforcement.md` | PR #18 коммит `0ce35cb` (R3+R4+R5) |
 | `2026-06-07-runtime-governance-phase3.md` | PR #19 коммит `b1525c5` (R7/R8/R9) |
 
+## Партия 2026-06-09 вторая волна (2 плана)
+
+| План | Доказательство завершённости |
+|------|------------------------------|
+| `2026-06-08-structural-hardening.md` | PR #22 merged: HA-8 (`--staged` gate), SPOF-1 (rolling .bak), UU-2 (7 stdin тестов) |
+| `2026-06-08-defect-remediation.md` | D-07 в PR #22; D-06 (10 fallback profiles); D-23 (tracked); все остальные D-fixes в PR #13–#21 |
+
 ## Активные планы (остаются в `docs/plans/`)
 
 | План | Статус | Остаток |
 |------|--------|---------|
 | `2026-05-18-sub-plan-a-wave-1.md` | Не начат | `apps/api/test/integration/` отсутствует — integration suite не создан |
 | `2026-05-24-dispute-sla-module.md` | ~70% | Tasks 8–10: `dispute.controller.ts` + `dispute.module.ts` MISSING; 2 TODO в `period.service.ts` |
-| `2026-06-08-structural-hardening.md` | Не начат | HA-8 (ADR pre-commit hook), SPOF-1 (rolling backup), UU-2 (Windows stdin тесты) |
-| `2026-06-08-defect-remediation.md` | Частично | D-01..D-21 — часть коммичена, часть открыта; нужна верификация остатка |
