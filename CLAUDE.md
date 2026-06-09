@@ -201,3 +201,18 @@ Token-saving rules for file reads. Goal: cut per-session token cost 30-50% with 
 **Зелёный ≠ закрытый риск:** тест, проходящий только из-за неявного дефолта среды (напр. Vitest `css:false` → CSS-модули как identity-прокси) или DOM-детали (иконка как голый текстовый узел) — отложенная поломка. Закрывай риск семантикой, не обходом: при необходимости добавь ARIA-атрибут в компонент (улучшает и a11y, и тестируемость).
 
 **Anti-patterns (forbidden):** `toHaveClass('active')` для проверки активности (используй `aria-current`) · `getByText`, склеенный с иконкой/обёрткой (используй `getByRole` + accessible-name) · принятие зелёного теста, чья зелёность держится на дефолте тест-раннера.
+
+## §18 Ограничения машинного Enforcement
+
+Следующие правила — **декларативные конвенции**, не machine-enforced:
+
+| Правило | Почему нет enforcement | Ответственность |
+|---------|----------------------|-----------------|
+| `intents == 2 → co-agent` (§Planner) | Нет hook подсчитывающего intents из payload | LLM-оркестратор |
+| `agent fails >= 2 → switch to backup` (§Feedback) | Нет автоматического счётчика failures/agent | LLM-оркестратор |
+| `intents >= 3 → planner only` (§Planner) | Нет hook ограничивающего тип агента | LLM-оркестратор |
+| `writeLock serializes all mutations` (execute-dag.js) | In-process lock — не работает при двух процессах | Одиночный процесс assumed |
+| Optimizer-gate TTL 5 min | Настраивается через `OPT_LOCK_TTL_MS` — по умолчанию 5 min; при длительных сессиях увеличить до 15 min (`OPT_LOCK_TTL_MS=900000`) | Конфигурация |
+| Stop hook order | Assumed sequential (по порядку в settings.json Stop array). Если concurrent — failure-detectors safe благодаря re-read before write (HA-3) | Документальная + частичная code defence |
+
+Если правило не упомянуто в таблице выше — оно либо machine-enforced (hook), либо advisory (signal без deny).
