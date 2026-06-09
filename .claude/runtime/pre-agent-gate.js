@@ -23,7 +23,8 @@ function evaluateGate(state, payload, opts = {}) {
   const violations = [];
 
   // INVARIANT 1 — [INV-AGENT-BUDGET]
-  const active = (state.observations || []).filter(o => o && o.agent).length
+  // Use agent_outputs (persists through flush) rather than observations (cleared at Stop) — D-10
+  const active = Object.keys(state.agent_outputs || {}).length
     + (state.dag || []).filter(s => s && s.status === 'running').length;
   if (active >= maxAgents)
     violations.push(`agent budget ${maxAgents} reached (${active} active) — CLAUDE.md §Execution`);

@@ -10,26 +10,26 @@ const agentPayload = (over = {}) => ({ tool_name: 'Agent',
   tool_input: { subagent_type: 'ccip-backend-core', ...over } });
 
 test('within budget, LOW risk → allow', () => {
-  const r = evaluateGate({ risk: 'LOW', observations: [{ agent: 'a' }] }, agentPayload(), { maxAgents: 3 });
+  const r = evaluateGate({ risk: 'LOW', agent_outputs: { 'a': {} } }, agentPayload(), { maxAgents: 3 });
   assert.strictEqual(r.decision, 'allow');
 });
 
 test('budget reached + enforce → deny', () => {
-  const state = { risk: 'LOW', observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }] };
+  const state = { risk: 'LOW', agent_outputs: { 'a': {}, 'b': {}, 'c': {} }, dag: [] };
   const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3 });
   assert.strictEqual(r.decision, 'deny');
   assert.match(r.reason, /budget/i);
 });
 
 test('budget reached + shadow (default) → allow but flags wouldDeny', () => {
-  const state = { risk: 'LOW', observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }] };
+  const state = { risk: 'LOW', agent_outputs: { 'a': {}, 'b': {}, 'c': {} }, dag: [] };
   const r = evaluateGate(state, agentPayload(), { enforce: false, maxAgents: 3 });
   assert.strictEqual(r.decision, 'allow');
   assert.strictEqual(r.wouldDeny, true);
 });
 
 test('budget reached + override → allow (audited)', () => {
-  const state = { risk: 'LOW', observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }] };
+  const state = { risk: 'LOW', agent_outputs: { 'a': {}, 'b': {}, 'c': {} }, dag: [] };
   const r = evaluateGate(state, agentPayload({ override: true }), { enforce: true, maxAgents: 3 });
   assert.strictEqual(r.decision, 'allow');
   assert.strictEqual(r.overridden, true);
@@ -54,6 +54,30 @@ test('non-Agent payload → allow (gate is Agent-only)', () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
+// D-10: budget must use agent_outputs (persists through flush), not observations (cleared at Stop)
+test('budget uses agent_outputs count, not observations length', () => {
+  const state = {
+    risk: 'LOW',
+    observations: [],
+    dag: [],
+    agent_outputs: { 'ccip-architect': {}, 'ccip-dba': {} },
+  };
+  const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('budget uses agent_outputs: deny when 3 agents already in agent_outputs', () => {
+  const state = {
+    risk: 'LOW',
+    observations: [],
+    dag: [],
+    agent_outputs: { 'ccip-architect': {}, 'ccip-dba': {}, 'ccip-frontend': {} },
+  };
+  const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /budget/i);
+});
+
 const fs = require('node:fs');
 const os = require('node:os');
 const cp = require('node:child_process');
@@ -67,7 +91,7 @@ function writeTmpState(obj) {
 
 test('main: enforce mode emits permissionDecision deny over budget', () => {
   const stateFile = writeTmpState({ session_id: 's', risk: 'LOW',
-    observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }], dag: [] });
+    agent_outputs: { 'a': {}, 'b': {}, 'c': {} }, dag: [] });
   const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
@@ -80,7 +104,7 @@ test('main: enforce mode emits permissionDecision deny over budget', () => {
 
 test('main: shadow mode (default) allows but warns on stderr', () => {
   const stateFile = writeTmpState({ session_id: 's', risk: 'LOW',
-    observations: [{ agent: 'a' }, { agent: 'b' }, { agent: 'c' }], dag: [] });
+    agent_outputs: { 'a': {}, 'b': {}, 'c': {} }, dag: [] });
   const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',

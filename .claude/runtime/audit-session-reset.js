@@ -87,6 +87,11 @@ process.stdin.on('end', () => {
       sState.session_id = sessionId;
       sState.started_at = now.toISOString();
       sState.status = 'planning';
+      // Reset session-scoped fields at session start (D-10: stale state from crashed session)
+      sState.observations = [];
+      sState.agent_outputs = {};
+      sState.dag = [];
+      sState.current_step = 0;
       const sTmp = SSTATE + '.tmp.' + process.pid;
       const sFd = fs.openSync(sTmp, 'w');
       try {
