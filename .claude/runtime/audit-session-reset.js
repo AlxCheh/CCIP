@@ -130,5 +130,13 @@ process.stdin.on('end', () => {
     process.stderr.write(`[audit-session-reset] alerts-prune fail: ${e.message}\n`);
   }
 
+  // Increment quarantine rule counters for non-transcript-blocked rules (D-17)
+  try {
+    const { incrementQuarantineCounters } = require('./quarantine-increment');
+    incrementQuarantineCounters();
+  } catch (e) {
+    process.stderr.write(`[audit-session-reset] quarantine-increment: ${e.message}\n`);
+  }
+
   process.exit(0);
 });
