@@ -105,5 +105,25 @@ process.stdin.on('end', () => {
     process.stderr.write(`[audit-session-reset] session-state init fail: ${e.message}\n`);
   }
 
+  // Prune governance_alerts to last 10 entries (D-09: unbounded growth)
+  const MAX_ALERTS = 10;
+  try {
+    const sRaw2 = fs.readFileSync(SSTATE, 'utf-8');
+    const sState2 = JSON.parse(sRaw2);
+    if (Array.isArray(sState2.governance_alerts) && sState2.governance_alerts.length > MAX_ALERTS) {
+      sState2.governance_alerts = sState2.governance_alerts.slice(-MAX_ALERTS);
+      const sTmp2 = SSTATE + '.prune.tmp.' + process.pid;
+      const sFd2 = fs.openSync(sTmp2, 'w');
+      try {
+        fs.writeSync(sFd2, JSON.stringify(sState2, null, 2) + '\n');
+        fs.fsyncSync(sFd2);
+      } finally { fs.closeSync(sFd2); }
+      try { fs.renameSync(sTmp2, SSTATE); }
+      catch (e) { try { fs.unlinkSync(sTmp2); } catch {} }
+    }
+  } catch (e) {
+    process.stderr.write(`[audit-session-reset] alerts-prune fail: ${e.message}\n`);
+  }
+
   process.exit(0);
 });

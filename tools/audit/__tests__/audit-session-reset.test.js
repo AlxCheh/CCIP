@@ -34,6 +34,29 @@ test('SessionStart hook initialises session_id when empty', () => {
   }
 });
 
+test('audit-session-reset prunes governance_alerts to last 10', () => {
+  const restoreS = backupState(SSTATE);
+  try {
+    const state = JSON.parse(fs.readFileSync(SSTATE, 'utf-8'));
+    state.governance_alerts = Array.from({ length: 15 }, (_, i) => ({
+      kind: 'test_alert', at: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`, session: 's'
+    }));
+    fs.writeFileSync(SSTATE, JSON.stringify(state, null, 2));
+
+    cp.spawnSync(process.execPath, [HOOK], { input: '{}', encoding: 'utf-8' });
+
+    const after = JSON.parse(fs.readFileSync(SSTATE, 'utf-8'));
+    assert.ok(after.governance_alerts.length <= 10,
+      `expected <= 10 alerts, got ${after.governance_alerts.length}`);
+    assert.strictEqual(
+      after.governance_alerts[after.governance_alerts.length - 1].at,
+      '2026-01-15T00:00:00Z', 'last alert must be the most recent'
+    );
+  } finally {
+    restoreS();
+  }
+});
+
 test('SessionStart hook preserves non-empty session_id', () => {
   const restoreS = backupState(SSTATE);
   try {
