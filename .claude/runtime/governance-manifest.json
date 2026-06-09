@@ -47,7 +47,7 @@
       "doc_anchor": "agents total",
       "enforcement": "pre-agent-gate.js#INV-AGENT-BUDGET",
       "kind": "block",
-      "status": "shadow"
+      "status": "enforced"
     },
     {
       "id": "INV-SECURITY-COAGENT",
@@ -55,7 +55,7 @@
       "doc_anchor": "security-reviewer as co-agent",
       "enforcement": "pre-agent-gate.js#INV-SECURITY-COAGENT",
       "kind": "block",
-      "status": "shadow"
+      "status": "enforced"
     },
     {
       "id": "INV-TELEMETRY-AGGREGATE",
@@ -72,7 +72,7 @@
       "doc_anchor": "Reading Discipline",
       "enforcement": "read-gate.js#INV-READING-DISCIPLINE",
       "kind": "block",
-      "status": "shadow"
+      "status": "enforced"
     },
     {
       "id": "INV-CONTRACT-CORRECTION",

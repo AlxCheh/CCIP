@@ -27,5 +27,5 @@ test('manifest declares INV-READING-DISCIPLINE in shadow status', () => {
   const inv = m.invariants.find(i => i.id === 'INV-READING-DISCIPLINE');
   assert.ok(inv, 'INV-READING-DISCIPLINE must be declared');
   assert.strictEqual(inv.kind, 'block');
-  assert.strictEqual(inv.status, 'shadow');
+  assert.ok(['shadow','enforced'].includes(inv.status), `status must be shadow or enforced, got ${inv.status}`);
 });

@@ -22,6 +22,6 @@ test('manifest declares the two block invariants in shadow status', () => {
     assert.ok(ids.includes(id), `manifest must declare ${id}`);
   for (const inv of m.invariants.filter(i => ['INV-AGENT-BUDGET', 'INV-SECURITY-COAGENT'].includes(i.id))) {
     assert.strictEqual(inv.kind, 'block');
-    assert.strictEqual(inv.status, 'shadow');
+    assert.ok(['shadow','enforced'].includes(inv.status), `status must be shadow or enforced, got ${inv.status}`);
   }
 });
