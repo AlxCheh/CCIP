@@ -38,3 +38,21 @@ test('seed manifest validates against schema', () => {
   for (const inv of manifest.invariants)
     assert.match(inv.enforcement, /^[\w.-]+#[\w-]+$/, `enforcement = file#MARKER, got ${inv.enforcement}`);
 });
+
+test('each enforcement anchor exists as [MARKER] comment in the target runtime file', () => {
+  const runtimeDir = path.join(root, '.claude/runtime');
+  for (const inv of manifest.invariants) {
+    const [file, marker] = inv.enforcement.split('#');
+    if (!file || !marker) continue;
+    const filePath = path.join(runtimeDir, file);
+    assert.ok(
+      fs.existsSync(filePath),
+      `enforcement file missing: .claude/runtime/${file} (invariant ${inv.id})`
+    );
+    const content = fs.readFileSync(filePath, 'utf-8');
+    assert.ok(
+      content.includes(`[${marker}]`),
+      `${file} does not contain marker [${marker}] required by invariant ${inv.id}`
+    );
+  }
+});
