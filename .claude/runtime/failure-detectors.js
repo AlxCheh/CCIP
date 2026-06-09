@@ -89,11 +89,16 @@ if (require.main === module) {
     for (const a of alerts)
       process.stderr.write(`[failure-detectors] ALERT ${a.kind}: ${JSON.stringify(a)}\n`);
 
-    const existing = state.governance_alerts || [];
+    // Re-read state immediately before write to capture any concurrent flush (HA-3)
+    let freshState;
+    try { freshState = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')); }
+    catch { freshState = state; }
+
+    const existing = freshState.governance_alerts || [];
     const merged = [...existing, ...alerts];
 
     const tmp = STATE_FILE + '.fd.tmp.' + process.pid;
-    const data = JSON.stringify({ ...state, governance_alerts: merged }, null, 2);
+    const data = JSON.stringify({ ...freshState, governance_alerts: merged }, null, 2);
     const fd = fs.openSync(tmp, 'w');
     try {
       fs.writeSync(fd, data);
