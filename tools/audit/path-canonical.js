@@ -22,7 +22,7 @@ const ALLOWLIST = [
   '.claude/agents/ccip-session-optimizer.md',                 // describes bad patterns as anti-examples
   '.claude/agents/consistency-checker.md',                    // table labels, not executable paths
   'docs/refactor/session-optimizer-skill-scope.md',          // planning doc — project-relative labels, not executable paths
-  'docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md', // plan doc — quotes audit verification commands
+  'docs/plans/archive/2026-05-17-multi-agent-ecosystem-residual-remediation.md', // plan doc — quotes audit verification commands
 ];
 
 const args = process.argv.slice(2);
