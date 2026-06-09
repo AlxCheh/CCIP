@@ -74,3 +74,65 @@ test('adr-immutability passes on real repo (default base)', () => {
   const res = cp.spawnSync(process.execPath, [SCRIPT], { encoding: 'utf-8' });
   assert.equal(res.status, 0, res.stderr);
 });
+
+// --staged mode tests
+function runStagedScript(dir) {
+  return cp.spawnSync(process.execPath, [SCRIPT, '--staged'], {
+    cwd: dir,
+    encoding: 'utf-8',
+  });
+}
+
+test('--staged: blocks staging modification of accepted ADR without status bump', () => {
+  const { dir, run } = makeTmpRepo();
+  writeAdr(dir, 'Принято', 'Initial body.');
+  run(['add', '-A']);
+  run(['commit', '-q', '-m', 'initial']);
+
+  writeAdr(dir, 'Принято', 'Modified body without rev bump.');
+  run(['add', '-A']); // stage the change
+
+  const res = runStagedScript(dir);
+  assert.equal(res.status, 1, `expected exit 1, got ${res.status}; stderr: ${res.stderr}`);
+  assert.match(res.stderr, /BLOCK/);
+});
+
+test('--staged: allows staging modification when status bumped', () => {
+  const { dir, run } = makeTmpRepo();
+  writeAdr(dir, 'Принято', 'Initial body.');
+  run(['add', '-A']);
+  run(['commit', '-q', '-m', 'initial']);
+
+  writeAdr(dir, 'Принято rev 2', 'Modified body.');
+  run(['add', '-A']);
+
+  const res = runStagedScript(dir);
+  assert.equal(res.status, 0, `expected exit 0; stderr: ${res.stderr}`);
+});
+
+test('--staged: allows staging new ADR file (not in HEAD)', () => {
+  const { dir, run } = makeTmpRepo();
+  // empty initial commit so HEAD exists
+  fs.writeFileSync(path.join(dir, 'README.md'), 'init');
+  run(['add', '-A']);
+  run(['commit', '-q', '-m', 'init']);
+
+  writeAdr(dir, 'Принято', 'Brand new ADR.');
+  run(['add', '-A']);
+
+  const res = runStagedScript(dir);
+  assert.equal(res.status, 0, `new file should pass; stderr: ${res.stderr}`);
+});
+
+test('--staged: exits 0 when no ADR files staged', () => {
+  const { dir, run } = makeTmpRepo();
+  fs.writeFileSync(path.join(dir, 'README.md'), 'init');
+  run(['add', '-A']);
+  run(['commit', '-q', '-m', 'init']);
+
+  fs.writeFileSync(path.join(dir, 'README.md'), 'changed');
+  run(['add', '-A']);
+
+  const res = runStagedScript(dir);
+  assert.equal(res.status, 0);
+});
