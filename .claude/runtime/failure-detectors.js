@@ -92,9 +92,21 @@ if (require.main === module) {
     const existing = state.governance_alerts || [];
     const merged = [...existing, ...alerts];
 
-    const tmp = STATE_FILE + '.fd.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ ...state, governance_alerts: merged }, null, 2), 'utf-8');
-    fs.renameSync(tmp, STATE_FILE);
+    const tmp = STATE_FILE + '.fd.tmp.' + process.pid;
+    const data = JSON.stringify({ ...state, governance_alerts: merged }, null, 2);
+    const fd = fs.openSync(tmp, 'w');
+    try {
+      fs.writeSync(fd, data);
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    try {
+      fs.renameSync(tmp, STATE_FILE);
+    } catch (e) {
+      try { fs.unlinkSync(tmp); } catch {}
+      throw e;
+    }
   } catch (e) {
     process.stderr.write(`[failure-detectors] ${e.message}\n`); // fail-open
   }
