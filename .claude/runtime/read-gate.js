@@ -12,7 +12,7 @@ const DEFAULT_PROTECTED = ['docs/architecture/', '.claude/agents/'];
 function isFullRead(p) {
   if (!p || p.tool_name !== 'Read') return false;
   const i = p.tool_input || {};
-  return i.limit == null;
+  return i.offset == null && i.limit == null;
 }
 
 /** Pure decision: { decision:'allow'|'deny', reason?, wouldDeny? }. */

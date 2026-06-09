@@ -39,11 +39,12 @@ test('full read of a non-protected path → allow', () => {
   assert.strictEqual(r.decision, 'allow');
 });
 
-test('offset-only read of a protected path is still unbounded (no limit) → deny', () => {
-  // offset without limit can read the rest of the file — still a full/unbounded read.
+test('offset-only read of a protected path → allow (offset set = not a full read)', () => {
+  // D-21 fix: canonical definition (tool-telemetry.js) requires BOTH offset==null AND limit==null
+  // to classify as a full read. offset=5 without limit reads tail of file — not a full read.
   const r = evaluateReadGate(readPayload({ file_path: 'docs/architecture/x.md', offset: 5 }),
     { enforce: true });
-  assert.strictEqual(r.decision, 'deny');
+  assert.strictEqual(r.decision, 'allow');
 });
 
 test('subdocs-decoy: path with different prefix does NOT match protected dir', () => {
