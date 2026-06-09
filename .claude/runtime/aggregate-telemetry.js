@@ -36,7 +36,7 @@ function run() {
   if (agents === 0 && toolCalls === 0) return; // nothing happened this session
 
   const line = `> 📊 ${sessionId.slice(0, 10)}: tool_calls=${toolCalls} full_reads=${fullReads}`
-    + ` agents=${agents} SSC=${ssc} CCR=${ssc} inline=${inline}`;
+    + ` agents=${agents} SSC=${ssc} inline=${inline}`;
   const idemKey = `metrics:${sessionId}:${crypto.createHash('sha1')
     .update(`${toolCalls}|${fullReads}|${agents}|${missing}`).digest('hex').slice(0, 8)}`;
 
