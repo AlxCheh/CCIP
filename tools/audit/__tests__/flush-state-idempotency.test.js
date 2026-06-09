@@ -9,12 +9,6 @@ const { gitRoot } = require('../_lib/git-root');
 
 const root = gitRoot();
 const HOOK = path.join(root, '.claude/runtime/flush-state.js');
-const STATE = path.join(root, '.claude/runtime/session-state.json');
-
-function backupState() {
-  const original = fs.readFileSync(STATE, 'utf-8');
-  return () => fs.writeFileSync(STATE, original, 'utf-8');
-}
 
 function stateWithObs() {
   return {
@@ -30,19 +24,19 @@ function stateWithObs() {
 }
 
 test('re-flushing identical observations does not duplicate the block', () => {
-  const restore = backupState();
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ccip-idem-'));
+  const stateFile = path.join(tmpDir, 'session-state.json');
   const fakeFeedback = path.join(tmpDir, 'feedback-loop.md');
   try {
-    const env = { ...process.env, CCIP_FEEDBACK_FILE: fakeFeedback };
+    const env = { ...process.env, CCIP_STATE_FILE: stateFile, CCIP_FEEDBACK_FILE: fakeFeedback };
 
     // First flush
-    fs.writeFileSync(STATE, JSON.stringify(stateWithObs()), 'utf-8');
+    fs.writeFileSync(stateFile, JSON.stringify(stateWithObs()), 'utf-8');
     cp.spawnSync(process.execPath, [HOOK], { encoding: 'utf-8', env });
 
     // Simulate the crash window: observations were NOT cleared from state
     // (e.g. process died after appendFileSync). Re-run flush with same batch.
-    fs.writeFileSync(STATE, JSON.stringify(stateWithObs()), 'utf-8');
+    fs.writeFileSync(stateFile, JSON.stringify(stateWithObs()), 'utf-8');
     cp.spawnSync(process.execPath, [HOOK], { encoding: 'utf-8', env });
 
     const feedback = fs.readFileSync(fakeFeedback, 'utf-8');
@@ -50,7 +44,6 @@ test('re-flushing identical observations does not duplicate the block', () => {
     assert.strictEqual(occurrences, 1,
       'identical observation batch must be appended at most once (idempotent)');
   } finally {
-    restore();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });

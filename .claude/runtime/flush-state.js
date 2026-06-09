@@ -7,7 +7,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
-const STATE_FILE = path.join(ROOT, '.claude/runtime/session-state.json');
+const STATE_FILE = process.env.CCIP_STATE_FILE
+  || path.join(ROOT, '.claude/runtime/session-state.json');
 const FEEDBACK_FILE = process.env.CCIP_FEEDBACK_FILE
   || path.join(ROOT, 'docs/tasks/feedback-loop.md');
 
@@ -125,10 +126,20 @@ function run() {
     process.stderr.write(`[flush-state] ⏭ batch ${idemKey} already flushed — skip (idempotent)\n`);
   }
 
-  // Clear observations from state; use atomic tmp→fsync→rename.
-  state.observations = [];
+  // Preserve names of agents that missed ## State Update for debt audit trail (D-05)
+  const debtAgents = observations
+    .filter(o => o && o.missing_state_update === true)
+    .map(o => o.agent)
+    .filter(Boolean);
+  if (debtAgents.length > 0) {
+    const existing = Array.isArray(state.contract_debt_agents) ? state.contract_debt_agents : [];
+    state.contract_debt_agents = [...new Set([...existing, ...debtAgents])];
+  }
+
+  // Write state with cleared observations — clear in-memory only after rename succeeds (D-15)
+  const stateToWrite = { ...state, observations: [] };
   const tmp = STATE_FILE + '.tmp.' + process.pid;
-  const data = JSON.stringify(state, null, 2) + '\n';
+  const data = JSON.stringify(stateToWrite, null, 2) + '\n';
   const fd = fs.openSync(tmp, 'w');
   try {
     fs.writeSync(fd, data);
@@ -138,6 +149,7 @@ function run() {
   }
   try {
     fs.renameSync(tmp, STATE_FILE);
+    state.observations = []; // only clear in-memory after disk commit succeeds
   } catch (e) {
     try { fs.unlinkSync(tmp); } catch {}
     throw e;
