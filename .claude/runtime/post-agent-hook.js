@@ -18,17 +18,24 @@ const path = require('path');
 const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/UU-4
 
 const ROOT        = path.resolve(__dirname, '../..');
-const STATE       = path.join(ROOT, '.claude/runtime/session-state.json');
+const STATE       = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
 const AGENTS_DIR  = path.join(ROOT, '.claude/agents');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+const BAK = STATE + '.bak';
+
 function readState() {
-  try { return JSON.parse(fs.readFileSync(STATE, 'utf-8')); }
-  catch { return null; }
+  for (const p of [STATE, BAK]) {
+    if (!fs.existsSync(p)) continue;
+    try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch {}
+  }
+  return null;
 }
 
 function writeState(state) {
+  // backup before overwrite (SPOF-1)
+  if (fs.existsSync(STATE)) { try { fs.copyFileSync(STATE, BAK); } catch {} }
   const tmp = STATE + '.tmp.' + process.pid;
   const data = JSON.stringify(state, null, 2) + '\n';
   const fd = fs.openSync(tmp, 'w');

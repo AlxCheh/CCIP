@@ -158,4 +158,52 @@ function run() {
   process.stdout.write(`[flush-state] ${observations.length} observation(s) → feedback-loop.md (session: ${sessionId})\n`);
 }
 
-run();
+if (require.main === module) run();
+
+// ---------------------------------------------------------------------------
+// SPOF-1: safe read/write with rolling .bak
+// ---------------------------------------------------------------------------
+
+const BAK_SUFFIX = '.bak';
+
+function defaultState() {
+  return { observations: [], agent_outputs: {}, status: 'idle', session_id: null };
+}
+
+function writeStateSafe(state, statePath) {
+  const target = statePath || STATE_FILE;
+  const bakPath = target + BAK_SUFFIX;
+  const tmp = target + '.tmp.' + process.pid;
+
+  // backup current state before overwriting
+  if (fs.existsSync(target)) {
+    try { fs.copyFileSync(target, bakPath); } catch {}
+  }
+
+  const data = JSON.stringify(state, null, 2) + '\n';
+  const fd = fs.openSync(tmp, 'w');
+  try {
+    fs.writeSync(fd, data);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  try {
+    fs.renameSync(tmp, target);
+  } catch (e) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw e;
+  }
+}
+
+function readStateSafe(statePath) {
+  const target = statePath || STATE_FILE;
+  const bakPath = target + BAK_SUFFIX;
+  for (const p of [target, bakPath]) {
+    if (!fs.existsSync(p)) continue;
+    try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch {}
+  }
+  return defaultState();
+}
+
+module.exports = { writeStateSafe, readStateSafe };

@@ -12,7 +12,7 @@ model: claude-sonnet-4-6
 NestJS + Prisma + PostgreSQL 16 + BullMQ + Redis + React + React Native + WatermelonDB. Монорепо: `apps/api`, `apps/web`, `apps/mobile`.
 
 ## Твоя зона ответственности
-- Принятие и сопровождение ADR (ADR-001..ADR-016 и новых; актуальный список — `docs/decisions/index.md`)
+- Принятие и сопровождение ADR (актуальный список — `docs/decisions/index.md`)
 - Целостность архитектуры: event-driven patterns, Transactional Outbox, state machines
 - Code review критических модулей: PeriodEngine (C), DisputeSLA (D), Analytics (E)
 - Decision authority по техническим развилкам
