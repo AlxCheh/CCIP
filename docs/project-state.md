@@ -17,7 +17,7 @@
 | **Next Milestone** | M-10 Security / Immutability / REVOKE (разблокирован) |
 | **Active Blockers** | 0 — нет |
 | **Open Feedbacks** | 0 |
-| **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/red-team-2026-05-07.md`) |
+| **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/2026-05-07-red-team.md`) |
 
 ---
 

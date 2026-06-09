@@ -16,7 +16,7 @@ const maxReal = Math.max(...[...realIds].map(id => parseInt(id.slice(4), 10)));
 
 // Audit / planning docs legitimately reference future or phantom ADR IDs as findings.
 const ALLOWLIST = new Set([
-  'docs/audits/multi-agent-ecosystem-2026-05-07.md',
+  'docs/audits/2026-05-07-multi-agent-ecosystem.md',
   'docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md',
   'docs/plans/2026-05-20-multi-agent-ecosystem-audit-remediation.md',
 ]);

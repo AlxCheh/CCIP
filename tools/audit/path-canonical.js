@@ -18,7 +18,7 @@ const FORBIDDEN = [
 const ALLOWLIST = [
   'docs/plans/archive/2026-05-12-zero-drift-compliance-section10.md', // plan doc — contains literal examples
   'tools/audit/__fixtures__/path-bad.md',                     // test fixture — intentionally bad
-  'docs/audits/multi-agent-ecosystem-2026-05-07.md',          // audit report — documents found violations
+  'docs/audits/2026-05-07-multi-agent-ecosystem.md',          // audit report — documents found violations
   '.claude/agents/ccip-session-optimizer.md',                 // describes bad patterns as anti-examples
   '.claude/agents/consistency-checker.md',                    // table labels, not executable paths
   'docs/refactor/session-optimizer-skill-scope.md',          // planning doc — project-relative labels, not executable paths

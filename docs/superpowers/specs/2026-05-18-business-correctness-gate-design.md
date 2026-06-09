@@ -253,7 +253,7 @@ ALL must hold:
 2. 47 algorithm tests covered (0 skip без linked issue).
 3. 4 ADR invariant suites passing.
 4. CI gate `api-integration` required + green на main 7 дней.
-5. `docs/audits/multi-agent-ecosystem-2026-05-07.md` §11 verdict обновлён.
+5. `docs/audits/2026-05-07-multi-agent-ecosystem.md` §11 verdict обновлён.
 6. `docs/project-state.md` §5 содержит строку про Sub-plan A.
 
 ### 7.2 Pre-pilot M-13 gate
@@ -318,7 +318,7 @@ W1+W2+W3 закрыты (W4 = post-pilot acceptable если зафиксиро�
 - `docs/decisions/ADR-007-period-immutability.md` — cascade recalc.
 - `docs/decisions/ADR-011-analytics-precomputation.md` — calcReadiness in-transaction.
 - `docs/plans/2026-05-17-multi-agent-ecosystem-residual-remediation.md` §6 (Sub-plan A stub).
-- `docs/audits/multi-agent-ecosystem-2026-05-07.md` — audit findings §11.
+- `docs/audits/2026-05-07-multi-agent-ecosystem.md` — audit findings §11.
 
 ## 14. Status
 
