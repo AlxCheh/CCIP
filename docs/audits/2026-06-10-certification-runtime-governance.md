@@ -164,8 +164,8 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 | **E-1** | ~~HIGH~~ ✅ **CLOSED** (64335e8) | pre-agent-gate | ~~`override:true` обходит ОБА block-инварианта; audit только в stderr~~ → override=строка-обоснование, снимает только budget, security неснимаем, durable governance-audit.jsonl + alerts, CCIP_OVERRIDE_DISABLED | исполнено: boolean→DENY, security держится, trail пишется |
 | **E-2** | ~~HIGH~~ ✅ **CLOSED** | pre-agent-gate | ~~Budget считает только завершённых агентов → parallel-burst даёт active=0~~ → inflight_spawns (TTL-self-heal) учитываются в budget; reconcile в post-agent-hook; reset в SessionStart. Residual: конкурентные хуки (HA-2) | исполнено: 1/2/3 ALLOW, 4th DENY |
 | **E-3** | ~~HIGH~~ ✅ **CLOSED** (см. лог) | pre-agent-gate | ~~`SECURITY_RE` не покрывает JWT/GpToken/multi-tenancy/AuditLog~~ → regex расширен до канона CLAUDE.md:84; E-3 тест-блок ловит будущий drift | исполнено: JWT/GpToken/tenancy/AuditLog → DENY |
-| **E-4** | MEDIUM | read-gate | Case-sensitive prefix → `docs/Architecture/` обходит на Windows (case-insensitive FS) | исполнено: ALLOW |
-| **E-5** | MEDIUM | read-gate | `limit:9999999` проходит — проверяется наличие limit, не величина | анализ кода стр.15 |
+| **E-4** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~Case-sensitive prefix → `docs/Architecture/` обходит на Windows~~ → case-insensitive match | исполнено: `docs/Architecture/` → DENY |
+| **E-5** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~`limit:9999999` проходит~~ → limit > cap (`CCIP_READ_MAX_LINES`, деф 2000) = full read | исполнено: limit:9999999 → DENY, limit:50 → ALLOW |
 | **E-6** | MEDIUM | все гейты | Malformed JSON → fail-open exit 0 | исполнено |
 | **S-1** | MAJOR | ADR-018 | Активный 3-сторонний drift doc↔manifest↔settings | исполнено |
 | **M-1** | MAJOR | test suite | Не parallel-safe, недетерминированная зелёность | 281 vs 283 vs изолированно 100% |
