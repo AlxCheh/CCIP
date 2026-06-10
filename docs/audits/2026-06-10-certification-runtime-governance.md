@@ -171,7 +171,7 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 | **M-1** | MAJOR | test suite | Не parallel-safe, недетерминированная зелёность | 281 vs 283 vs изолированно 100% |
 | **T-1** | MEDIUM | aggregate-telemetry | Нет фильтра session_id (cross-session leak) | анализ кода |
 | **R-1** | MINOR | flush-state | Тихий откат к .bak без alert | исполнено |
-| **G-1** | ARCH | failure-detectors | Detect-but-not-react: alert'ы никем не потребляются для runtime-решений | трассировка consumers |
+| **G-1** | ~~ARCH~~ ✅ **CLOSED** | failure-detectors | ~~Detect-but-not-react: alert'ы никем не потребляются~~ → governance-reactor.js (UserPromptSubmit) сворачивает не-surfaced alert'ы в corrective-инъекцию + анти-спам; INV-GOVERNANCE-REACTOR зарегистрирован (advisory; hard-escalation — follow-up) | исполнено: 2 alert'а surfaced+marked, turn 2 пусто |
 | **E-7** | ~~HIGH~~ ✅ **CLOSED** | pre-agent-gate | Гейт `risk===HIGH AND surface`, CLAUDE.md `или` → security-surface при MEDIUM/LOW пропускал security-reviewer (занижение risk-метки). Opt1: surface→reviewer при любом risk; CLAUDE.md+manifest синхронизированы | исполнено: JWT@MEDIUM→DENY, RLS@LOW→DENY, PeriodEngine@HIGH→ALLOW |
 
 ---
