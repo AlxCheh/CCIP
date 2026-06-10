@@ -161,7 +161,7 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 
 | ID | Severity | Компонент | Проблема | Доказательство |
 |---|---|---|---|---|
-| **E-1** | HIGH | pre-agent-gate | `override:true` обходит ОБА block-инварианта; audit только в stderr | исполнено: «override used» |
+| **E-1** | ~~HIGH~~ ✅ **CLOSED** (64335e8) | pre-agent-gate | ~~`override:true` обходит ОБА block-инварианта; audit только в stderr~~ → override=строка-обоснование, снимает только budget, security неснимаем, durable governance-audit.jsonl + alerts, CCIP_OVERRIDE_DISABLED | исполнено: boolean→DENY, security держится, trail пишется |
 | **E-2** | HIGH | pre-agent-gate | Budget считает только завершённых агентов → parallel-burst в одном turn даёт active=0 | исполнено: ALLOW |
 | **E-3** | HIGH | pre-agent-gate | `SECURITY_RE` не покрывает JWT/GpToken/multi-tenancy/AuditLog (заявленные триггеры) | исполнено: ALLOW |
 | **E-4** | MEDIUM | read-gate | Case-sensitive prefix → `docs/Architecture/` обходит на Windows (case-insensitive FS) | исполнено: ALLOW |
