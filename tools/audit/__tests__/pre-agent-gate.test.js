@@ -105,6 +105,36 @@ test('HIGH risk + auth scope in DAG step + no security-reviewer → deny', () =>
   assert.match(r.reason, /security-reviewer/i);
 });
 
+// E-3: SECURITY_RE must cover ALL declared triggers (CLAUDE.md:84 — JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog).
+// Each scope below intentionally omits the words 'auth'/'rbac'/'security' to prove the gap is closed.
+const e3 = (scope) => ({
+  risk: 'HIGH', intents: ['BACKEND'], observations: [], agent_outputs: {},
+  dag: [{ agent: 'ccip-backend-aux', scope }],
+});
+for (const [label, scope] of [
+  ['JWT',          'rotate JWT signing keys and refresh token TTL'],
+  ['GpToken',      'tighten GpToken scope restrictions in the flow'],
+  ['multi-tenancy','add multi-tenancy middleware for tenant_id isolation'],
+  ['multitenancy', 'refactor multitenancy extension'],
+  ['AuditLog',     'make AuditLog writes append-only inside the transaction'],
+  ['audit log',    'ensure audit log entries are immutable'],
+]) {
+  test(`E-3: HIGH-risk "${label}" scope without security-reviewer → deny`, () => {
+    const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-backend-aux' } };
+    const r = evaluateGate(e3(scope), payload, { enforce: true, maxAgents: 3 });
+    assert.strictEqual(r.decision, 'deny', `"${label}" must require security-reviewer`);
+    assert.match(r.reason, /security-reviewer/i);
+  });
+}
+
+test('E-3: declared trigger but co-agent present → allow (no false block)', () => {
+  const state = { risk: 'HIGH', intents: ['BACKEND'], observations: [], agent_outputs: {},
+    dag: [{ agent: 'ccip-backend-aux', scope: 'GpToken flow' }, { agent: 'security-reviewer' }] };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-backend-aux' } };
+  const r = evaluateGate(state, payload, { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'allow');
+});
+
 test('non-Agent payload → allow (gate is Agent-only)', () => {
   const r = evaluateGate({ risk: 'HIGH' }, { tool_name: 'Bash', tool_input: {} }, { enforce: true });
   assert.strictEqual(r.decision, 'allow');

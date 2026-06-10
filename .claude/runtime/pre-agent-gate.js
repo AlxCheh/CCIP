@@ -18,7 +18,13 @@
  *   - CCIP_OVERRIDE_DISABLED=1 disables override entirely (high-assurance runs).
  */
 
-const SECURITY_RE = /security|auth|rbac|rls/i;
+// Canonical security-surface triggers — MUST mirror CLAUDE.md:84
+// (security-reviewer triggers on: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog).
+// Drift here = E-3. The E-3 test block in pre-agent-gate.test.js encodes the full list and
+// fails if any declared trigger stops matching. Over-matching is fail-safe (asks for a
+// co-agent when maybe unneeded); under-matching is the security hole.
+const SECURITY_RE =
+  /security|auth|rbac|rls|jwt|gp[_-]?token|multitenan|\btenan|audit[\s_-]?log/i;
 
 /** Pure decision. Returns:
  *   { decision:'allow'|'deny', reason?, wouldDeny?,
