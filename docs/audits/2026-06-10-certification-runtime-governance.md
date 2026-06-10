@@ -168,7 +168,7 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 | **E-5** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~`limit:9999999` проходит~~ → limit > cap (`CCIP_READ_MAX_LINES`, деф 2000) = full read | исполнено: limit:9999999 → DENY, limit:50 → ALLOW |
 | **E-6** | MEDIUM | все гейты | Malformed JSON → fail-open exit 0 | исполнено |
 | **S-1** | MAJOR | ADR-018 | Активный 3-сторонний drift doc↔manifest↔settings | исполнено |
-| **M-1** | MAJOR | test suite | Не parallel-safe, недетерминированная зелёность | 281 vs 283 vs изолированно 100% |
+| **M-1** | ~~MAJOR~~ ✅ **CLOSED** | test suite | ~~Не parallel-safe, недетерминированная зелёность (281/283/284)~~ → resolver-виновники изолированы на tmp-state; concurrency:false задокументирован + guard-тест; token-rules уже под serial-guard | исполнено: канон 342/342, glob стабильно 325+2 (guard by-design) |
 | **T-1** | MEDIUM | aggregate-telemetry | Нет фильтра session_id (cross-session leak) | анализ кода |
 | **R-1** | MINOR | flush-state | Тихий откат к .bak без alert | исполнено |
 | **G-1** | ~~ARCH~~ ✅ **CLOSED** | failure-detectors | ~~Detect-but-not-react: alert'ы никем не потребляются~~ → governance-reactor.js (UserPromptSubmit) сворачивает не-surfaced alert'ы в corrective-инъекцию + анти-спам; INV-GOVERNANCE-REACTOR зарегистрирован (advisory; hard-escalation — follow-up) | исполнено: 2 alert'а surfaced+marked, turn 2 пусто |
