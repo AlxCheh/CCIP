@@ -167,7 +167,7 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 | **E-4** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~Case-sensitive prefix → `docs/Architecture/` обходит на Windows~~ → case-insensitive match | исполнено: `docs/Architecture/` → DENY |
 | **E-5** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~`limit:9999999` проходит~~ → limit > cap (`CCIP_READ_MAX_LINES`, деф 2000) = full read | исполнено: limit:9999999 → DENY, limit:50 → ALLOW |
 | **E-6** | MEDIUM | все гейты | Malformed JSON → fail-open exit 0 | исполнено |
-| **S-1** | MAJOR | ADR-018 | Активный 3-сторонний drift doc↔manifest↔settings | исполнено |
+| **S-1** | ~~MAJOR~~ ✅ **CLOSED** | ADR-018 | ~~Активный 3-сторонний drift doc↔manifest↔settings~~ → таблица shadow→enforced, §Ревизия, status «Принято rev 2» (immutability-safe) | исполнено: doc=manifest=settings=enforced |
 | **M-1** | ~~MAJOR~~ ✅ **CLOSED** | test suite | ~~Не parallel-safe, недетерминированная зелёность (281/283/284)~~ → resolver-виновники изолированы на tmp-state; concurrency:false задокументирован + guard-тест; token-rules уже под serial-guard | исполнено: канон 342/342, glob стабильно 325+2 (guard by-design) |
 | **T-1** | MEDIUM | aggregate-telemetry | Нет фильтра session_id (cross-session leak) | анализ кода |
 | **R-1** | MINOR | flush-state | Тихий откат к .bak без alert | исполнено |
