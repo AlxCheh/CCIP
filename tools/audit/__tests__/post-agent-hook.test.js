@@ -252,3 +252,30 @@ test('valid block does not increment contract_debt (RFC R3)', () => {
     restore();
   }
 });
+
+test('E-2 reconciliation: completing agent removes its inflight_spawns entry', () => {
+  const restore = backupState();
+  try {
+    fs.writeFileSync(STATE, JSON.stringify({
+      session_id: '2026-05-12-1200', task: 't', intents: [], risk: 'LOW',
+      confidence: 'HIGH', routing: 'direct', dag: [], current_step: 0,
+      agent_outputs: {}, status: 'executing', started_at: '', observations: [],
+      inflight_spawns: [
+        { agent: 'ccip-architect', at: new Date().toISOString() },
+        { agent: 'ccip-dba', at: new Date().toISOString() },
+      ],
+    }), 'utf-8');
+    const payload = JSON.stringify({
+      tool_name: 'Agent',
+      tool_input: { subagent_type: 'ccip-architect', description: 'x' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"done","artifacts":[],"handoff_notes":""}\n```' },
+    });
+    cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8' });
+    const after = JSON.parse(fs.readFileSync(STATE, 'utf-8'));
+    const names = (after.inflight_spawns || []).map(s => s.agent);
+    assert.ok(!names.includes('ccip-architect'), 'completed agent removed from inflight');
+    assert.ok(names.includes('ccip-dba'), 'other in-flight agent remains');
+  } finally {
+    restore();
+  }
+});

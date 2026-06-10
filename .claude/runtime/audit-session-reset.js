@@ -92,6 +92,7 @@ process.stdin.on('end', () => {
       sState.agent_outputs = {};
       sState.dag = [];
       sState.current_step = 0;
+      sState.inflight_spawns = []; // E-2: clear stale in-flight markers from a crashed session
       const sTmp = SSTATE + '.tmp.' + process.pid;
       const sFd = fs.openSync(sTmp, 'w');
       try {

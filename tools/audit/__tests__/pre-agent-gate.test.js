@@ -200,6 +200,39 @@ test('budget uses agent_outputs: deny when 3 agents already in agent_outputs', (
   assert.match(r.reason, /budget/i);
 });
 
+// E-2: budget must count in-flight spawns (approved, not yet completed) so a parallel
+// burst in one turn cannot evade the limit. inflight_spawns is TTL-filtered.
+const nowISO = () => new Date().toISOString();
+test('E-2: inflight_spawns count toward budget (3 inflight, 0 completed → deny)', () => {
+  const state = { risk: 'LOW', agent_outputs: {}, dag: [],
+    inflight_spawns: [{ agent: 'a', at: nowISO() }, { agent: 'b', at: nowISO() }, { agent: 'c', at: nowISO() }] };
+  const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /budget/i);
+});
+
+test('E-2: agent_outputs + inflight combine (2 done + 1 inflight → deny on 4th)', () => {
+  const state = { risk: 'LOW', agent_outputs: { 'x': {}, 'y': {} }, dag: [],
+    inflight_spawns: [{ agent: 'z', at: nowISO() }] };
+  const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny');
+});
+
+test('E-2: stale inflight beyond TTL is NOT counted (self-heal on crashed agent)', () => {
+  const old = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 1h ago
+  const state = { risk: 'LOW', agent_outputs: {}, dag: [],
+    inflight_spawns: [{ agent: 'a', at: old }, { agent: 'b', at: old }, { agent: 'c', at: old }] };
+  const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3, inflightTtlMs: 600000 });
+  assert.strictEqual(r.decision, 'allow', 'stale inflight must age out of the count');
+});
+
+test('E-2: 2 fresh inflight → 3rd allowed (under budget)', () => {
+  const state = { risk: 'LOW', agent_outputs: {}, dag: [],
+    inflight_spawns: [{ agent: 'a', at: nowISO() }, { agent: 'b', at: nowISO() }] };
+  const r = evaluateGate(state, agentPayload(), { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'allow');
+});
+
 const fs = require('node:fs');
 const os = require('node:os');
 const cp = require('node:child_process');
@@ -296,5 +329,47 @@ test('E-1 main: CCIP_OVERRIDE_DISABLED=1 → override ignored, deny stands', () 
       env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_OVERRIDE_DISABLED: '1', CCIP_STATE_FILE: stateFile } });
     assert.strictEqual(res.status, 0);
     assert.strictEqual(JSON.parse(res.stdout).hookSpecificOutput.permissionDecision, 'deny');
+  } finally { fs.rmSync(stateFile, { force: true }); }
+});
+
+test('E-2 main: an allowed spawn records itself in inflight_spawns', () => {
+  const stateFile = writeTmpState({ session_id: 's', risk: 'LOW', agent_outputs: {}, dag: [] });
+  const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+    assert.strictEqual(res.status, 0);
+    assert.strictEqual(res.stdout.trim(), '', 'first spawn allowed');
+    const st = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    assert.ok(Array.isArray(st.inflight_spawns) && st.inflight_spawns.length === 1);
+    assert.strictEqual(st.inflight_spawns[0].agent, 'ccip-dba');
+    assert.ok(st.inflight_spawns[0].at, 'inflight entry has a timestamp');
+  } finally { fs.rmSync(stateFile, { force: true }); }
+});
+
+test('E-2 main: a denied spawn does NOT record inflight', () => {
+  const stateFile = writeTmpState({ session_id: 's', risk: 'LOW',
+    agent_outputs: { 'a': {}, 'b': {}, 'c': {} }, dag: [] });
+  const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+    assert.strictEqual(JSON.parse(res.stdout).hookSpecificOutput.permissionDecision, 'deny');
+    const st = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    assert.ok(!st.inflight_spawns || st.inflight_spawns.length === 0, 'denied spawn must not be tracked');
+  } finally { fs.rmSync(stateFile, { force: true }); }
+});
+
+test('E-2 burst: 4 sequential pre-gate calls — 4th denied (inflight accumulates)', () => {
+  const stateFile = writeTmpState({ session_id: 's', risk: 'LOW', agent_outputs: {}, dag: [] });
+  const spawn = (name) => cp.spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: name } }),
+    encoding: 'utf-8', env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+  try {
+    assert.strictEqual(spawn('ccip-dba').stdout.trim(), '', '1st allowed');
+    assert.strictEqual(spawn('ccip-frontend').stdout.trim(), '', '2nd allowed');
+    assert.strictEqual(spawn('ccip-devops').stdout.trim(), '', '3rd allowed');
+    const r4 = spawn('ccip-qa');
+    assert.strictEqual(JSON.parse(r4.stdout).hookSpecificOutput.permissionDecision, 'deny', '4th denied');
   } finally { fs.rmSync(stateFile, { force: true }); }
 });

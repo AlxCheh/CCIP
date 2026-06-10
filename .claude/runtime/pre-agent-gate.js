@@ -33,7 +33,8 @@ const SECURITY_RE =
  *  so the caller can durably record the attempt. `bypassed` = waived violation messages;
  *  `remaining` = violation messages that still stand. */
 function evaluateGate(state, payload, opts = {}) {
-  const { enforce = false, maxAgents = 3, overrideDisabled = false } = opts;
+  const { enforce = false, maxAgents = 3, overrideDisabled = false,
+    inflightTtlMs = parseInt(process.env.CCIP_INFLIGHT_TTL_MS || '600000', 10) } = opts;
   if (!payload || payload.tool_name !== 'Agent') return { decision: 'allow' };
   const input = payload.tool_input || {};
 
@@ -46,9 +47,15 @@ function evaluateGate(state, payload, opts = {}) {
   const violations = [];
 
   // INVARIANT 1 — [INV-AGENT-BUDGET] (waivable by override)
-  // Use agent_outputs (persists through flush) rather than observations (cleared at Stop) — D-10
+  // Use agent_outputs (persists through flush) rather than observations (cleared at Stop) — D-10.
+  // E-2: also count in-flight spawns (approved by this gate, not yet completed) so a parallel
+  // burst in one turn cannot evade the limit. TTL-filter ages out crashed-agent leaks.
+  const cutoff = Date.now() - inflightTtlMs;
+  const inflight = (state.inflight_spawns || [])
+    .filter(s => s && s.at && Date.parse(s.at) >= cutoff).length;
   const active = Object.keys(state.agent_outputs || {}).length
-    + (state.dag || []).filter(s => s && s.status === 'running').length;
+    + (state.dag || []).filter(s => s && s.status === 'running').length
+    + inflight;
   if (active >= maxAgents)
     violations.push({ type: 'budget', waivable: true,
       msg: `agent budget ${maxAgents} reached (${active} active) — CLAUDE.md §Execution` });
@@ -148,6 +155,25 @@ if (require.main === module) {
     }
   };
 
+  /** Append an in-flight spawn marker (atomic, fail-open, HA-3 re-read). E-2. */
+  const recordInflight = (_state, agent) => {
+    try {
+      const fresh = readState();
+      const list = Array.isArray(fresh.inflight_spawns) ? fresh.inflight_spawns : [];
+      list.push({ agent: String(agent), at: new Date().toISOString() });
+      const tmp = STATE + '.gate.tmp.' + process.pid;
+      const fd = fs.openSync(tmp, 'w');
+      try {
+        fs.writeSync(fd, JSON.stringify({ ...fresh, inflight_spawns: list }, null, 2));
+        fs.fsyncSync(fd);
+      } finally { fs.closeSync(fd); }
+      try { fs.renameSync(tmp, STATE); }
+      catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
+    } catch (e) {
+      process.stderr.write(`[pre-agent-gate] inflight-record failed: ${e.message}\n`);
+    }
+  };
+
   let raw = '';
   process.stdin.setEncoding('utf-8');
   process.stdin.on('data', c => { raw += c; });
@@ -176,6 +202,11 @@ if (require.main === module) {
       if (r.decision === 'deny') {
         process.stderr.write(`[pre-agent-gate] DENY: ${r.reason}\n`);
         deny(r.reason);
+      } else if (payload.tool_name === 'Agent') {
+        // E-2: record this approved spawn as in-flight so a parallel burst in the same turn
+        // counts toward the budget. Reconciled (removed) by post-agent-hook on completion;
+        // TTL-filtered at count time; cleared at SessionStart.
+        recordInflight(state, (payload.tool_input || {}).subagent_type || '');
       }
     } catch (e) {
       process.stderr.write(`[pre-agent-gate] ${e.message}\n`); // fail-open: allow

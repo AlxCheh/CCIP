@@ -164,6 +164,13 @@ function run(raw) {
   if (oMatch) outcome = oMatch[1];
   if (payload.tool_response?.is_error === true) outcome = 'failed';
 
+  // ── E-2 reconciliation: this agent completed → drop ONE matching in-flight marker
+  // recorded by pre-agent-gate, so the budget count no longer double-counts it.
+  if (Array.isArray(state.inflight_spawns)) {
+    const i = state.inflight_spawns.findIndex(s => s && s.agent === agent);
+    if (i !== -1) state.inflight_spawns.splice(i, 1);
+  }
+
   // ── agent_outputs ──────────────────────────────────────────────────────────
   if (!state.agent_outputs) state.agent_outputs = {};
   state.agent_outputs[agent] = {
