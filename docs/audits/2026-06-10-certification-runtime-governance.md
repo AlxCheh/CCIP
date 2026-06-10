@@ -172,6 +172,7 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 | **T-1** | MEDIUM | aggregate-telemetry | Нет фильтра session_id (cross-session leak) | анализ кода |
 | **R-1** | MINOR | flush-state | Тихий откат к .bak без alert | исполнено |
 | **G-1** | ARCH | failure-detectors | Detect-but-not-react: alert'ы никем не потребляются для runtime-решений | трассировка consumers |
+| **E-7** | ~~HIGH~~ ✅ **CLOSED** | pre-agent-gate | Гейт `risk===HIGH AND surface`, CLAUDE.md `или` → security-surface при MEDIUM/LOW пропускал security-reviewer (занижение risk-метки). Opt1: surface→reviewer при любом risk; CLAUDE.md+manifest синхронизированы | исполнено: JWT@MEDIUM→DENY, RLS@LOW→DENY, PeriodEngine@HIGH→ALLOW |
 
 ---
 
