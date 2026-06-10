@@ -51,8 +51,8 @@
     },
     {
       "id": "INV-SECURITY-COAGENT",
-      "claim": "HIGH-risk security surface requires a security-reviewer co-agent",
-      "doc_anchor": "security-reviewer as co-agent",
+      "claim": "Security surface (JWT/RBAC/RLS/tenancy/GpToken/AuditLog) requires a security-reviewer co-agent at any risk",
+      "doc_anchor": "security-reviewer co-agent",
       "enforcement": "pre-agent-gate.js#INV-SECURITY-COAGENT",
       "kind": "block",
       "status": "enforced"

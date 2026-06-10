@@ -50,7 +50,7 @@ DEFAULT → direct agent of primary intent
 > Триггеры — оркестрационная конвенция, не машинный enforcement: «по запросу» = ручной вызов, остальные срабатывают по условию (risk/intents/фраза-триггер). Хук НЕ авто-спавнит этих агентов.
 | Agent                       | Trigger                                |
 |-----------------------------|----------------------------------------|
-| security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
+| security-reviewer           | JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes (любой risk) |
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
 | ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
@@ -72,16 +72,17 @@ DEFAULT → direct agent of primary intent
 
 ## Risk Rules
 ```
-HIGH          → add security-reviewer as co-agent
+HIGH          → planner + present output for review
 MEDIUM        → present output for review before applying
 LOW           → execute directly
 risk unclear  → default MEDIUM
+security-reviewer co-agent → REQUIRED when scope touches a security surface, ANY risk (see below)
 ```
 ```
 IF intent == ARCH → ccip-architect leads
 IF intent == SECURITY → ccip-security leads (full write, threat model, RBAC audit, pre-launch review)
-  security-reviewer is NOT a primary agent — it is a co-agent triggered automatically by risk:HIGH
-  security-reviewer triggers on: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog changes
+  security-reviewer is NOT a primary agent — it is a co-agent triggered by the security surface
+  security-reviewer REQUIRED on ANY change touching: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog — independent of risk level (machine-enforced: pre-agent-gate.js INV-SECURITY-COAGENT)
 ```
 
 ## Agent Selection

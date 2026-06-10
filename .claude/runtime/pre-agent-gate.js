@@ -62,9 +62,12 @@ function evaluateGate(state, payload, opts = {}) {
     ...((state.dag || []).map(s => s && s.agent)),
     ...((state.observations || []).map(o => o && o.agent)),
   ];
-  if (state.risk === 'HIGH' && securitySurface && !roster.includes('security-reviewer'))
+  // Opt1: surface drives the requirement at ANY risk level — risk labels are LLM-assigned
+  // and gameable; the textual surface match is the objective signal. HIGH-without-surface
+  // does NOT require a security co-agent. See cert 2026-06-10 §VI (A2 hole).
+  if (securitySurface && !roster.includes('security-reviewer'))
     violations.push({ type: 'security', waivable: false,
-      msg: 'HIGH-risk security surface requires security-reviewer co-agent — CLAUDE.md Risk Rules' });
+      msg: 'security surface (JWT/RBAC/RLS/tenancy/GpToken/AuditLog) requires security-reviewer co-agent, any risk — CLAUDE.md Risk Rules' });
 
   if (violations.length === 0) return { decision: 'allow' };
 

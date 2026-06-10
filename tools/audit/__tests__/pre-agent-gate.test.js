@@ -105,6 +105,42 @@ test('HIGH risk + auth scope in DAG step + no security-reviewer → deny', () =>
   assert.match(r.reason, /security-reviewer/i);
 });
 
+// AND→OR (Opt1): security surface requires security-reviewer at ANY risk level (closes A2);
+// HIGH risk WITHOUT a security surface does NOT require it (A1-2 stays allow).
+test('Opt1: security surface at MEDIUM risk → deny (A2-1 JWT@MEDIUM)', () => {
+  const state = { risk: 'MEDIUM', intents: ['BACKEND'], observations: [], agent_outputs: {},
+    dag: [{ agent: 'ccip-backend-aux', scope: 'rotate JWT signing keys' }] };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-backend-aux' } };
+  const r = evaluateGate(state, payload, { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /security-reviewer/i);
+});
+
+test('Opt1: security surface at LOW risk → deny (A2-2 RLS@LOW)', () => {
+  const state = { risk: 'LOW', intents: ['BACKEND'], observations: [], agent_outputs: {},
+    dag: [{ agent: 'ccip-backend-aux', scope: 'adjust RLS policy for tenant_id' }] };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-backend-aux' } };
+  const r = evaluateGate(state, payload, { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /security-reviewer/i);
+});
+
+test('Opt1: HIGH risk WITHOUT security surface → allow (A1-2 PeriodEngine, no reviewer forced)', () => {
+  const state = { risk: 'HIGH', intents: ['BACKEND'], observations: [], agent_outputs: {},
+    dag: [{ agent: 'ccip-backend-core', scope: 'refactor PeriodEngine state machine' }] };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-backend-core' } };
+  const r = evaluateGate(state, payload, { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('Opt1: SECURITY intent at LOW risk → deny (intent itself is a surface)', () => {
+  const state = { risk: 'LOW', intents: ['SECURITY'], observations: [], agent_outputs: {}, dag: [] };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-security' } };
+  const r = evaluateGate(state, payload, { enforce: true, maxAgents: 3 });
+  assert.strictEqual(r.decision, 'deny');
+  assert.match(r.reason, /security-reviewer/i);
+});
+
 // E-3: SECURITY_RE must cover ALL declared triggers (CLAUDE.md:84 — JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog).
 // Each scope below intentionally omits the words 'auth'/'rbac'/'security' to prove the gap is closed.
 const e3 = (scope) => ({
