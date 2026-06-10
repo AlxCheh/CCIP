@@ -8,28 +8,46 @@
  * Default SHADOW: logs would-deny but allows. Real deny only under CCIP_GATE_ENFORCE=1.
  * Fail-open: any error → allow (never block a legitimate spawn). Deny protocol copied
  * from optimizer-gate.js.
+ *
+ * Override (E-1 hardening):
+ *   - `tool_input.override` must be a non-empty JUSTIFICATION STRING (boolean no longer works).
+ *   - It waives ONLY the agent-budget invariant. The security co-agent requirement is
+ *     NEVER waivable — a HIGH-risk security surface without security-reviewer always denies.
+ *   - Every applied or rejected override leaves a durable append-only record in
+ *     governance-audit.jsonl AND governance_alerts[]. The "(audited)" claim is now real.
+ *   - CCIP_OVERRIDE_DISABLED=1 disables override entirely (high-assurance runs).
  */
 
 const SECURITY_RE = /security|auth|rbac|rls/i;
 
-/** Pure decision: returns { decision:'allow'|'deny', reason?, wouldDeny?, overridden? }. */
+/** Pure decision. Returns:
+ *   { decision:'allow'|'deny', reason?, wouldDeny?,
+ *     overridden?, overrideReason?, bypassed?:[], remaining?:[] }
+ *  `overrideReason` is set whenever a justification string was supplied (even if rejected),
+ *  so the caller can durably record the attempt. `bypassed` = waived violation messages;
+ *  `remaining` = violation messages that still stand. */
 function evaluateGate(state, payload, opts = {}) {
-  const { enforce = false, maxAgents = 3 } = opts;
+  const { enforce = false, maxAgents = 3, overrideDisabled = false } = opts;
   if (!payload || payload.tool_name !== 'Agent') return { decision: 'allow' };
   const input = payload.tool_input || {};
-  if (input.override) return { decision: 'allow', overridden: true };
+
+  // Override is a non-empty justification string; truthy/boolean no longer suffices (E-1).
+  const overrideReason = (!overrideDisabled
+    && typeof input.override === 'string' && input.override.trim())
+    ? input.override.trim() : null;
 
   const target = input.subagent_type || '';
   const violations = [];
 
-  // INVARIANT 1 — [INV-AGENT-BUDGET]
+  // INVARIANT 1 — [INV-AGENT-BUDGET] (waivable by override)
   // Use agent_outputs (persists through flush) rather than observations (cleared at Stop) — D-10
   const active = Object.keys(state.agent_outputs || {}).length
     + (state.dag || []).filter(s => s && s.status === 'running').length;
   if (active >= maxAgents)
-    violations.push(`agent budget ${maxAgents} reached (${active} active) — CLAUDE.md §Execution`);
+    violations.push({ type: 'budget', waivable: true,
+      msg: `agent budget ${maxAgents} reached (${active} active) — CLAUDE.md §Execution` });
 
-  // INVARIANT 2 — [INV-SECURITY-COAGENT]
+  // INVARIANT 2 — [INV-SECURITY-COAGENT] (NEVER waivable)
   const scopeText = (state.dag || []).map(s => (s && s.scope) || '').join(' ');
   const securitySurface = (state.intents || []).includes('SECURITY')
     || SECURITY_RE.test(target)
@@ -39,11 +57,35 @@ function evaluateGate(state, payload, opts = {}) {
     ...((state.observations || []).map(o => o && o.agent)),
   ];
   if (state.risk === 'HIGH' && securitySurface && !roster.includes('security-reviewer'))
-    violations.push('HIGH-risk security surface requires security-reviewer co-agent — CLAUDE.md Risk Rules');
+    violations.push({ type: 'security', waivable: false,
+      msg: 'HIGH-risk security surface requires security-reviewer co-agent — CLAUDE.md Risk Rules' });
 
   if (violations.length === 0) return { decision: 'allow' };
-  const reason = `[pre-agent-gate] ${violations.join('; ')}`;
-  return enforce ? { decision: 'deny', reason } : { decision: 'allow', wouldDeny: true, reason };
+
+  // Override clears only waivable violations, and only with a justification string.
+  const bypassed = overrideReason ? violations.filter(v => v.waivable) : [];
+  const remaining = violations.filter(v => !bypassed.includes(v));
+
+  const result = {};
+  if (overrideReason) {
+    result.overrideReason = overrideReason;
+    if (bypassed.length > 0) {
+      result.overridden = true;
+      result.bypassed = bypassed.map(v => v.msg);
+    }
+    if (remaining.length > 0) result.remaining = remaining.map(v => v.msg);
+  }
+
+  if (remaining.length === 0) {
+    result.decision = 'allow';
+    return result;
+  }
+
+  const reason = `[pre-agent-gate] ${remaining.map(v => v.msg).join('; ')}`;
+  result.reason = reason;
+  result.decision = enforce ? 'deny' : 'allow';
+  if (!enforce) result.wouldDeny = true;
+  return result;
 }
 
 module.exports = { evaluateGate };
@@ -54,8 +96,12 @@ if (require.main === module) {
   const path = require('path');
   const ROOT = path.resolve(__dirname, '../..');
   const STATE = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
+  const GOV_AUDIT = process.env.CCIP_GOV_AUDIT_FILE
+    || path.join(ROOT, '.claude/runtime/governance-audit.jsonl');
   const ENFORCE = process.env.CCIP_GATE_ENFORCE === '1';
+  const OVERRIDE_DISABLED = process.env.CCIP_OVERRIDE_DISABLED === '1';
   const MAX = parseInt(process.env.CCIP_MAX_AGENTS || '3', 10);
+  const MAX_BYTES = 5 * 1024 * 1024;
 
   const readState = () => {
     try { return JSON.parse(fs.readFileSync(STATE, 'utf-8')); } catch { return {}; }
@@ -64,14 +110,59 @@ if (require.main === module) {
     hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason },
   }));
 
+  /** Append one governance-audit record (durable, append-only, rotated like events.jsonl). */
+  const auditAppend = (record) => {
+    try {
+      try { if (fs.statSync(GOV_AUDIT).size > MAX_BYTES) fs.renameSync(GOV_AUDIT, GOV_AUDIT + '.1'); }
+      catch {}
+      fs.appendFileSync(GOV_AUDIT, JSON.stringify(record) + '\n', 'utf-8');
+    } catch (e) {
+      process.stderr.write(`[pre-agent-gate] audit-append failed: ${e.message}\n`);
+    }
+  };
+
+  /** Best-effort mirror into session-state.governance_alerts[] (atomic, fail-open, HA-3 re-read). */
+  const alertAppend = (record) => {
+    try {
+      const fresh = readState();
+      const merged = [...(fresh.governance_alerts || []), record];
+      const tmp = STATE + '.gate.tmp.' + process.pid;
+      const fd = fs.openSync(tmp, 'w');
+      try {
+        fs.writeSync(fd, JSON.stringify({ ...fresh, governance_alerts: merged }, null, 2));
+        fs.fsyncSync(fd);
+      } finally { fs.closeSync(fd); }
+      try { fs.renameSync(tmp, STATE); }
+      catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
+    } catch (e) {
+      process.stderr.write(`[pre-agent-gate] alert-append failed: ${e.message}\n`);
+    }
+  };
+
   let raw = '';
   process.stdin.setEncoding('utf-8');
   process.stdin.on('data', c => { raw += c; });
   process.stdin.on('end', () => {
     try {
       const payload = JSON.parse(raw);
-      const r = evaluateGate(readState(), payload, { enforce: ENFORCE, maxAgents: MAX });
-      if (r.overridden) process.stderr.write('[pre-agent-gate] budget override used (audited)\n');
+      const state = readState();
+      const r = evaluateGate(state, payload, { enforce: ENFORCE, maxAgents: MAX, overrideDisabled: OVERRIDE_DISABLED });
+
+      // Durable governance audit for any override attempt (applied or rejected).
+      if (r.overridden) {
+        const rec = { kind: 'override_applied', at: new Date().toISOString(),
+          session: state.session_id || '', target: (payload.tool_input || {}).subagent_type || '',
+          reason: r.overrideReason, bypassed: r.bypassed || [] };
+        process.stderr.write(`[pre-agent-gate] OVERRIDE APPLIED (durably audited): ${JSON.stringify(rec)}\n`);
+        auditAppend(rec); alertAppend(rec);
+      } else if (r.overrideReason && r.remaining) {
+        const rec = { kind: 'override_rejected', at: new Date().toISOString(),
+          session: state.session_id || '', target: (payload.tool_input || {}).subagent_type || '',
+          reason: r.overrideReason, remaining: r.remaining };
+        process.stderr.write(`[pre-agent-gate] OVERRIDE REJECTED (non-waivable violation): ${JSON.stringify(rec)}\n`);
+        auditAppend(rec); alertAppend(rec);
+      }
+
       if (r.wouldDeny) process.stderr.write(`[pre-agent-gate] SHADOW would-deny: ${r.reason}\n`);
       if (r.decision === 'deny') {
         process.stderr.write(`[pre-agent-gate] DENY: ${r.reason}\n`);

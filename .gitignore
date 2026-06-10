@@ -45,6 +45,8 @@ docs/errors/sessions/
 .claude/runtime/optimizer.lock
 .claude/runtime/events.jsonl
 .claude/runtime/events.jsonl.1
+.claude/runtime/governance-audit.jsonl
+.claude/runtime/governance-audit.jsonl.1
 
 # Per-machine Claude Code permissions (allow-list Bash commands etc.)
 .claude/settings.local.json
