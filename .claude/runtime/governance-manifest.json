@@ -97,6 +97,14 @@
       "enforcement": "execute-dag.js#INV-FALLBACK-PROFILE",
       "kind": "advisory",
       "status": "observed"
+    },
+    {
+      "id": "INV-GOVERNANCE-REACTOR",
+      "claim": "unacknowledged governance_alerts[] are surfaced into the next turn's context and marked surfaced (detect→react)",
+      "doc_anchor": "governance-reactor.js",
+      "enforcement": "governance-reactor.js#INV-GOVERNANCE-REACTOR",
+      "kind": "signal",
+      "status": "observed"
     }
   ]
 }

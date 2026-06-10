@@ -95,7 +95,12 @@
           "threshold": { "type": "number", "minimum": 0 },
           "ratio":     { "type": "number", "minimum": 0, "maximum": 1 },
           "agents":    { "type": "integer", "minimum": 0 },
-          "steps":     { "type": "array", "items": { "type": "integer", "minimum": 1 } }
+          "steps":     { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+          "target":    { "type": "string", "description": "override target agent (E-1 override_applied/rejected)" },
+          "reason":    { "type": "string", "description": "override justification (E-1)" },
+          "bypassed":  { "type": "array", "items": { "type": "string" }, "description": "waived violations (E-1 override_applied)" },
+          "remaining": { "type": "array", "items": { "type": "string" }, "description": "non-waivable violations (E-1 override_rejected)" },
+          "surfaced":  { "type": "boolean", "description": "alert already injected into orchestrator context by governance-reactor (G-1 anti-spam)" }
         },
         "additionalProperties": false
       }

@@ -147,6 +147,7 @@ INIT    set task,intents,risk,confidence,routing,started_at; status=planning
 INJECT  before each Agent call: read state -> inject into prompt
 UPDATE  after each Agent call: post-agent-hook.js parses "## State Update" block -> agent_outputs[name] + observation
 FLUSH   Stop hook: flush-state.js -> observations[] to docs/tasks/feedback-loop.md §4
+REACT   next UserPromptSubmit: governance-reactor.js surfaces unacknowledged governance_alerts[] into context, marks them surfaced (G-1 detect→react)
 ```
 
 **Agent contract** — each agent MUST end its output with:
