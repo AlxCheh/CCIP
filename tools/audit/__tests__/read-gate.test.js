@@ -85,3 +85,45 @@ test('main: fail-open on malformed payload', () => {
   assert.strictEqual(res.status, 0);
   assert.strictEqual(res.stdout.trim(), '');
 });
+
+// E-4: case-insensitive match — Windows FS is case-insensitive, so docs/Architecture/
+// resolves to the SAME protected file as docs/architecture/. Prefix match must not be
+// case-sensitive or the discipline is bypassable by changing case.
+test('E-4: capitalised protected dir (docs/Architecture/) full read → deny', () => {
+  const r = evaluateReadGate(readPayload({ file_path: 'docs/Architecture/architecture_v1_0.md' }),
+    { enforce: true });
+  assert.strictEqual(r.decision, 'deny');
+});
+
+test('E-4: mixed-case .CLAUDE/Agents/ full read → deny', () => {
+  const r = evaluateReadGate(readPayload({ file_path: '.CLAUDE/Agents/ccip-architect.md' }),
+    { enforce: true });
+  assert.strictEqual(r.decision, 'deny');
+});
+
+// E-5: a huge explicit limit loads the whole file but slipped past the gate, which only
+// checked for the PRESENCE of limit, not its magnitude. A limit beyond the discipline cap
+// is a full read in disguise.
+test('E-5: protected path + huge limit (9999999) → deny', () => {
+  const r = evaluateReadGate(readPayload({ file_path: 'docs/architecture/x.md', limit: 9999999 }),
+    { enforce: true, maxLines: 2000 });
+  assert.strictEqual(r.decision, 'deny');
+});
+
+test('E-5: protected path + limit at cap (2000) → allow', () => {
+  const r = evaluateReadGate(readPayload({ file_path: 'docs/architecture/x.md', limit: 2000 }),
+    { enforce: true, maxLines: 2000 });
+  assert.strictEqual(r.decision, 'allow');
+});
+
+test('E-5: protected path + limit just over cap (2001) → deny', () => {
+  const r = evaluateReadGate(readPayload({ file_path: 'docs/architecture/x.md', limit: 2001 }),
+    { enforce: true, maxLines: 2000 });
+  assert.strictEqual(r.decision, 'deny');
+});
+
+test('E-5: non-protected path + huge limit → allow (gate only guards protected dirs)', () => {
+  const r = evaluateReadGate(readPayload({ file_path: 'README.md', limit: 9999999 }),
+    { enforce: true, maxLines: 2000 });
+  assert.strictEqual(r.decision, 'allow');
+});
