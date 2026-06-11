@@ -213,7 +213,6 @@ Token-saving rules for file reads. Goal: cut per-session token cost 30-50% with 
 | `intents == 2 → co-agent` (§Planner) | Нет hook подсчитывающего intents из payload | LLM-оркестратор |
 | `agent fails >= 2 → switch to backup` (§Feedback) | Нет автоматического счётчика failures/agent | LLM-оркестратор |
 | `intents >= 3 → planner only` (§Planner) | Нет hook ограничивающего тип агента | LLM-оркестратор |
-| `writeLock serializes all mutations` (execute-dag.js) | In-process lock — не работает при двух процессах | Одиночный процесс assumed |
 | Optimizer-gate TTL 5 min | Настраивается через `OPT_LOCK_TTL_MS` — по умолчанию 5 min; при длительных сессиях увеличить до 15 min (`OPT_LOCK_TTL_MS=900000`) | Конфигурация |
 | Stop hook order | Assumed sequential (по порядку в settings.json Stop array). Если concurrent — failure-detectors safe благодаря re-read before write (HA-3) | Документальная + частичная code defence |
 
