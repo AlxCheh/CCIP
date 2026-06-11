@@ -270,10 +270,24 @@ test('main: shadow mode (default) allows but warns on stderr', () => {
   } finally { fs.rmSync(stateFile, { force: true }); }
 });
 
-test('main: fail-open on malformed payload (exit 0, empty stdout)', () => {
-  const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
-  assert.strictEqual(res.status, 0);
-  assert.strictEqual(res.stdout.trim(), '');
+test('main: fail-open on malformed payload (exit 0, empty stdout) — observable (E-6)', () => {
+  const audit = path.join(os.tmpdir(), `pag-audit-${Date.now()}-${Math.random().toString(36).slice(2)}.jsonl`);
+  const stateFile = writeTmpState({ session_id: '2026-01-01-1200', governance_alerts: [] });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8',
+      env: { ...process.env, CCIP_GOV_AUDIT_FILE: audit, CCIP_STATE_FILE: stateFile } });
+    assert.strictEqual(res.status, 0);
+    assert.strictEqual(res.stdout.trim(), '', 'fail-open: no deny');
+    const lines = fs.readFileSync(audit, 'utf-8').trim().split('\n').filter(Boolean).map(JSON.parse);
+    assert.strictEqual(lines[0].kind, 'gate_failed_open');
+    assert.strictEqual(lines[0].gate, 'pre-agent-gate');
+    assert.strictEqual(lines[0].phase, 'parse');
+    const st = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+    assert.ok(st.governance_alerts.some(a => a.kind === 'gate_failed_open'), 'state alert pushed for reactor');
+  } finally {
+    fs.rmSync(audit, { force: true });
+    fs.rmSync(stateFile, { force: true });
+  }
 });
 
 test('E-1 main: override applied writes a durable governance-audit.jsonl line', () => {

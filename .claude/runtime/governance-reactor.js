@@ -31,6 +31,7 @@ const DIRECTIVES = {
   invalid_intent:           'an unknown intent was recorded — use only the CLAUDE.md Intent vocabulary',
   state_recovered_from_backup: 'session state was recovered from .bak after the main file was corrupt — data may be one write stale; verify recent changes persisted',
   state_lost_defaulted:     'session state was UNRECOVERABLE (main + backup corrupt) and reset to defaults — recent session context was lost',
+  gate_failed_open:         'a governance gate could not evaluate and failed OPEN (allowed) — that spawn/read was NOT checked; if phase=evaluate it is a gate bug, investigate; re-verify the action manually',
 };
 
 /** Pure: { msg, surfacedIdx:[indices] }. Empty msg when nothing fresh to surface. */
@@ -44,7 +45,8 @@ function buildReaction(state) {
     const kind = a.kind || 'unknown';
     const directive = DIRECTIVES[kind] || `governance signal "${kind}" raised — review session-state.governance_alerts`;
     // Add a compact detail suffix where it helps the orchestrator act.
-    const detail = a.target ? ` (${a.target})`
+    const detail = a.gate ? ` (${a.gate}/${a.phase || '?'})`
+      : a.target ? ` (${a.target})`
       : a.agent ? ` (${a.agent})`
       : a.ratio != null ? ` (ratio ${a.ratio})`
       : a.ssc != null ? ` (SSC ${a.ssc})`

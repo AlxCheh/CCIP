@@ -47,16 +47,23 @@ if (require.main === module) {
   const deny = (reason) => process.stdout.write(JSON.stringify({
     hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason },
   }));
+  const { recordGateFailOpen } = require('./gate-fail-open.js');
+
   let raw = '';
   process.stdin.setEncoding('utf-8');
   process.stdin.on('data', c => { raw += c; });
   process.stdin.on('end', () => {
+    let phase = 'parse';
     try {
-      const r = evaluateReadGate(JSON.parse(raw), { enforce: ENFORCE });
+      const payload = JSON.parse(raw);
+      phase = 'evaluate';
+      const r = evaluateReadGate(payload, { enforce: ENFORCE });
       if (r.wouldDeny) process.stderr.write(`[read-gate] SHADOW would-deny: ${r.reason}\n`);
       if (r.decision === 'deny') { process.stderr.write(`[read-gate] DENY: ${r.reason}\n`); deny(r.reason); }
     } catch (e) {
       process.stderr.write(`[read-gate] ${e.message}\n`); // fail-open
+      // E-6: make the fail-open observable (durable audit + reactor-surfaced alert).
+      recordGateFailOpen({ gate: 'read-gate', phase, message: e.message });
     }
     process.exit(0);
   });

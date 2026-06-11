@@ -100,7 +100,10 @@
           "reason":    { "type": "string", "description": "override justification (E-1)" },
           "bypassed":  { "type": "array", "items": { "type": "string" }, "description": "waived violations (E-1 override_applied)" },
           "remaining": { "type": "array", "items": { "type": "string" }, "description": "non-waivable violations (E-1 override_rejected)" },
-          "surfaced":  { "type": "boolean", "description": "alert already injected into orchestrator context by governance-reactor (G-1 anti-spam)" }
+          "surfaced":  { "type": "boolean", "description": "alert already injected into orchestrator context by governance-reactor (G-1 anti-spam)" },
+          "gate":      { "type": "string", "description": "gate that failed open (E-6 gate_failed_open)" },
+          "phase":     { "type": "string", "description": "where the gate threw: parse | evaluate (E-6)" },
+          "message":   { "type": "string", "description": "error message captured at fail-open (E-6)" }
         },
         "additionalProperties": false
       }

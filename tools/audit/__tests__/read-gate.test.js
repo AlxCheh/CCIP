@@ -81,9 +81,26 @@ test('main: shadow mode (default) allows but warns on stderr', () => {
 });
 
 test('main: fail-open on malformed payload', () => {
-  const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
-  assert.strictEqual(res.status, 0);
-  assert.strictEqual(res.stdout.trim(), '');
+  const os = require('node:os');
+  const audit = path.join(os.tmpdir(), `rg-audit-${Date.now()}-${Math.random().toString(36).slice(2)}.jsonl`);
+  const state = path.join(os.tmpdir(), `rg-state-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  fs.writeFileSync(state, JSON.stringify({ session_id: '2026-01-01-1200', governance_alerts: [] }), 'utf-8');
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8',
+      env: { ...process.env, CCIP_GOV_AUDIT_FILE: audit, CCIP_STATE_FILE: state } });
+    assert.strictEqual(res.status, 0, 'still fail-open (exit 0)');
+    assert.strictEqual(res.stdout.trim(), '', 'no deny emitted');
+    // E-6: the fail-open is now observable
+    const lines = fs.readFileSync(audit, 'utf-8').trim().split('\n').filter(Boolean).map(JSON.parse);
+    assert.strictEqual(lines[0].kind, 'gate_failed_open');
+    assert.strictEqual(lines[0].gate, 'read-gate');
+    assert.strictEqual(lines[0].phase, 'parse', 'malformed payload → parse phase');
+    const st = JSON.parse(fs.readFileSync(state, 'utf-8'));
+    assert.ok(st.governance_alerts.some(a => a.kind === 'gate_failed_open'), 'state alert pushed for reactor');
+  } finally {
+    fs.rmSync(audit, { force: true });
+    fs.rmSync(state, { force: true });
+  }
 });
 
 // E-4: case-insensitive match — Windows FS is case-insensitive, so docs/Architecture/

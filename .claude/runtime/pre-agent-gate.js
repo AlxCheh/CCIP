@@ -174,12 +174,16 @@ if (require.main === module) {
     }
   };
 
+  const { recordGateFailOpen } = require('./gate-fail-open.js');
+
   let raw = '';
   process.stdin.setEncoding('utf-8');
   process.stdin.on('data', c => { raw += c; });
   process.stdin.on('end', () => {
+    let phase = 'parse';
     try {
       const payload = JSON.parse(raw);
+      phase = 'evaluate';
       const state = readState();
       const r = evaluateGate(state, payload, { enforce: ENFORCE, maxAgents: MAX, overrideDisabled: OVERRIDE_DISABLED });
 
@@ -210,6 +214,8 @@ if (require.main === module) {
       }
     } catch (e) {
       process.stderr.write(`[pre-agent-gate] ${e.message}\n`); // fail-open: allow
+      // E-6: make the fail-open observable (durable audit + reactor-surfaced alert).
+      recordGateFailOpen({ gate: 'pre-agent-gate', phase, message: e.message });
     }
     process.exit(0);
   });
