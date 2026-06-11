@@ -168,9 +168,11 @@ function run(raw) {
       missing_state_update: missingBlock,
     });
 
-    // [INV-CONTRACT-DEBT] RFC R3 — Level 1 escalation: count contract misses, alert at threshold.
+    // [INV-CONTRACT-DEBT] RFC R3 + [INV-STATE-CONTRACT] enforced — escalate contract misses.
+    // FPR=0 (relay agents exempt) делает каждый non-exempt промах истинным нарушением →
+    // дефолтный порог 1 (немедленный state_contract_degraded). Env override сохранён.
     if (missingBlock) {
-      const threshold = parseInt(process.env.CCIP_CONTRACT_DEBT_THRESHOLD || '3', 10);
+      const threshold = parseInt(process.env.CCIP_CONTRACT_DEBT_THRESHOLD || '1', 10);
       state.contract_debt = (state.contract_debt || 0) + 1;
       if (state.contract_debt >= threshold) {
         state.governance_alerts = state.governance_alerts || [];

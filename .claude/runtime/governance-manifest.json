@@ -2,11 +2,11 @@
   "invariants": [
     {
       "id": "INV-STATE-CONTRACT",
-      "claim": "agent MUST end with ## State Update; пропуск помечается missing_state_update",
+      "claim": "non-exempt agent MUST end with ## State Update; пропуск у non-exempt → state_contract_degraded немедленно (enforced, порог 1). Relay-агенты освобождены (contract-exempt.js, FPR=0)",
       "doc_anchor": "§15",
       "enforcement": "post-agent-hook.js#INV-STATE-CONTRACT",
       "kind": "signal",
-      "status": "observed"
+      "status": "enforced"
     },
     {
       "id": "INV-STATE-CONTRACT-DAG",
