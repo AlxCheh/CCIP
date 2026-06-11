@@ -8,6 +8,8 @@
 
 > **Методологическое замечание:** self-score проекта = 76/100 (зафиксирован в `docs/plans/archive/2026-06-08-defect-remediation.md`, Phase K). Сертификационный балл = **64/100**. Разрыв — не ошибка, а разница метода: проект засчитал запланированную и частично self-attested работу; комиссия засчитала только воспроизведённое исполнением и оштрафовала за обходы, которые внутренний скоринг не моделировал.
 
+> **РЕМЕДИАЦИЯ ЗАВЕРШЕНА 2026-06-11:** все 11 находок отчёта (E-1..E-7, G-1, M-1, S-1, T-1, R-1) + латентный E-1 schema-gap закрыты с TDD и live re-cert, каждая — отдельным коммитом. Все enforcement-обходы устранены; петля detect→react замкнута (`governance-reactor.js`); тест-сьют детерминирован; ADR-018 drift снят. Финал: канон-раннер 349/349, audit-suite 22/22 на каждом коммите. Статусы по находкам — в таблице §5.
+
 ---
 
 ## 1. Executive Summary
@@ -166,7 +168,7 @@ Graceful degradation — ✅ fail-open везде. Atomic+fsync — ✅. HA-3 re
 | **E-3** | ~~HIGH~~ ✅ **CLOSED** (см. лог) | pre-agent-gate | ~~`SECURITY_RE` не покрывает JWT/GpToken/multi-tenancy/AuditLog~~ → regex расширен до канона CLAUDE.md:84; E-3 тест-блок ловит будущий drift | исполнено: JWT/GpToken/tenancy/AuditLog → DENY |
 | **E-4** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~Case-sensitive prefix → `docs/Architecture/` обходит на Windows~~ → case-insensitive match | исполнено: `docs/Architecture/` → DENY |
 | **E-5** | ~~MEDIUM~~ ✅ **CLOSED** | read-gate | ~~`limit:9999999` проходит~~ → limit > cap (`CCIP_READ_MAX_LINES`, деф 2000) = full read | исполнено: limit:9999999 → DENY, limit:50 → ALLOW |
-| **E-6** | MEDIUM | все гейты | Malformed JSON → fail-open exit 0 | исполнено |
+| **E-6** | ~~MEDIUM~~ ✅ **CLOSED** | DENY-гейты | ~~Malformed JSON → fail-open exit 0 (silent)~~ → fail-open остаётся (правильный дефолт), но пишет gate_failed_open в governance-audit.jsonl + alert (reactor surface'ит); phase parse/evaluate | исполнено: malformed → exit 0 + durable + reactor |
 | **S-1** | ~~MAJOR~~ ✅ **CLOSED** | ADR-018 | ~~Активный 3-сторонний drift doc↔manifest↔settings~~ → таблица shadow→enforced, §Ревизия, status «Принято rev 2» (immutability-safe) | исполнено: doc=manifest=settings=enforced |
 | **M-1** | ~~MAJOR~~ ✅ **CLOSED** | test suite | ~~Не parallel-safe, недетерминированная зелёность (281/283/284)~~ → resolver-виновники изолированы на tmp-state; concurrency:false задокументирован + guard-тест; token-rules уже под serial-guard | исполнено: канон 342/342, glob стабильно 325+2 (guard by-design) |
 | **T-1** | ~~MEDIUM~~ ✅ **CLOSED** | aggregate-telemetry | ~~Нет фильтра session_id (cross-session leak)~~ → events фильтруются по session_id (graceful degrade при 'unknown') + CCIP_STATE_FILE | исполнено: 5 событий (2+3) → tool_calls=2 |
