@@ -69,6 +69,7 @@ function updateStateLocked(stateFile, mutator, opts = {}) {
     const state = readStateRaw(target);
     if (!state) return null;
     const r = mutator(state);
+    if (r === false) return false; // mutator signalled no-op → skip write (idempotent guard)
     writeStateAtomic(state, target);
     return r === undefined ? state : r;
   }, opts);

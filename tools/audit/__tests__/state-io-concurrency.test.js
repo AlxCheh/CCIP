@@ -38,6 +38,15 @@ test('updateStateLocked applies mutator and persists', () => {
   fs.unlinkSync(f); try { fs.unlinkSync(f + '.bak'); } catch {}
 });
 
+test('updateStateLocked skips the write when mutator returns false', () => {
+  const f = tmpState('skip');
+  writeStateAtomic({ session_id: 's', observations: [{ keep: 1 }] }, f);
+  const r = updateStateLocked(f, (st) => { st.observations.push({ n: 2 }); return false; });
+  assert.strictEqual(r, false);
+  assert.strictEqual(readStateRaw(f).observations.length, 1, 'no-op mutator must not persist changes');
+  fs.unlinkSync(f); try { fs.unlinkSync(f + '.bak'); } catch {}
+});
+
 const cp = require('node:child_process');
 
 test('20 concurrent updateStateLocked appends — ALL survive (no lost update)', async () => {

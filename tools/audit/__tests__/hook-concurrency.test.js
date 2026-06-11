@@ -39,8 +39,17 @@ test('20-way concurrent hook produces valid JSON and leaves no .tmp residue', as
     const finalRaw = fs.readFileSync(STATE, 'utf-8');
     assert.doesNotThrow(() => { JSON.parse(finalRaw); }, 'state.json must remain valid JSON');
 
+    // HA-2: every one of the 20 concurrent hooks must append its observation. Before the
+    // cross-process lock, the last rename clobbered earlier writers' mutations (lost update);
+    // this asserts the lock now serialises read-modify-write across processes.
+    const final = JSON.parse(finalRaw);
+    assert.strictEqual(final.observations.length, 20,
+      `all 20 concurrent hooks must append an observation; got ${final.observations.length} (lost update = HA-2)`);
+
     const tmps = fs.readdirSync(path.dirname(STATE)).filter(f => f.includes('.tmp'));
     assert.deepEqual(tmps, [], 'no .tmp file should remain after concurrent writers settle');
+    const locks = fs.readdirSync(path.dirname(STATE)).filter(f => f.endsWith('.lock'));
+    assert.deepEqual(locks, [], 'no .lock residue after writers settle');
   } finally {
     fs.writeFileSync(STATE, original, 'utf-8');
   }

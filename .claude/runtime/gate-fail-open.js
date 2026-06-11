@@ -42,4 +42,14 @@ function recordGateFailOpen({ gate, phase, message }) {
   } catch { /* never throw — durable log already captured it */ }
 }
 
-module.exports = { recordGateFailOpen };
+/**
+ * recordStateLockFailOpen (HA-2) — make a state-lock acquire-timeout OBSERVABLE.
+ * When updateStateLocked cannot grab the lock within the timeout, the write proceeds
+ * WITHOUT mutual exclusion (never deadlock a hook). That residual race must be visible —
+ * reuse the same durable-log + reactor-surfaced channel as gate fail-open (E-6 pattern).
+ */
+function recordStateLockFailOpen({ gate, why }) {
+  recordGateFailOpen({ gate: `state-lock/${gate}`, phase: 'lock', message: `lock fail-open: ${why}` });
+}
+
+module.exports = { recordGateFailOpen, recordStateLockFailOpen };

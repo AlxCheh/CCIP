@@ -16,7 +16,8 @@
 const fs = require('fs');
 const path = require('path');
 const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/UU-4
-const { readStateRaw, updateStateLocked } = require('./state-io'); // HA-2: locked read-modify-write
+const { updateStateLocked } = require('./state-io'); // HA-2: locked read-modify-write
+const { recordStateLockFailOpen } = require('./gate-fail-open'); // HA-2: observable lock fail-open
 
 const ROOT        = path.resolve(__dirname, '../..');
 const STATE       = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
@@ -116,16 +117,15 @@ function run(raw) {
   if (oMatch) outcome = oMatch[1];
   if (payload.tool_response?.is_error === true) outcome = 'failed';
 
-  // Pre-guard (стабильные условия — не меняются в рамках сессии): пропустить целиком,
-  // если state отсутствует/повреждён или сессия не инициализирована. Сохраняет прежнее
-  // поведение «не писать в этих случаях» (updateStateLocked всегда пишет после mutator).
-  const pre = readStateRaw(STATE);
-  if (!pre) { process.stderr.write('[post-agent-hook] state file missing or unparseable\n'); return; }
-  if (!pre.session_id) { process.stderr.write('[post-agent-hook] session_id empty — skip (uninitialised session)\n'); return; }
+  // Read-modify-write под cross-process локом (HA-2). Guard на инициализацию — ВНУТРИ лока
+  // (одно чтение, без гонки с параллельным copyFileSync/rename, что давало транзиентный
+  // null и терю observation). `return false` → пропуск записи (uninitialised session).
+  const result = updateStateLocked(STATE, (state) => {
+    if (!state.session_id) {
+      process.stderr.write('[post-agent-hook] session_id empty — skip (uninitialised session)\n');
+      return false; // skip write
+    }
 
-  // Read-modify-write под cross-process локом (HA-2). Все мутации — внутри mutator,
-  // который видит свежий state (перечитанный под локом).
-  updateStateLocked(STATE, (state) => {
     // ── E-2 reconciliation: this agent completed → drop ONE matching in-flight marker
     // recorded by pre-agent-gate, so the budget count no longer double-counts it.
     if (Array.isArray(state.inflight_spawns)) {
@@ -187,5 +187,9 @@ function run(raw) {
         state.status = 'done';
       }
     }
-  }, { onFailOpen: (why) => process.stderr.write(`[post-agent-hook] state-lock fail-open: ${why}\n`) });
+  }, { onFailOpen: (why) => recordStateLockFailOpen({ gate: 'post-agent-hook', why }) });
+
+  if (result === null) {
+    process.stderr.write('[post-agent-hook] state file missing or unparseable\n');
+  }
 }

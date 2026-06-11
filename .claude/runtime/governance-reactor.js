@@ -32,6 +32,7 @@ const DIRECTIVES = {
   state_recovered_from_backup: 'session state was recovered from .bak after the main file was corrupt — data may be one write stale; verify recent changes persisted',
   state_lost_defaulted:     'session state was UNRECOVERABLE (main + backup corrupt) and reset to defaults — recent session context was lost',
   gate_failed_open:         'a governance gate could not evaluate and failed OPEN (allowed) — that spawn/read was NOT checked; if phase=evaluate it is a gate bug, investigate; re-verify the action manually',
+  state_lock_failed_open:   'a state-write lock could not be acquired and the write proceeded WITHOUT mutual exclusion — possible lost update under contention; verify recent state mutations persisted',
 };
 
 /** Pure: { msg, surfacedIdx:[indices] }. Empty msg when nothing fresh to surface. */
