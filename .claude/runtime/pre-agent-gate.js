@@ -110,6 +110,7 @@ module.exports = { evaluateGate };
 if (require.main === module) {
   const fs = require('fs');
   const path = require('path');
+  const { updateStateLocked } = require('./state-io'); // HA-2: locked alert/inflight append
   const ROOT = path.resolve(__dirname, '../..');
   const STATE = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
   const GOV_AUDIT = process.env.CCIP_GOV_AUDIT_FILE
@@ -139,39 +140,18 @@ if (require.main === module) {
 
   /** Best-effort mirror into session-state.governance_alerts[] (atomic, fail-open, HA-3 re-read). */
   const alertAppend = (record) => {
-    try {
-      const fresh = readState();
-      const merged = [...(fresh.governance_alerts || []), record];
-      const tmp = STATE + '.gate.tmp.' + process.pid;
-      const fd = fs.openSync(tmp, 'w');
-      try {
-        fs.writeSync(fd, JSON.stringify({ ...fresh, governance_alerts: merged }, null, 2));
-        fs.fsyncSync(fd);
-      } finally { fs.closeSync(fd); }
-      try { fs.renameSync(tmp, STATE); }
-      catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
-    } catch (e) {
-      process.stderr.write(`[pre-agent-gate] alert-append failed: ${e.message}\n`);
-    }
+    try { updateStateLocked(STATE, (s) => { (s.governance_alerts ||= []).push(record); }); }
+    catch (e) { process.stderr.write(`[pre-agent-gate] alert-append failed: ${e.message}\n`); }
   };
 
   /** Append an in-flight spawn marker (atomic, fail-open, HA-3 re-read). E-2. */
   const recordInflight = (_state, agent) => {
     try {
-      const fresh = readState();
-      const list = Array.isArray(fresh.inflight_spawns) ? fresh.inflight_spawns : [];
-      list.push({ agent: String(agent), at: new Date().toISOString() });
-      const tmp = STATE + '.gate.tmp.' + process.pid;
-      const fd = fs.openSync(tmp, 'w');
-      try {
-        fs.writeSync(fd, JSON.stringify({ ...fresh, inflight_spawns: list }, null, 2));
-        fs.fsyncSync(fd);
-      } finally { fs.closeSync(fd); }
-      try { fs.renameSync(tmp, STATE); }
-      catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
-    } catch (e) {
-      process.stderr.write(`[pre-agent-gate] inflight-record failed: ${e.message}\n`);
-    }
+      updateStateLocked(STATE, (s) => {
+        if (!Array.isArray(s.inflight_spawns)) s.inflight_spawns = [];
+        s.inflight_spawns.push({ agent: String(agent), at: new Date().toISOString() });
+      });
+    } catch (e) { process.stderr.write(`[pre-agent-gate] inflight-record failed: ${e.message}\n`); }
   };
 
   const { recordGateFailOpen } = require('./gate-fail-open.js');

@@ -69,6 +69,7 @@ module.exports = {
 if (require.main === module) {
   const fs = require('fs');
   const path = require('path');
+  const { updateStateLocked } = require('./state-io'); // HA-2: locked alert-append
   const ROOT = path.resolve(__dirname, '../..');
   const STATE_FILE = process.env.CCIP_STATE_FILE
     || path.join(ROOT, '.claude/runtime/session-state.json');
@@ -89,29 +90,11 @@ if (require.main === module) {
     for (const a of alerts)
       process.stderr.write(`[failure-detectors] ALERT ${a.kind}: ${JSON.stringify(a)}\n`);
 
-    // Re-read state immediately before write to capture any concurrent flush (HA-3)
-    let freshState;
-    try { freshState = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8')); }
-    catch { freshState = state; }
-
-    const existing = freshState.governance_alerts || [];
-    const merged = [...existing, ...alerts];
-
-    const tmp = STATE_FILE + '.fd.tmp.' + process.pid;
-    const data = JSON.stringify({ ...freshState, governance_alerts: merged }, null, 2);
-    const fd = fs.openSync(tmp, 'w');
-    try {
-      fs.writeSync(fd, data);
-      fs.fsyncSync(fd);
-    } finally {
-      fs.closeSync(fd);
-    }
-    try {
-      fs.renameSync(tmp, STATE_FILE);
-    } catch (e) {
-      try { fs.unlinkSync(tmp); } catch {}
-      throw e;
-    }
+    // HA-2: append под cross-process локом — mutator читает свежий state и мержит alerts
+    // (заменяет ручной HA-3 re-read + tmp/rename).
+    updateStateLocked(STATE_FILE, (fresh) => {
+      fresh.governance_alerts = [...(fresh.governance_alerts || []), ...alerts];
+    });
   } catch (e) {
     process.stderr.write(`[failure-detectors] ${e.message}\n`); // fail-open
   }

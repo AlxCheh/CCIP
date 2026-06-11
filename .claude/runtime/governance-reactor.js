@@ -65,6 +65,7 @@ module.exports = { buildReaction, DIRECTIVES };
 if (require.main === module) {
   const fs = require('fs');
   const path = require('path');
+  const { updateStateLocked } = require('./state-io'); // HA-2: locked mark-surfaced
   const ROOT = path.resolve(__dirname, '../..');
   const STATE_FILE = process.env.CCIP_STATE_FILE
     || path.join(ROOT, '.claude/runtime/session-state.json');
@@ -82,16 +83,10 @@ if (require.main === module) {
       // Mark surfaced alerts so they are not re-injected every turn (anti-spam).
       // Atomic write with re-read immediately before (HA-3); fail-open on any error.
       try {
-        const fresh = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-        if (Array.isArray(fresh.governance_alerts)) {
-          for (const i of surfacedIdx) if (fresh.governance_alerts[i]) fresh.governance_alerts[i].surfaced = true;
-          const tmp = STATE_FILE + '.gr.tmp.' + process.pid;
-          const fd = fs.openSync(tmp, 'w');
-          try { fs.writeSync(fd, JSON.stringify(fresh, null, 2)); fs.fsyncSync(fd); }
-          finally { fs.closeSync(fd); }
-          try { fs.renameSync(tmp, STATE_FILE); }
-          catch (e) { try { fs.unlinkSync(tmp); } catch {} throw e; }
-        }
+        updateStateLocked(STATE_FILE, (fresh) => {
+          if (Array.isArray(fresh.governance_alerts))
+            for (const i of surfacedIdx) if (fresh.governance_alerts[i]) fresh.governance_alerts[i].surfaced = true;
+        });
       } catch (e) {
         process.stderr.write(`[governance-reactor] mark-surfaced failed: ${e.message}\n`); // still inject
       }

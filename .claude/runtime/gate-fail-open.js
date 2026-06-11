@@ -16,6 +16,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { updateStateLocked } = require('./state-io'); // HA-2: locked alert-append
 
 const ROOT = path.resolve(__dirname, '../..');
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -32,17 +33,12 @@ function recordGateFailOpen({ gate, phase, message }) {
     fs.appendFileSync(auditFile, JSON.stringify({ kind: 'gate_failed_open', at, gate, phase, message: msg }) + '\n', 'utf-8');
   } catch { /* never throw */ }
 
-  // Best-effort state alert so governance-reactor surfaces it next turn.
+  // Best-effort state alert so governance-reactor surfaces it next turn (HA-2: locked append).
   try {
-    const fresh = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
-    const alert = { kind: 'gate_failed_open', at, gate, phase, message: msg, session: fresh.session_id || '' };
-    const merged = [...(Array.isArray(fresh.governance_alerts) ? fresh.governance_alerts : []), alert];
-    const tmp = stateFile + '.gfo.tmp.' + process.pid;
-    const fd = fs.openSync(tmp, 'w');
-    try { fs.writeSync(fd, JSON.stringify({ ...fresh, governance_alerts: merged }, null, 2)); fs.fsyncSync(fd); }
-    finally { fs.closeSync(fd); }
-    try { fs.renameSync(tmp, stateFile); }
-    catch (e) { try { fs.unlinkSync(tmp); } catch {} }
+    updateStateLocked(stateFile, (fresh) => {
+      const alert = { kind: 'gate_failed_open', at, gate, phase, message: msg, session: fresh.session_id || '' };
+      (fresh.governance_alerts ||= []).push(alert);
+    });
   } catch { /* never throw — durable log already captured it */ }
 }
 
