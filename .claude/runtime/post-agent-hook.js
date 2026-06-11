@@ -18,6 +18,7 @@ const path = require('path');
 const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/UU-4
 const { updateStateLocked } = require('./state-io'); // HA-2: locked read-modify-write
 const { recordStateLockFailOpen } = require('./gate-fail-open'); // HA-2: observable lock fail-open
+const { isContractExempt } = require('./contract-exempt'); // INV-STATE-CONTRACT exemption (FPR→0)
 
 const ROOT        = path.resolve(__dirname, '../..');
 const STATE       = process.env.CCIP_STATE_FILE || path.join(ROOT, '.claude/runtime/session-state.json');
@@ -105,9 +106,13 @@ function run(raw) {
   const text    = responseText(payload.tool_response);
   const tokens  = estimateTokens(text);
   const parsed  = parseStateUpdate(text); // UU-4: brace-balanced, last-match semantics
-  // [INV-STATE-CONTRACT] ADR-017 — observability of missing ## State Update
-  const missingBlock = parsed === null;
-  if (missingBlock) {
+  // [INV-STATE-CONTRACT] ADR-017 — observability of missing ## State Update.
+  // Exempt relay agents (contract-exempt.js): пропуск блока by-design, не нарушение (FPR→0).
+  const exempt = isContractExempt(agent);
+  const missingBlock = parsed === null && !exempt;
+  if (parsed === null && exempt) {
+    process.stderr.write(`[post-agent-hook] ${agent}: no State Update (contract-exempt, by design)\n`);
+  } else if (missingBlock) {
     process.stderr.write(`[post-agent-hook] ⚠ ${agent}: no valid ## State Update block\n`);
   }
 
