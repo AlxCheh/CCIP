@@ -48,9 +48,16 @@ function withStateLock(stateFile, fn, opts = {}) {
       acquired = true;
     } catch (e) {
       if (e.code !== 'EEXIST') throw e;
-      let holder = {};
+      // Holder может быть НЕЧИТАЕМ, если другой процесс только что сделал openSync('wx'),
+      // но ещё не записал PID (файл существует пустым). Это НЕ stale — это лок в процессе
+      // создания. Реклеймим ТОЛЬКО при позитивном доказательстве: мёртвый PID или истёкший
+      // TTL. Пустой/битый holder → ждём и ретраимся (иначе race: двое в критической секции).
+      let holder = null;
       try { holder = JSON.parse(fs.readFileSync(lockFile, 'utf-8')); } catch {}
-      const stale = !pidAlive(holder.pid) || (Date.now() - (holder.at || 0) > LOCK_TTL_MS);
+      const stale = holder && (
+        (holder.pid && !pidAlive(holder.pid)) ||
+        (holder.at && Date.now() - holder.at > LOCK_TTL_MS)
+      );
       if (stale) { try { fs.unlinkSync(lockFile); } catch {} continue; }
       if (Date.now() > deadline) {
         // Наблюдаемый fail-open: НЕ дедлочим writer'а — выполняем без лока, сигналим.

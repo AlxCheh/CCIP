@@ -37,3 +37,31 @@ test('updateStateLocked applies mutator and persists', () => {
   assert.strictEqual(readStateRaw(f).observations.length, 1);
   fs.unlinkSync(f); try { fs.unlinkSync(f + '.bak'); } catch {}
 });
+
+const cp = require('node:child_process');
+
+test('20 concurrent updateStateLocked appends — ALL survive (no lost update)', async () => {
+  const f = tmpState('concurrent');
+  writeStateAtomic({ session_id: 's', observations: [] }, f);
+
+  // Каждый процесс делает updateStateLocked, добавляя уникальную observation.
+  const script = (i) => `
+    const { updateStateLocked } = require(${JSON.stringify(path.join(gitRoot(), '.claude/runtime/state-io.js'))});
+    updateStateLocked(${JSON.stringify(f)}, (st) => { st.observations.push({ i: ${i} }); });
+  `;
+  const procs = [];
+  for (let i = 0; i < 20; i++) {
+    procs.push(new Promise(resolve => {
+      const p = cp.spawn(process.execPath, ['-e', script(i)]);
+      p.on('exit', () => resolve());
+    }));
+  }
+  await Promise.all(procs);
+
+  const final = readStateRaw(f);
+  assert.strictEqual(final.observations.length, 20,
+    `all 20 mutations must survive; got ${final.observations.length} (lost update = HA-2)`);
+  const ids = new Set(final.observations.map(o => o.i));
+  assert.strictEqual(ids.size, 20, 'no duplicate/lost ids');
+  fs.unlinkSync(f); try { fs.unlinkSync(f + '.bak'); } catch {}
+});
