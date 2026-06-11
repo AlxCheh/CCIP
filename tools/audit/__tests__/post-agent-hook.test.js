@@ -180,3 +180,34 @@ test('E-2 reconciliation: completing agent removes its inflight_spawns entry', (
     assert.ok(names.includes('ccip-dba'), 'other in-flight agent remains');
   } finally { fs.rmSync(sf, { force: true }); }
 });
+
+test('R-1: recovery from .bak (corrupt main) raises a visible governance_alert', () => {
+  const sf = mkState(freshState());
+  const bak = sf + '.bak';
+  try {
+    // valid backup, corrupt main → hook must recover from .bak AND flag it
+    fs.copyFileSync(sf, bak);
+    fs.writeFileSync(sf, 'CORRUPT{{{not json', 'utf-8');
+    const res = feed({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"s","artifacts":[],"handoff_notes":""}\n```' } }, sf);
+    assert.ok(res.stderr.includes('recovered state from .bak'), 'must warn on stderr about recovery');
+    const after = JSON.parse(fs.readFileSync(sf, 'utf-8'));
+    const kinds = (after.governance_alerts || []).map(a => a.kind);
+    assert.ok(kinds.includes('state_recovered_from_backup'),
+      'silent rollback must now leave a governance_alert (R-1)');
+  } finally {
+    fs.rmSync(sf, { force: true });
+    fs.rmSync(bak, { force: true });
+  }
+});
+
+test('R-1: clean read (valid main) raises NO recovery alert', () => {
+  const sf = mkState(freshState());
+  try {
+    feed({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-architect' },
+      tool_response: { content: '## State Update\n```json\n{"summary":"s","artifacts":[],"handoff_notes":""}\n```' } }, sf);
+    const after = JSON.parse(fs.readFileSync(sf, 'utf-8'));
+    const kinds = (after.governance_alerts || []).map(a => a.kind);
+    assert.ok(!kinds.includes('state_recovered_from_backup'), 'no recovery alert on a clean read');
+  } finally { fs.rmSync(sf, { force: true }); }
+});

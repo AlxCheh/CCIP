@@ -26,9 +26,29 @@ const AGENTS_DIR  = path.join(ROOT, '.claude/agents');
 const BAK = STATE + '.bak';
 
 function readState() {
-  for (const p of [STATE, BAK]) {
-    if (!fs.existsSync(p)) continue;
-    try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch {}
+  if (fs.existsSync(STATE)) {
+    try { return JSON.parse(fs.readFileSync(STATE, 'utf-8')); }
+    catch {
+      // STATE exists but is corrupt → recover from backup VISIBLY (R-1: no more silent rollback).
+      if (fs.existsSync(BAK)) {
+        try {
+          const recovered = JSON.parse(fs.readFileSync(BAK, 'utf-8'));
+          process.stderr.write('[post-agent-hook] ⚠ recovered state from .bak (main corrupt) — R-1\n');
+          if (!Array.isArray(recovered.governance_alerts)) recovered.governance_alerts = [];
+          recovered.governance_alerts.push({
+            kind: 'state_recovered_from_backup',
+            at: new Date().toISOString(),
+            session: recovered.session_id || '',
+          });
+          return recovered; // alert persists on the hook's writeState; reactor surfaces it next turn
+        } catch {}
+      }
+      return null; // main corrupt, no usable backup
+    }
+  }
+  // STATE missing (fresh session) → fall back to BAK if present, without alerting (not a corruption).
+  if (fs.existsSync(BAK)) {
+    try { return JSON.parse(fs.readFileSync(BAK, 'utf-8')); } catch {}
   }
   return null;
 }

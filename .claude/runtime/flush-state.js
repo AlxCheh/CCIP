@@ -196,12 +196,34 @@ function writeStateSafe(state, statePath) {
   }
 }
 
+function recoveryAlert(state, kind) {
+  if (!Array.isArray(state.governance_alerts)) state.governance_alerts = [];
+  state.governance_alerts.push({ kind, at: new Date().toISOString(), session: state.session_id || '' });
+  return state;
+}
+
 function readStateSafe(statePath) {
   const target = statePath || STATE_FILE;
   const bakPath = target + BAK_SUFFIX;
-  for (const p of [target, bakPath]) {
-    if (!fs.existsSync(p)) continue;
-    try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch {}
+
+  if (fs.existsSync(target)) {
+    try { return JSON.parse(fs.readFileSync(target, 'utf-8')); }
+    catch {
+      // target exists but is corrupt → recover VISIBLY (R-1: no silent rollback).
+      if (fs.existsSync(bakPath)) {
+        try {
+          const recovered = JSON.parse(fs.readFileSync(bakPath, 'utf-8'));
+          process.stderr.write(`[flush-state] ⚠ recovered state from ${BAK_SUFFIX} (main corrupt) — R-1\n`);
+          return recoveryAlert(recovered, 'state_recovered_from_backup');
+        } catch {}
+      }
+      process.stderr.write('[flush-state] ✗ state lost — main and backup unreadable, using defaults — R-1\n');
+      return recoveryAlert(defaultState(), 'state_lost_defaulted');
+    }
+  }
+  // target missing (fresh) → try backup quietly (not a corruption event).
+  if (fs.existsSync(bakPath)) {
+    try { return JSON.parse(fs.readFileSync(bakPath, 'utf-8')); } catch {}
   }
   return defaultState();
 }

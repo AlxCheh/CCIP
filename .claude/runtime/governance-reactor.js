@@ -29,6 +29,8 @@ const DIRECTIVES = {
   override_applied:         'a budget override was applied (durably audited) — confirm it was intended; prefer staying within the agent budget',
   override_rejected:        'an override attempt on a security invariant was rejected — a security-reviewer co-agent is required, do not bypass it',
   invalid_intent:           'an unknown intent was recorded — use only the CLAUDE.md Intent vocabulary',
+  state_recovered_from_backup: 'session state was recovered from .bak after the main file was corrupt — data may be one write stale; verify recent changes persisted',
+  state_lost_defaulted:     'session state was UNRECOVERABLE (main + backup corrupt) and reset to defaults — recent session context was lost',
 };
 
 /** Pure: { msg, surfacedIdx:[indices] }. Empty msg when nothing fresh to surface. */
