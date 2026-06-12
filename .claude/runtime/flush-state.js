@@ -11,6 +11,7 @@ const STATE_FILE = process.env.CCIP_STATE_FILE
   || path.join(ROOT, '.claude/runtime/session-state.json');
 const FEEDBACK_FILE = process.env.CCIP_FEEDBACK_FILE
   || path.join(ROOT, 'docs/tasks/feedback-loop.md');
+const { updateStateLocked, writeStateAtomic } = require('./state-io'); // HA-2: locked path
 
 function run() {
   if (!fs.existsSync(STATE_FILE)) return;
@@ -131,29 +132,18 @@ function run() {
     .filter(o => o && o.missing_state_update === true)
     .map(o => o.agent)
     .filter(Boolean);
-  if (debtAgents.length > 0) {
-    const existing = Array.isArray(state.contract_debt_agents) ? state.contract_debt_agents : [];
-    state.contract_debt_agents = [...new Set([...existing, ...debtAgents])];
-  }
 
-  // Write state with cleared observations — clear in-memory only after rename succeeds (D-15)
-  const stateToWrite = { ...state, observations: [] };
-  const tmp = STATE_FILE + '.tmp.' + process.pid;
-  const data = JSON.stringify(stateToWrite, null, 2) + '\n';
-  const fd = fs.openSync(tmp, 'w');
-  try {
-    fs.writeSync(fd, data);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
-  }
-  try {
-    fs.renameSync(tmp, STATE_FILE);
-    state.observations = []; // only clear in-memory after disk commit succeeds
-  } catch (e) {
-    try { fs.unlinkSync(tmp); } catch {}
-    throw e;
-  }
+  // Очищаем observations + мёржим contract_debt_agents АТОМАРНО под локом (HA-2). Мутируем
+  // fresh (перечитанный под локом), перенося только то, что flush реально меняет — чтобы не
+  // затереть alerts/agent_outputs, добавленные параллельными хуками между чтением и записью.
+  updateStateLocked(STATE_FILE, (fresh) => {
+    fresh.observations = []; // clear cleared-observations (D-15: on-disk commit)
+    if (debtAgents.length > 0) {
+      const existing = Array.isArray(fresh.contract_debt_agents) ? fresh.contract_debt_agents : [];
+      fresh.contract_debt_agents = [...new Set([...existing, ...debtAgents])];
+    }
+  });
+  state.observations = []; // in-memory mirror после успешного commit
 
   process.stdout.write(`[flush-state] ${observations.length} observation(s) → feedback-loop.md (session: ${sessionId})\n`);
 }
@@ -171,37 +161,37 @@ function defaultState() {
 }
 
 function writeStateSafe(state, statePath) {
-  const target = statePath || STATE_FILE;
-  const bakPath = target + BAK_SUFFIX;
-  const tmp = target + '.tmp.' + process.pid;
+  writeStateAtomic(state, statePath || STATE_FILE); // единый атомарный путь +.bak (Task 2)
+}
 
-  // backup current state before overwriting
-  if (fs.existsSync(target)) {
-    try { fs.copyFileSync(target, bakPath); } catch {}
-  }
-
-  const data = JSON.stringify(state, null, 2) + '\n';
-  const fd = fs.openSync(tmp, 'w');
-  try {
-    fs.writeSync(fd, data);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
-  }
-  try {
-    fs.renameSync(tmp, target);
-  } catch (e) {
-    try { fs.unlinkSync(tmp); } catch {}
-    throw e;
-  }
+function recoveryAlert(state, kind) {
+  if (!Array.isArray(state.governance_alerts)) state.governance_alerts = [];
+  state.governance_alerts.push({ kind, at: new Date().toISOString(), session: state.session_id || '' });
+  return state;
 }
 
 function readStateSafe(statePath) {
   const target = statePath || STATE_FILE;
   const bakPath = target + BAK_SUFFIX;
-  for (const p of [target, bakPath]) {
-    if (!fs.existsSync(p)) continue;
-    try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch {}
+
+  if (fs.existsSync(target)) {
+    try { return JSON.parse(fs.readFileSync(target, 'utf-8')); }
+    catch {
+      // target exists but is corrupt → recover VISIBLY (R-1: no silent rollback).
+      if (fs.existsSync(bakPath)) {
+        try {
+          const recovered = JSON.parse(fs.readFileSync(bakPath, 'utf-8'));
+          process.stderr.write(`[flush-state] ⚠ recovered state from ${BAK_SUFFIX} (main corrupt) — R-1\n`);
+          return recoveryAlert(recovered, 'state_recovered_from_backup');
+        } catch {}
+      }
+      process.stderr.write('[flush-state] ✗ state lost — main and backup unreadable, using defaults — R-1\n');
+      return recoveryAlert(defaultState(), 'state_lost_defaulted');
+    }
+  }
+  // target missing (fresh) → try backup quietly (not a corruption event).
+  if (fs.existsSync(bakPath)) {
+    try { return JSON.parse(fs.readFileSync(bakPath, 'utf-8')); } catch {}
   }
   return defaultState();
 }

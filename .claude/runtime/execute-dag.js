@@ -74,14 +74,14 @@ function writeState(state) {
   }
 }
 
-// Serialised write lock — chains all read-modify-write ops so parallel steps
-// never stomp each other. fn() must be fully synchronous (no await inside).
+// In-process очередь (writeLock) сериализует read-modify-write ШАГИ внутри ЭТОГО процесса;
+// updateStateLocked добавляет cross-process лок, сериализующий относительно хуков в ДРУГИХ
+// процессах (post-agent-hook, flush-state, gates). Вместе закрывают HA-2 / E-2. fn() — sync.
+const { updateStateLocked } = require('./state-io');
 let writeLock = Promise.resolve();
 function updateState(fn) {
   writeLock = writeLock.then(() => {
-    const s = readState();   // sync read
-    fn(s);                   // sync mutation
-    writeState(s);           // sync atomic write
+    updateStateLocked(STATE_FILE, (s) => { fn(s); });
   });
   return writeLock;
 }

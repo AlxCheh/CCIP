@@ -118,6 +118,8 @@ Bootstrap прошлой сессии может быть seed для конте
 - Цитата — короткий уникальный фрагмент без секции → используй сам фрагмент (первые 30 ASCII-символов) как anchor (self-anchoring, Режим B с гарантированной близостью).
 - Literal anchor из середины файла, который может встречаться повторно → **не использовать** без Grep c output_mode=count.
 
+**Типичная ошибка №3 — усечённый heading anchor:** `anchorWindow()` сравнивает текст заголовка ТОЧНО (`anchor.replace(/^#+\s*/, '').trim() === m[2].trim()`). Усечённый anchor (`## Task 8: HTTP Layer`) не совпадёт с реальным заголовком (`## Task 8: HTTP Layer — Controller, Module, register in AppModule`) → режим A не сработает, верификатор переключится в Режим B (literal ±200B) → цитата, лежащая в теле секции, окажется вне 200-символьного окна → `quote_not_in_anchor_window`. **Правило:** копируй heading verbatim из Grep-результата, не обрезай ни слова.
+
 ### §0.7 Evidence pre-emit checklist (ОБЯЗАТЕЛЕН перед emit'ом)
 
 Для каждой планируемой Evidence row:
@@ -262,6 +264,7 @@ full | partial — N/M IDs verified | budget_exhausted_at_turn_K
 - > 25 rows → bootstrap слишком амбициозный; сокращай bootstrap, не таблицу.
 - Если для claim нет источника, удовлетворяющего allowlist'у — claim **удаляется** из bootstrap. Не `[unverified]` тег, не «приблизительно». Удаляется.
 - При `bootstrap_claims == 0`: таблица — header+separator only. Никаких `| — |`, `| - |`, `| n/a |` placeholder-row'ов; хук их толерантно skip'ает, но spec формы — пустая table body.
+- **state-memory: session-state.json — нельзя цитировать volatile-поля.** Поля `contract_debt`, `governance_alerts`, `agent_outputs`, `observations` изменяются PostToolUse/Stop-хуками ПОСЛЕ завершения агента и ДО момента проверки verify-evidence-log.js. К этому моменту значения уже другие → `anchor_not_found`. Допустимы для цитирования только стабильные поля: `session_id`, `task`, `risk`, `routing`. Для `contract_debt` / счётчиков — исключи из Evidence или используй стабильный memory-файл вместо session-state.
 
 ## §I — Манифест инвариантов (обязательный последний блок ответа)
 

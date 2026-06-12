@@ -71,3 +71,35 @@ test('writeStateSafe creates no .bak when target does not exist yet', () => {
     assert.ok(fs.existsSync(statePath));
   } finally { cleanup(); }
 });
+
+test('R-1: readStateSafe recovers from .bak and adds a state_recovered_from_backup alert', () => {
+  const { statePath, cleanup } = makeTmpState();
+  try {
+    fs.writeFileSync(statePath + '.bak', JSON.stringify({ session_id: '2026-01-01-1200', observations: [] }), 'utf-8');
+    fs.writeFileSync(statePath, 'CORRUPT{{{', 'utf-8');
+    const r = readStateSafe(statePath);
+    assert.equal(r.session_id, '2026-01-01-1200');
+    const kinds = (r.governance_alerts || []).map(a => a.kind);
+    assert.ok(kinds.includes('state_recovered_from_backup'), 'recovery must be visible (R-1)');
+  } finally { cleanup(); }
+});
+
+test('R-1: readStateSafe with both corrupt → defaults + state_lost_defaulted alert', () => {
+  const { statePath, cleanup } = makeTmpState();
+  try {
+    fs.writeFileSync(statePath + '.bak', 'ALSO CORRUPT', 'utf-8');
+    fs.writeFileSync(statePath, 'CORRUPT{{{', 'utf-8');
+    const r = readStateSafe(statePath);
+    const kinds = (r.governance_alerts || []).map(a => a.kind);
+    assert.ok(kinds.includes('state_lost_defaulted'), 'total loss must be visible (R-1)');
+  } finally { cleanup(); }
+});
+
+test('R-1: clean readStateSafe (valid main) adds no recovery alert', () => {
+  const { statePath, cleanup } = makeTmpState();
+  try {
+    fs.writeFileSync(statePath, JSON.stringify({ session_id: '2026-01-01-1200', governance_alerts: [] }), 'utf-8');
+    const r = readStateSafe(statePath);
+    assert.deepEqual(r.governance_alerts, [], 'no recovery alert on a clean read');
+  } finally { cleanup(); }
+});

@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { updateStateLocked } = require('./state-io'); // HA-2: locked SSTATE writes
 
 const ROOT   = path.resolve(__dirname, '../..');
 const TSTATE = path.join(ROOT, '.claude/audit/trigger-state.json');
@@ -76,9 +77,8 @@ process.stdin.on('end', () => {
   // Auto-init session-state.json: set session_id if currently empty (audit C-05).
   // Idempotent — preserves existing session_id to avoid mid-session reset.
   try {
-    const sRaw = fs.readFileSync(SSTATE, 'utf-8');
-    const sState = JSON.parse(sRaw);
-    if (!sState.session_id) {
+    updateStateLocked(SSTATE, (sState) => {
+      if (sState.session_id) return; // already initialised — don't reset mid-session (idempotent)
       const now = new Date();
       const pad = n => String(n).padStart(2, '0');
       const sessionId =
@@ -92,40 +92,20 @@ process.stdin.on('end', () => {
       sState.agent_outputs = {};
       sState.dag = [];
       sState.current_step = 0;
-      const sTmp = SSTATE + '.tmp.' + process.pid;
-      const sFd = fs.openSync(sTmp, 'w');
-      try {
-        fs.writeSync(sFd, JSON.stringify(sState, null, 2) + '\n');
-        fs.fsyncSync(sFd);
-      } finally {
-        fs.closeSync(sFd);
-      }
-      try {
-        fs.renameSync(sTmp, SSTATE);
-      } catch (e) {
-        try { fs.unlinkSync(sTmp); } catch {}
-      }
-    }
+      sState.inflight_spawns = []; // E-2: clear stale in-flight markers from a crashed session
+    });
   } catch (e) {
     process.stderr.write(`[audit-session-reset] session-state init fail: ${e.message}\n`);
   }
 
-  // Prune governance_alerts to last 10 entries (D-09: unbounded growth)
+  // Prune governance_alerts to last 10 entries (D-09: unbounded growth). HA-2: under lock.
   const MAX_ALERTS = 10;
   try {
-    const sRaw2 = fs.readFileSync(SSTATE, 'utf-8');
-    const sState2 = JSON.parse(sRaw2);
-    if (Array.isArray(sState2.governance_alerts) && sState2.governance_alerts.length > MAX_ALERTS) {
-      sState2.governance_alerts = sState2.governance_alerts.slice(-MAX_ALERTS);
-      const sTmp2 = SSTATE + '.prune.tmp.' + process.pid;
-      const sFd2 = fs.openSync(sTmp2, 'w');
-      try {
-        fs.writeSync(sFd2, JSON.stringify(sState2, null, 2) + '\n');
-        fs.fsyncSync(sFd2);
-      } finally { fs.closeSync(sFd2); }
-      try { fs.renameSync(sTmp2, SSTATE); }
-      catch (e) { try { fs.unlinkSync(sTmp2); } catch {} }
-    }
+    updateStateLocked(SSTATE, (sState2) => {
+      if (Array.isArray(sState2.governance_alerts) && sState2.governance_alerts.length > MAX_ALERTS) {
+        sState2.governance_alerts = sState2.governance_alerts.slice(-MAX_ALERTS);
+      }
+    });
   } catch (e) {
     process.stderr.write(`[audit-session-reset] alerts-prune fail: ${e.message}\n`);
   }

@@ -2,11 +2,11 @@
   "invariants": [
     {
       "id": "INV-STATE-CONTRACT",
-      "claim": "agent MUST end with ## State Update; пропуск помечается missing_state_update",
+      "claim": "non-exempt agent MUST end with ## State Update; пропуск у non-exempt → state_contract_degraded немедленно (enforced, порог 1). Relay-агенты освобождены (contract-exempt.js, FPR=0)",
       "doc_anchor": "§15",
       "enforcement": "post-agent-hook.js#INV-STATE-CONTRACT",
       "kind": "signal",
-      "status": "observed"
+      "status": "enforced"
     },
     {
       "id": "INV-STATE-CONTRACT-DAG",
@@ -51,8 +51,8 @@
     },
     {
       "id": "INV-SECURITY-COAGENT",
-      "claim": "HIGH-risk security surface requires a security-reviewer co-agent",
-      "doc_anchor": "security-reviewer as co-agent",
+      "claim": "Security surface (JWT/RBAC/RLS/tenancy/GpToken/AuditLog) requires a security-reviewer co-agent at any risk",
+      "doc_anchor": "security-reviewer co-agent",
       "enforcement": "pre-agent-gate.js#INV-SECURITY-COAGENT",
       "kind": "block",
       "status": "enforced"
@@ -96,6 +96,14 @@
       "doc_anchor": "fallback при DEGRADED",
       "enforcement": "execute-dag.js#INV-FALLBACK-PROFILE",
       "kind": "advisory",
+      "status": "observed"
+    },
+    {
+      "id": "INV-GOVERNANCE-REACTOR",
+      "claim": "unacknowledged governance_alerts[] are surfaced into the next turn's context and marked surfaced (detect→react)",
+      "doc_anchor": "governance-reactor.js",
+      "enforcement": "governance-reactor.js#INV-GOVERNANCE-REACTOR",
+      "kind": "signal",
       "status": "observed"
     }
   ]

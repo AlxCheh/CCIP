@@ -67,6 +67,19 @@
       "items": { "type": "string" },
       "description": "Агенты с missing_state_update=true, перенесённые из observations при flush (D-05)"
     },
+    "inflight_spawns": {
+      "type": "array",
+      "description": "In-flight agent spawns approved by pre-agent-gate but not yet completed (E-2 parallel-burst budget). TTL-filtered at count time; reconciled by post-agent-hook; cleared at SessionStart.",
+      "items": {
+        "type": "object",
+        "required": ["agent", "at"],
+        "properties": {
+          "agent": { "type": "string" },
+          "at":    { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
     "governance_alerts": {
       "type": "array",
       "items": {
@@ -82,7 +95,15 @@
           "threshold": { "type": "number", "minimum": 0 },
           "ratio":     { "type": "number", "minimum": 0, "maximum": 1 },
           "agents":    { "type": "integer", "minimum": 0 },
-          "steps":     { "type": "array", "items": { "type": "integer", "minimum": 1 } }
+          "steps":     { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+          "target":    { "type": "string", "description": "override target agent (E-1 override_applied/rejected)" },
+          "reason":    { "type": "string", "description": "override justification (E-1)" },
+          "bypassed":  { "type": "array", "items": { "type": "string" }, "description": "waived violations (E-1 override_applied)" },
+          "remaining": { "type": "array", "items": { "type": "string" }, "description": "non-waivable violations (E-1 override_rejected)" },
+          "surfaced":  { "type": "boolean", "description": "alert already injected into orchestrator context by governance-reactor (G-1 anti-spam)" },
+          "gate":      { "type": "string", "description": "gate that failed open (E-6 gate_failed_open)" },
+          "phase":     { "type": "string", "description": "where the gate threw: parse | evaluate (E-6)" },
+          "message":   { "type": "string", "description": "error message captured at fail-open (E-6)" }
         },
         "additionalProperties": false
       }

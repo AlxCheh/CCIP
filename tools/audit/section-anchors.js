@@ -17,6 +17,7 @@ const CROSS_DOC_ALLOWLIST = [
   'docs/team_roles_v1_0.md',
   'docs/plans/archive/2026-06-07-runtime-governance-phase3.md',
   'docs/decisions/ADR-018-machine-enforced-runtime-governance.md',
+  'docs/plans/2026-06-11-advanced-enterprise-cross-process-lock.md',
 ];
 
 function stripCodeBlocks(md) {

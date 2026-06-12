@@ -1,6 +1,6 @@
 ---
 adr: ADR-018
-status: Принято
+status: Принято rev 2
 impl_anchors:
   - .claude/runtime/pre-agent-gate.js
   - .claude/runtime/tool-telemetry.js
@@ -18,7 +18,7 @@ impl_anchors:
 
 # ADR-018 — Machine-Enforced Runtime Governance
 
-**Статус:** Принято (2026-06-08)
+**Статус:** Принято 2026-06-08 · ревизия 2026-06-10 (enforcement активирован, см. §Ревизия)
 **Связано:** CLAUDE.md §15 State Contract; CLAUDE.md §16 Reading Discipline; ADR-017 (State Update Observability); closes RFC F-RT-05.
 
 ## Контекст
@@ -115,15 +115,44 @@ EC = 11/12 инвариантов имеют `kind` block или signal (оди�
 | INV-OBSERVABILITY-ROLLUP | signal | observed | telemetry |
 | INV-TOOL-TELEMETRY | signal | observed | telemetry |
 | INV-CONTRACT-DEBT | signal | observed | telemetry |
-| INV-AGENT-BUDGET | block | **shadow** | enforcement |
-| INV-SECURITY-COAGENT | block | **shadow** | enforcement |
+| INV-AGENT-BUDGET | block | **enforced** | enforcement |
+| INV-SECURITY-COAGENT | block | **enforced** | enforcement |
 | INV-TELEMETRY-AGGREGATE | signal | observed | telemetry |
-| INV-READING-DISCIPLINE | block | **shadow** | enforcement |
+| INV-READING-DISCIPLINE | block | **enforced** | enforcement |
 | INV-CONTRACT-CORRECTION | signal | observed | semantic |
 | INV-FAILURE-DETECTOR | signal | observed | telemetry |
 | INV-FALLBACK-PROFILE | advisory | observed | semantic |
 
-Три инварианта (`INV-AGENT-BUDGET`, `INV-SECURITY-COAGENT`, `INV-READING-DISCIPLINE`) находятся в shadow-режиме: логируют, не блокируют. Переход в `enforced` — операционное решение после накопления FPR-данных.
+Три block-инварианта (`INV-AGENT-BUDGET`, `INV-SECURITY-COAGENT`, `INV-READING-DISCIPLINE`) **активированы** (`status:enforced`) после прохождения миграционного пути ниже — реально выдают `permissionDecision:deny` под `CCIP_GATE_ENFORCE=1` / `CCIP_READGATE_ENFORCE=1` (в `.claude/settings.json`). Историческая shadow-фаза и активация задокументированы в §Ревизия.
+
+## Ревизия
+
+### 2026-06-09 — активация enforcement (D-01/D-02/D-03)
+
+Три block-инварианта переведены `shadow → enforced` после pre-flight верификации
+(22/22 прогонов audit-suite, 0 false-positive). Активация выполнена через
+`CCIP_GATE_ENFORCE=1` (pre-agent-gate: `INV-AGENT-BUDGET`, `INV-SECURITY-COAGENT`) и
+`CCIP_READGATE_ENFORCE=1` (read-gate: `INV-READING-DISCIPLINE`) в `.claude/settings.json`,
+плюс `status:enforced` в `governance-manifest.json`. Миграционный путь shadow→enforced
+(см. §Последствия) пройден для этих трёх. Таблица §Инварианты обновлена.
+
+### 2026-06-10 — закалка механизмов (cert 2026-06-10)
+
+Независимая сертификация выявила обходы активированных гейтов; устранены:
+- **INV-AGENT-BUDGET:** `override` теперь требует строку-обоснование (не boolean), снимает
+  только budget, пишет durable-аудит (`governance-audit.jsonl`); параллельный burst закрыт
+  учётом `inflight_spawns` с TTL (E-1, E-2).
+- **INV-SECURITY-COAGENT:** `SECURITY_RE` расширен до полного канона CLAUDE.md
+  (JWT/GpToken/multi-tenancy/AuditLog); триггер стал surface-driven при **любом** risk
+  (раньше требовал HIGH) — занижение risk-метки больше не пропускает reviewer; security-часть
+  override неснимаема (E-3, E-7).
+- **INV-READING-DISCIPLINE:** case-insensitive матч пути + лимит сверх потолка
+  (`CCIP_READ_MAX_LINES`) считается полным чтением (E-4, E-5).
+
+Добавлен 13-й инвариант **`INV-GOVERNANCE-REACTOR`** (signal, `governance-reactor.js`,
+UserPromptSubmit): замыкает петлю detect→react — не-surfaced `governance_alerts[]`
+инжектятся в контекст следующего turn (G-1). Таблица §Инварианты выше отражает исходные
+12 инвариантов решения; реестр-истина — `governance-manifest.json`.
 
 ## Последствия
 

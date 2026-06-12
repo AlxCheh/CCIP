@@ -39,6 +39,13 @@ test('seed manifest validates against schema', () => {
     assert.match(inv.enforcement, /^[\w.-]+#[\w-]+$/, `enforcement = file#MARKER, got ${inv.enforcement}`);
 });
 
+test('INV-STATE-CONTRACT is enforced (signal promoted after FPR→0 via contract-exempt)', () => {
+  const inv = manifest.invariants.find(i => i.id === 'INV-STATE-CONTRACT');
+  assert.ok(inv, 'INV-STATE-CONTRACT must exist');
+  assert.equal(inv.status, 'enforced');
+  assert.match(inv.claim, /exempt|enforce/i, 'claim reflects exemption-gated enforcement');
+});
+
 test('each enforcement anchor exists as [MARKER] comment in the target runtime file', () => {
   const runtimeDir = path.join(root, '.claude/runtime');
   for (const inv of manifest.invariants) {

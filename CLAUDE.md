@@ -50,7 +50,7 @@ DEFAULT → direct agent of primary intent
 > Триггеры — оркестрационная конвенция, не машинный enforcement: «по запросу» = ручной вызов, остальные срабатывают по условию (risk/intents/фраза-триггер). Хук НЕ авто-спавнит этих агентов.
 | Agent                       | Trigger                                |
 |-----------------------------|----------------------------------------|
-| security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
+| security-reviewer           | JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes (любой risk) |
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
 | ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
@@ -72,16 +72,17 @@ DEFAULT → direct agent of primary intent
 
 ## Risk Rules
 ```
-HIGH          → add security-reviewer as co-agent
+HIGH          → planner + present output for review
 MEDIUM        → present output for review before applying
 LOW           → execute directly
 risk unclear  → default MEDIUM
+security-reviewer co-agent → REQUIRED when scope touches a security surface, ANY risk (see below)
 ```
 ```
 IF intent == ARCH → ccip-architect leads
 IF intent == SECURITY → ccip-security leads (full write, threat model, RBAC audit, pre-launch review)
-  security-reviewer is NOT a primary agent — it is a co-agent triggered automatically by risk:HIGH
-  security-reviewer triggers on: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog changes
+  security-reviewer is NOT a primary agent — it is a co-agent triggered by the security surface
+  security-reviewer REQUIRED on ANY change touching: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog — independent of risk level (machine-enforced: pre-agent-gate.js INV-SECURITY-COAGENT)
 ```
 
 ## Agent Selection
@@ -146,6 +147,7 @@ INIT    set task,intents,risk,confidence,routing,started_at; status=planning
 INJECT  before each Agent call: read state -> inject into prompt
 UPDATE  after each Agent call: post-agent-hook.js parses "## State Update" block -> agent_outputs[name] + observation
 FLUSH   Stop hook: flush-state.js -> observations[] to docs/tasks/feedback-loop.md §4
+REACT   next UserPromptSubmit: governance-reactor.js surfaces unacknowledged governance_alerts[] into context, marks them surfaced (G-1 detect→react)
 ```
 
 **Agent contract** — each agent MUST end its output with:
@@ -211,7 +213,6 @@ Token-saving rules for file reads. Goal: cut per-session token cost 30-50% with 
 | `intents == 2 → co-agent` (§Planner) | Нет hook подсчитывающего intents из payload | LLM-оркестратор |
 | `agent fails >= 2 → switch to backup` (§Feedback) | Нет автоматического счётчика failures/agent | LLM-оркестратор |
 | `intents >= 3 → planner only` (§Planner) | Нет hook ограничивающего тип агента | LLM-оркестратор |
-| `writeLock serializes all mutations` (execute-dag.js) | In-process lock — не работает при двух процессах | Одиночный процесс assumed |
 | Optimizer-gate TTL 5 min | Настраивается через `OPT_LOCK_TTL_MS` — по умолчанию 5 min; при длительных сессиях увеличить до 15 min (`OPT_LOCK_TTL_MS=900000`) | Конфигурация |
 | Stop hook order | Assumed sequential (по порядку в settings.json Stop array). Если concurrent — failure-detectors safe благодаря re-read before write (HA-3) | Документальная + частичная code defence |
 
