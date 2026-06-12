@@ -58,6 +58,12 @@ const BOOTSTRAP_WORD_LIMIT = 300;
 const PREFLIGHT_TOKEN_LIMIT = 3000;
 // @skill: config:min-quote-bytes — нижняя граница специфичности цитаты
 const MIN_QUOTE_BYTES = parseInt(process.env.OPT_MIN_QUOTE_BYTES || '12', 10);
+// @skill: config:max-quote — верхняя граница цитаты в ДВУХ измерениях:
+//   специфичность меряется СИМВОЛАМИ (справедливо к multibyte-скриптам — корпус CCIP
+//   русскоязычный, byte-счёт штрафовал кириллицу вдвое), анти-блоат — БАЙТАМИ (потолок
+//   режет emoji/binary). 80 симв = старый ASCII-бюджет без регрессии; 160B = 80 кир.симв.
+const MAX_QUOTE_CHARS = parseInt(process.env.OPT_MAX_QUOTE_CHARS || '80', 10);
+const MAX_QUOTE_BYTES = parseInt(process.env.OPT_MAX_QUOTE_BYTES || '160', 10);
 const LOW_SIGNAL_QUOTES = new Set(['done', 'pending', 'blocked', 'deferred', 'none', 'n/a', 'todo', 'wip', 'ok', 'yes', 'no']);
 const PREFLIGHT_CALL_LIMIT = 6;
 // @skill: config:source-prefix-vocabulary — each prefix needs a registered resolver (see verifyRowSource)
@@ -290,10 +296,13 @@ function verifyRowSource(row) {
     return { ok: false, reason: 'source_is_session_artifact' };
   }
   if (!row.quote) return { ok: false, reason: 'quote_empty' };
-  // Spec line 179: ≤ 80 bytes (UTF-8). Code units (.length) would under-count
-  // multi-byte chars and let Cyrillic-heavy quotes slip past (Wave 2 fix #3).
+  // Specificity bound in CHARACTERS (code points — fair to Cyrillic/multibyte), anti-bloat
+  // ceiling in BYTES. Wave 2 fix #3 had moved to pure bytes to stop .length under-counting;
+  // that overcorrected and penalised the Russian corpus 2× — char+byte splits the concern.
+  const quoteChars = [...row.quote].length;
   const quoteBytes = Buffer.byteLength(row.quote, 'utf-8');
-  if (quoteBytes > 80) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
+  if (quoteChars > MAX_QUOTE_CHARS) return { ok: false, reason: `quote_too_long(${quoteChars}c)` };
+  if (quoteBytes > MAX_QUOTE_BYTES) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
   if (quoteBytes < MIN_QUOTE_BYTES) return { ok: false, reason: `quote_too_short(${quoteBytes}B)` };
   if (LOW_SIGNAL_QUOTES.has(row.quote.trim().toLowerCase())) return { ok: false, reason: 'quote_low_signal' };
 
