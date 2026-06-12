@@ -32,3 +32,27 @@ test('anchorWindow: literal locator falls back to ±window', () => {
 test('anchorWindow: unknown anchor returns null', () => {
   assert.strictEqual(mod.anchorWindow('## Real\nbody', 'no-such-anchor-xyz'), null);
 });
+
+// ── quote length: char-aware specificity + byte ceiling (anti-bloat) ────────────
+// verifyRowSource checks length BEFORE resolving the source file, so a non-existent
+// repo: path isolates the length gate (it returns source_file_missing only AFTER
+// passing length). Cyrillic corpus must not be penalised by raw byte counting.
+
+test('Cyrillic quote ~100B but <80 chars passes the length gate (not quote_too_long)', () => {
+  const quote = 'я'.repeat(50); // 50 chars, 100 bytes
+  const res = mod.verifyRowSource({ source_file: 'repo:__no_such_file__.md', anchor: '## X', quote });
+  assert.doesNotMatch(res.reason || '', /quote_too_long/, 'Cyrillic ≤80 chars must clear the length gate');
+  assert.strictEqual(res.reason, 'source_file_missing', 'proceeds past length to file resolution');
+});
+
+test('quote over the char cap is rejected as quote_too_long(Nc)', () => {
+  const quote = 'x'.repeat(81); // 81 chars, 81 bytes
+  const res = mod.verifyRowSource({ source_file: 'repo:__no_such_file__.md', anchor: '## X', quote });
+  assert.match(res.reason || '', /quote_too_long\(81c\)/, 'char overflow reported in chars');
+});
+
+test('quote over the byte ceiling (but <=char cap) is rejected as quote_too_long(NB)', () => {
+  const quote = '😀'.repeat(41); // 41 code points, 164 bytes — under char cap, over byte ceiling
+  const res = mod.verifyRowSource({ source_file: 'repo:__no_such_file__.md', anchor: '## X', quote });
+  assert.match(res.reason || '', /quote_too_long\(164B\)/, 'byte ceiling reported in bytes');
+});
