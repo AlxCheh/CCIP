@@ -43,7 +43,7 @@
 | Атомарность состояния между процессами, N-way тест **[ПОДТВ.]** | Lock fail-open под контенцией (наблюдаемый остаток) **[ПОДТВ.]** |
 | Детерминированный 362/362 + audit 22/22 **[ПОДТВ.]** | Нет формальной верификации **[ОТСУТ.]** |
 | Видимая recovery (.bak, R-1), detect→react **[ПОДТВ.]** | Нет distributed state / консенсуса **[ОТСУТ.]** |
-| Семантическая целостность doc↔manifest↔settings **[ПОДТВ.]** | main-agent token-blindness, ADR-016 **[ПОДТВ. как слепое пятно]** |
+| Семантическая целостность doc↔manifest↔settings **[ПОДТВ.]** | tool-I/O token-estimate есть (ADR-020) **[ЧАСТ.]**; reasoning-токены главного агента слепы, ADR-016 **[ПОДТВ. как слепое пятно]** |
 | Аудируемый override, наблюдаемый fail-open **[ПОДТВ.]** | Routing-правила — LLM-конвенция (CLAUDE.md §18) **[НЕДОК.]** |
 
 Почему не выше: High-Reliability требует устранения SPOF и доказанной деградации под отказами узлов — узел один, fail-open сознательно оставлен наблюдаемым. Mission-Critical требует формальной верификации/консенсуса — не начато. Оба честно зафиксированы как путь, не свойство.
@@ -148,9 +148,9 @@
 
 - **Fully Ready (строй смело):** целостность состояния · self-audit & semantic-integrity-as-code · ADR-governance · детерминированная регрессия · видимая recovery · наблюдаемый fail-open · security co-agent enforcement · budget enforcement · contract-enforced handoff (FPR=0).
 - **Mostly Ready:** DAG multi-step pipeline · fallback при degraded · session continuity · telemetry (session-scoped) · detect→react.
-- **Partially Ready:** автономные многоагентные прогоны (≤3) · resume долгих прогонов · token-efficiency self-learning (узкий).
+- **Partially Ready:** автономные многоагентные прогоны (≤3) · resume долгих прогонов · token-efficiency self-learning (узкий) · tool-I/O token estimate (heuristic, ADR-020).
 - **Experimental:** adaptive/confidence-based execution · recursive planning · auto-doc generation · авто-ремедиация дрейфа.
-- **Not Ready:** distributed state/консенсус · формальная верификация · масштаб >3 агентов как гарантия · multi-tenant governance · main-agent token-attribution · enforced intelligent routing.
+- **Not Ready:** distributed state/консенсус · формальная верификация · масштаб >3 агентов как гарантия · multi-tenant governance · main-agent reasoning-token attribution (только tool-I/O оценивается, ADR-020) · enforced intelligent routing.
 
 ---
 
@@ -212,7 +212,7 @@
 
 - **(a)** >3 агентов или второй оркестратор-процесс → routing-конвенции (CLAUDE.md §18) не удержат без enforcement-счётчиков.
 - **(b)** Рост числа хук-writer'ов → контенция лока → чаще fail-open (наблюдаемо, но реально).
-- **(c)** token-blindness главного агента искажает оценку стоимости при росте автономности.
+- **(c)** token-blindness главного агента искажает оценку стоимости при росте автономности — снижена для tool-I/O (эвристическая оценка, ADR-020), сохраняется для reasoning-токенов.
 - **(d)** Отсутствие persistence ограничивает длину workflow.
 - **(e)** Семантический аудит покрывает структуру, не всю смысловую корректность.
 
@@ -227,7 +227,7 @@
 
 ### Архитектурные усиления
 4. **Снять fail-open-остаток лока** для high-assurance-режима (опц. fail-closed под флагом).
-5. **Token-attribution через доступный канал** (даже грубый, per-tool) — закрывает слепое пятно ADR-016.
+5. **Token-attribution через доступный канал** (даже грубый, per-tool) — закрывает слепое пятно ADR-016. ✅ Реализовано (ADR-020): эвристическая per-tool оценка `est_tokens` поверх `events.jsonl`, частичное закрытие [ЧАСТ.] (tool-I/O; reasoning остаётся слеп).
 6. **Машинный счётчик failures/agent → авто-switch на backup** — переводит ключевую routing-конвенцию (CLAUDE.md §18) в [ПОДТВ.].
 
 ### Новые классы возможностей
@@ -258,3 +258,4 @@
 | Дата | Изменение | Базис |
 |---|---|---|
 | 2026-06-12 | Первая версия. Состояние post-ADR-019 (86/100). | re-cert 2026-06-11, ADR-019, 362/362, 22/22 |
+| 2026-06-14 | Волна 1 / §XII.5 реализован: token-attribution [НЕДОК.]→[ЧАСТ.] (tool-I/O эвристика). Промоут §I, §VII, §XI(c), §XII.5. | ADR-020, token-estimate тесты, canonical 372/372, audit 22/22 |

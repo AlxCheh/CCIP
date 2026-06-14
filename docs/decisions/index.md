@@ -44,6 +44,7 @@
 - [ADR-017-state-update-observability.md](ADR-017-state-update-observability.md) — видимость пропуска ## State Update: флаг missing_state_update + сводка на Stop
 - [ADR-018-machine-enforced-runtime-governance.md](ADR-018-machine-enforced-runtime-governance.md) — три-плоскостная machine-enforced governance: enforcement (deny), telemetry (events), semantic (manifest+RGS)
 - [ADR-019-cross-process-state-lock.md](ADR-019-cross-process-state-lock.md) — межпроцессный лок session-state (HA-2/E-2) + честная градация INV-STATE-CONTRACT (signal→enforced через exemption)
+- [ADR-020-main-agent-token-estimate.md](ADR-020-main-agent-token-estimate.md) — эвристическая оценка токенов tool-I/O (bytes/K с кириллической поправкой) поверх events.jsonl; частичное закрытие token-blindness ADR-016 [ЧАСТ.]
 
 ---
 
