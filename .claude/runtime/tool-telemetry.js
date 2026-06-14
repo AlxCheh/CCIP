@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+const { nonAsciiRatio, estimateTokens } = require('../../tools/audit/_lib/token-estimate');
 /**
  * PostToolUse hook (RFC R2) — fires after EVERY tool call (not only Agent).
  * Appends one telemetry event per call to events.jsonl, giving inline-session
@@ -28,12 +29,16 @@ function extractTarget(p) {
 /** Build a schema-conforming telemetry event from a hook payload. */
 function buildEvent(p, session) {
   const text = JSON.stringify((p && p.tool_response) || '');
+  const bytes = Buffer.byteLength(text, 'utf-8');
+  const ratio = nonAsciiRatio(text);
   return {
     ts:        new Date().toISOString(),
     session:   session || '',
     tool:      (p && p.tool_name) || '',
     target:    extractTarget(p),
-    bytes:     Buffer.byteLength(text, 'utf-8'),   // proxy for volume, not tokens
+    bytes,                                  // proxy for volume, not tokens
+    non_ascii_ratio: ratio,                 // event-time Cyrillic signal (#5)
+    est_tokens: estimateTokens(bytes, ratio), // heuristic tool-I/O tokens (ADR-020)
     full_read: isFullRead(p),
     outcome:   p && p.tool_response && p.tool_response.is_error ? 'error' : 'ok',
   };

@@ -11,6 +11,8 @@
     "target":    { "type": "string" },
     "bytes":     { "type": "integer", "minimum": 0 },
     "full_read": { "type": "boolean" },
+    "non_ascii_ratio": { "type": "number", "minimum": 0, "maximum": 1 },
+    "est_tokens":      { "type": "integer", "minimum": 0 },
     "outcome":   { "type": "string", "enum": ["ok", "error"] }
   },
   "additionalProperties": false
