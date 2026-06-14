@@ -5,7 +5,7 @@ const path = require('node:path');
 const { gitRoot } = require('../_lib/git-root');
 
 const root = gitRoot();
-const { applyStepResult } = require(path.join(root, '.claude/runtime/execute-dag.js'));
+const { applyStepResult, selectEffectiveAgent } = require(path.join(root, '.claude/runtime/execute-dag.js'));
 
 function freshState() {
   return {
@@ -55,4 +55,48 @@ test('#2 non-exempt agent WITH valid ## State Update → no governance_alert', (
   applyStepResult(state, { step: 1, agent: 'ccip-architect' }, out);
   assert.ok(!state.governance_alerts || state.governance_alerts.length === 0,
     'valid block must not produce alert');
+});
+
+// ── #6 Wave2: agent_failure_counts ────────────────────────────────────────────
+
+test('#6 applyStepResult: non-exempt agent missing block → increments agent_failure_counts', () => {
+  const state = freshState();
+  applyStepResult(state, { step: 1, agent: 'ccip-architect' }, 'no block');
+  assert.ok(state.agent_failure_counts && state.agent_failure_counts['ccip-architect'] === 1,
+    'failure count must be 1 after first miss');
+  applyStepResult(state, { step: 1, agent: 'ccip-architect' }, 'no block again');
+  assert.strictEqual(state.agent_failure_counts['ccip-architect'], 2,
+    'failure count must be 2 after second miss');
+});
+
+test('#6 applyStepResult: exempt agent missing block → does NOT increment count', () => {
+  const state = freshState();
+  applyStepResult(state, { step: 1, agent: 'ccip-session-optimizer' }, 'relay, no block');
+  assert.ok(!state.agent_failure_counts || !state.agent_failure_counts['ccip-session-optimizer'],
+    'exempt agent must not accumulate failure count');
+});
+
+// ── #6 Wave2: selectEffectiveAgent auto-switch ────────────────────────────────
+
+test('#6 selectEffectiveAgent: no failures → returns step unchanged', () => {
+  const state = { agent_failure_counts: { 'ccip-architect': 0 } };
+  const step = { step: 1, agent: 'ccip-architect' };
+  const eff = selectEffectiveAgent(state, step, { threshold: 2 });
+  assert.strictEqual(eff.agent, 'ccip-architect');
+  assert.ok(!eff.fallback_for, 'must not set fallback_for on non-degraded step');
+});
+
+test('#6 selectEffectiveAgent: failures >= threshold → substitutes backup agent', () => {
+  const state = { agent_failure_counts: { 'ccip-architect': 2 } };
+  const step = { step: 1, agent: 'ccip-architect' };
+  const eff = selectEffectiveAgent(state, step, { threshold: 2 });
+  assert.notStrictEqual(eff.agent, 'ccip-architect', 'must switch to backup');
+  assert.strictEqual(eff.fallback_for, 'ccip-architect', 'must mark original as fallback_for');
+});
+
+test('#6 selectEffectiveAgent: no backup defined → returns step unchanged even if degraded', () => {
+  const state = { agent_failure_counts: { 'general-purpose': 5 } };
+  const step = { step: 1, agent: 'general-purpose' };
+  const eff = selectEffectiveAgent(state, step, { threshold: 2 });
+  assert.strictEqual(eff.agent, 'general-purpose', 'no backup for general-purpose → keep original');
 });

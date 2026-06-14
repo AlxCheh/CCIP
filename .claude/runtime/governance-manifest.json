@@ -29,7 +29,6 @@
       "claim": "every tool call emits a telemetry event (PostToolUse always fires — structural guarantee); complete blackout detected by failure-detectors → telemetry_blackout governance_alert (FPR=0). ADR-024.",
       "doc_anchor": "§15",
       "enforcement": "tool-telemetry.js#INV-TOOL-TELEMETRY",
-      "enforcement_secondary": "failure-detectors.js#detectTelemetryBlackout",
       "kind": "signal",
       "telemetry": "events.jsonl:tool_use",
       "status": "enforced"

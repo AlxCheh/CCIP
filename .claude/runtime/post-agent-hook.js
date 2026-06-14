@@ -183,6 +183,9 @@ function run(raw) {
           agent,
         });
       }
+      // [INV-AGENT-FAILURES] ADR-025 — per-agent failure counter for inline sessions
+      state.agent_failure_counts = state.agent_failure_counts || {};
+      state.agent_failure_counts[agent] = (state.agent_failure_counts[agent] || 0) + 1;
     }
 
     // ── DAG step advance ───────────────────────────────────────────────────────

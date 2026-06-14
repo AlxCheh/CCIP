@@ -9,7 +9,7 @@ const { gitRoot } = require('../_lib/git-root');
 const root = gitRoot();
 const {
   detectSSC, detectTelemetryBlackout, detectHandoffDecay,
-  detectContractCollapse, detectFallbackDegradation, runDetectors,
+  detectContractCollapse, detectFallbackDegradation, detectAgentFailures, runDetectors,
 } = require(path.join(root, '.claude/runtime/failure-detectors.js'));
 
 // ── pure functions ─────────────────────────────────────────────────────────────
@@ -86,6 +86,35 @@ test('detectFallbackDegradation fires when general-purpose step lacks fallback_f
 test('detectFallbackDegradation returns null when fallback_for present', () => {
   const state = { dag: [{ step: 1, agent: 'general-purpose', fallback_for: 'ccip-backend-core', status: 'done' }] };
   assert.strictEqual(detectFallbackDegradation(state), null);
+});
+
+// ── #6 Wave2: detectAgentFailures ────────────────────────────────────────────
+
+test('#6 detectAgentFailures fires when count >= threshold', () => {
+  const state = { agent_failure_counts: { 'ccip-architect': 2, 'ccip-dba': 0 } };
+  const alert = detectAgentFailures(state, 2);
+  assert.ok(alert, 'must return alert');
+  assert.strictEqual(alert.kind, 'agent_failure_degraded');
+  assert.ok(Array.isArray(alert.degraded) && alert.degraded.includes('ccip-architect'));
+  assert.ok(!alert.degraded.includes('ccip-dba'), 'ccip-dba count=0, must not be in degraded list');
+});
+
+test('#6 detectAgentFailures returns null when no agent meets threshold', () => {
+  const state = { agent_failure_counts: { 'ccip-architect': 1 } };
+  assert.strictEqual(detectAgentFailures(state, 2), null);
+});
+
+test('#6 detectAgentFailures returns null when agent_failure_counts absent', () => {
+  assert.strictEqual(detectAgentFailures({}, 2), null);
+});
+
+test('#6 runDetectors includes agent_failure_degraded when threshold met', () => {
+  const state = {
+    observations: [], agent_outputs: {}, contract_debt: 0, dag: [],
+    agent_failure_counts: { 'ccip-architect': 3 },
+  };
+  const alerts = runDetectors(state, [], { agentFailThreshold: 2 });
+  assert.ok(alerts.some(a => a.kind === 'agent_failure_degraded'), 'must include agent_failure_degraded');
 });
 
 test('runDetectors aggregates alerts into array', () => {

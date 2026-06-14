@@ -80,6 +80,11 @@
         "additionalProperties": false
       }
     },
+    "agent_failure_counts": {
+      "type": "object",
+      "description": "Per-agent count of contract violations (missing ## State Update, non-exempt). Threshold >= 2 triggers auto-switch in DAG mode (ADR-025).",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
     "governance_alerts": {
       "type": "array",
       "items": {
@@ -103,7 +108,9 @@
           "surfaced":  { "type": "boolean", "description": "alert already injected into orchestrator context by governance-reactor (G-1 anti-spam)" },
           "gate":      { "type": "string", "description": "gate that failed open (E-6 gate_failed_open)" },
           "phase":     { "type": "string", "description": "where the gate threw: parse | evaluate (E-6)" },
-          "message":   { "type": "string", "description": "error message captured at fail-open (E-6)" }
+          "message":   { "type": "string", "description": "error message captured at fail-open (E-6)" },
+          "count":     { "type": "integer", "minimum": 0, "description": "failure count for agent_failure_degraded alerts (ADR-025)" },
+          "backup":    { "type": "string", "description": "recommended backup agent for agent_failure_degraded alerts (ADR-025)" }
         },
         "additionalProperties": false
       }

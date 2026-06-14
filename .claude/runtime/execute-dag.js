@@ -31,6 +31,20 @@ const rl   = require('readline');
 const { buildFallbackContext } = require('./fallback-context');
 const { isContractExempt } = require('./contract-exempt');
 
+// ── agent backup map (CLAUDE.md Intent→Agent→Backup table) ───────────────────
+const AGENT_BACKUP_MAP = {
+  'ccip-architect':    'general-purpose',
+  'ccip-dba':          'ccip-backend-core',
+  'ccip-backend-core': 'general-purpose',
+  'ccip-backend-aux':  'ccip-backend-core',
+  'ccip-frontend':     'general-purpose',
+  'ccip-devops':       'general-purpose',
+  'ccip-qa':           'general-purpose',
+  'ccip-mobile':       'general-purpose',
+  'ccip-security':     'ccip-architect',
+  'ccip-doc-writer':   'general-purpose',
+};
+
 // ── config ────────────────────────────────────────────────────────────────────
 
 const ROOT       = path.resolve(__dirname, '../..');
@@ -250,6 +264,19 @@ function validateDependencyOutputs(state, step) {
 
 // ── state mutation helpers ────────────────────────────────────────────────────
 
+// [INV-AGENT-FAILURES] ADR-025 — auto-switch to backup when failure count >= threshold
+function selectEffectiveAgent(state, step, opts = {}) {
+  const threshold = opts.threshold != null ? Number(opts.threshold)
+    : parseInt(process.env.CCIP_AGENT_FAIL_THRESHOLD || '2', 10);
+  const counts = state.agent_failure_counts || {};
+  const count = counts[step.agent] || 0;
+  if (count < threshold) return step;
+  const backup = AGENT_BACKUP_MAP[step.agent];
+  if (!backup) return step;
+  process.stderr.write(`[execute-dag] ⚠ ${step.agent} degraded (${count}× failures) → auto-switch to ${backup}\n`);
+  return { ...step, agent: backup, fallback_for: step.agent };
+}
+
 function applyStepResult(state, step, output) {
   const upd = parseStateUpdate(output); // UU-5: brace-balanced, last-match semantics
   // [INV-STATE-CONTRACT-DAG] ADR-017 — DAG-writer parity
@@ -263,6 +290,9 @@ function applyStepResult(state, step, output) {
         agent: step.agent,
         source: 'execute-dag',
       });
+      // [INV-AGENT-FAILURES] ADR-025 — per-agent failure counter
+      state.agent_failure_counts = state.agent_failure_counts || {};
+      state.agent_failure_counts[step.agent] = (state.agent_failure_counts[step.agent] || 0) + 1;
     }
   }
   state.agent_outputs = state.agent_outputs || {};
@@ -446,16 +476,18 @@ async function main() {
     const outcomes = await Promise.all(wave.map(async step => {
       validateDependencyOutputs(readState(), step);
 
-      const maxRetries = step.retries ?? 1;
+      // [INV-AGENT-FAILURES] ADR-025: auto-switch before retry-loop; decision baked at step-start
+      const effectiveStep = selectEffectiveAgent(readState(), step);
+      const maxRetries = effectiveStep.retries ?? 1;
       let result = { ok: false, output: '', error: '' };
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         if (attempt > 0) {
           const delay = RETRY_BASE * Math.pow(2, attempt - 1);
-          console.log(`   ↻ retry ${attempt}/${maxRetries} in ${delay}ms — step ${step.step}`);
+          console.log(`   ↻ retry ${attempt}/${maxRetries} in ${delay}ms — step ${effectiveStep.step}`);
           await new Promise(r => setTimeout(r, delay));
         }
-        result = await runStepAsync(readState(), step);
+        result = await runStepAsync(readState(), effectiveStep);
         if (result.ok) break;
         console.error(`   ✗ attempt ${attempt + 1}: ${result.error || 'unknown error'}`);
       }
@@ -468,7 +500,7 @@ async function main() {
         return false;
       }
 
-      await updateState(s => applyStepResult(s, step, result.output));
+      await updateState(s => applyStepResult(s, effectiveStep, result.output));
       dagJournal.appendEntry({
         run_id: runId, session_id: state.session_id, dag_hash: dagHash,
         event: 'step_done', step: step.step, agent: step.agent, ts: new Date().toISOString(),
@@ -497,5 +529,5 @@ async function main() {
 if (require.main === module) {
   main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
 } else {
-  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState, applyStepResult };
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState, applyStepResult, selectEffectiveAgent };
 }

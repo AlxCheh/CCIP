@@ -46,9 +46,21 @@ function detectFallbackDegradation(state) {
   return null;
 }
 
+// [INV-AGENT-FAILURES] ADR-025 — per-agent failure counter: count >= threshold → switch to backup
+function detectAgentFailures(state, threshold) {
+  const th = threshold != null ? Number(threshold)
+    : parseInt(process.env.CCIP_AGENT_FAIL_THRESHOLD || '2', 10);
+  const counts = state.agent_failure_counts || {};
+  const degraded = Object.keys(counts).filter(a => counts[a] >= th);
+  if (degraded.length === 0) return null;
+  return { kind: 'agent_failure_degraded', degraded, threshold: th };
+}
+
 function runDetectors(state, events, opts = {}) {
   const threshold = opts.contractDebtThreshold
     || parseInt(process.env.CCIP_CONTRACT_DEBT_THRESHOLD || '3', 10);
+  const agentFailThreshold = opts.agentFailThreshold != null ? opts.agentFailThreshold
+    : parseInt(process.env.CCIP_AGENT_FAIL_THRESHOLD || '2', 10);
   const obs = state.observations || [];
   const results = [
     detectSSC(obs),
@@ -56,13 +68,14 @@ function runDetectors(state, events, opts = {}) {
     detectHandoffDecay(state.agent_outputs),
     detectContractCollapse(state, threshold),
     detectFallbackDegradation(state),
+    detectAgentFailures(state, agentFailThreshold),
   ].filter(Boolean);
   return results.map(a => ({ ...a, at: new Date().toISOString(), session: state.session_id }));
 }
 
 module.exports = {
   detectSSC, detectTelemetryBlackout, detectHandoffDecay,
-  detectContractCollapse, detectFallbackDegradation, runDetectors,
+  detectContractCollapse, detectFallbackDegradation, detectAgentFailures, runDetectors,
 };
 
 // ── main (Stop hook entrypoint) ────────────────────────────────────────────────
