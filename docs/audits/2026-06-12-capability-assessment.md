@@ -98,7 +98,7 @@
 | Audit ↔ Runtime | Высокое | да | да | n/a | низкая | **[ПОДТВ.]** |
 | Documentation ↔ Runtime | Высокое | да (ADR-immut, anchor) | частично | n/a | низкая | **[ПОДТВ.]** |
 | Hooks ↔ Telemetry | Средне-высокое | частично | да | n/a | средняя | **[ПОДТВ. с дырой]** main-agent слеп |
-| Agents ↔ State | Средне-высокое | да (contract enforced, FPR=0) | да | да | средняя | **[ПОДТВ.]** |
+| Agents ↔ State | Средне-высокое | да (contract enforced, FPR=0, inline+DAG) | да | да | средняя | **[ПОДТВ.]** ADR-024: DAG-parity |
 | Planner ↔ Agents | Среднее | частично (DAG preflight) | да | да | средняя | **[ЧАСТ.]** spawn live = LLM |
 | Runtime ↔ Hooks | Среднее | fail-open by design | да (наблюдаемо) | n/a | средняя | **[ПОДТВ. условно]** хук harness-зависим |
 | Fallback ↔ Specialist | Среднее | advisory (observed) | да | да | средняя | **[ЧАСТ.]** не block |
@@ -223,7 +223,7 @@
 
 ### Максимальный ROI (минимум изменений, большой эффект)
 1. **Авто-ремедиация семантического дрейфа** — поверх 22-чек audit добавить авто-fix детерминированных классов. ✅ Частично (ADR-021): детерминированный `--fix` для path-canonical prefix-дрейфа (advisory). anchor/dead-ref оказались не детерминированно-восстановимыми — вне класса.
-2. **Перевод 1-2 зрелых signal→enforced по FPR-методике** (как INV-STATE-CONTRACT), после накопления данных.
+2. **Перевод 1-2 зрелых signal→enforced по FPR-методике** ✅ Реализовано (ADR-024): INV-STATE-CONTRACT-DAG (execute-dag alert-push, FPR=0 via contract-exempt) + INV-TOOL-TELEMETRY (structural PostToolUse guarantee + blackout detection). RGS 0.46→0.96.
 3. **Persisted DAG-журнал между сессиями** — превращает долгоживущие workflow (45%) в реально длинные без нового runtime. ✅ Реализовано (ADR-023): dag-journal.jsonl, cross-session resume, TTL 7 дней. «Долгоживущие workflow» 45%→60%.
 
 ### Архитектурные усиления
