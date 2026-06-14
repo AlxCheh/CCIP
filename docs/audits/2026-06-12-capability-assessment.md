@@ -57,7 +57,7 @@
 | Возможность | Готовность | Подтверждающий механизм | Ограничение / риск |
 |---|---|---|---|
 | Сложные orchestration | **70%** [ЧАСТ.] | `execute-dag.js` (preflight, async-spawn, retries, write-lock); budget+security enforced | Спавн в live-сессии — LLM-driven; лимит 3; routing-конвенции не enforced |
-| Долгоживущие workflow | **45%** [ЧАСТ.] | session-state lifecycle, resume + circuit-breaker | Нет персистентного процесса; «долго» = в пределах сессии |
+| Долгоживущие workflow | **60%** [ЧАСТ.] | session-state + dag-journal.jsonl (ADR-023): cross-session resume done-шагов по dag_hash | Журнал возобновляет DAG между сессиями; reasoning/output всё ещё session-bound |
 | Многоступенчатые pipeline | **75%** [ПОДТВ. для DAG] | DAG depends_on, atomic advance, handoff sanitize | Один процесс-оркестратор |
 | Автоматическая маршрутизация | **35%** [НЕДОК.] | Intent→Agent таблица; budget/security gate | «intents→agent», «2→co-agent», «≥3→planner» не машинные (CLAUDE.md §18) |
 | Динамический routing | **30%** [НЕДОК.] | feedback-loop observations, fallback-profiles | Реакция — LLM, нет enforcement-счётчика failures |
@@ -224,7 +224,7 @@
 ### Максимальный ROI (минимум изменений, большой эффект)
 1. **Авто-ремедиация семантического дрейфа** — поверх 22-чек audit добавить авто-fix детерминированных классов. ✅ Частично (ADR-021): детерминированный `--fix` для path-canonical prefix-дрейфа (advisory). anchor/dead-ref оказались не детерминированно-восстановимыми — вне класса.
 2. **Перевод 1-2 зрелых signal→enforced по FPR-методике** (как INV-STATE-CONTRACT), после накопления данных.
-3. **Persisted DAG-журнал между сессиями** — превращает долгоживущие workflow (45%) в реально длинные без нового runtime.
+3. **Persisted DAG-журнал между сессиями** — превращает долгоживущие workflow (45%) в реально длинные без нового runtime. ✅ Реализовано (ADR-023): dag-journal.jsonl, cross-session resume, TTL 7 дней. «Долгоживущие workflow» 45%→60%.
 
 ### Архитектурные усиления
 4. **Снять fail-open-остаток лока** для high-assurance-режима (опц. fail-closed под флагом). ✅ Реализовано (ADR-022): `CCIP_STATE_LOCK_FAILCLOSED=1` + `opts.failClosed`; дефолт fail-open неизменён.
@@ -262,3 +262,4 @@
 | 2026-06-14 | Волна 1 / §XII.5 реализован: token-attribution [НЕДОК.]→[ЧАСТ.] (tool-I/O эвристика). Промоут §I, §VII, §XI(c), §XII.5. | ADR-020, token-estimate тесты, canonical 372/372, audit 22/22 |
 | 2026-06-14 | Волна 1 / §XII.1 реализован частично: детерминированный path-canonical `--fix` (advisory). Промоут §VII, §XII.1. | ADR-021, path-canonical тесты (оба режима), canonical 374/374, audit 22/22 |
 | 2026-06-14 | Волна 1 / §XII.4 реализован: fail-closed opt-in для state-lock. Промоут §I. | ADR-022, state-lock тесты (оба режима), canonical 374/374, audit 22/22 |
+| 2026-06-14 | Волна 1 / §XII.3 реализован: persisted dag-journal.jsonl + cross-session resume. «Долгоживущие workflow» 45%→60%. | ADR-023, dag-journal 10/10 + smoke 2/2, canonical 389/389, audit 22/22 |
