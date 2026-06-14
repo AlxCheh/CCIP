@@ -84,3 +84,25 @@ test('hook is fail-open on malformed payload (exit 0, no throw)', () => {
   const res = cp.spawnSync(process.execPath, [HOOK], { input: 'not-json', encoding: 'utf-8' });
   assert.strictEqual(res.status, 0);
 });
+
+test('buildEvent includes non_ascii_ratio and est_tokens', () => {
+  const ev = buildEvent({ tool_name: 'Read', tool_input: { file_path: 'a.md' },
+    tool_response: { content: 'абвгд' } }, 'sess-1');
+  assert.ok('non_ascii_ratio' in ev, 'event missing non_ascii_ratio');
+  assert.ok('est_tokens' in ev, 'event missing est_tokens');
+  assert.ok(ev.non_ascii_ratio > 0, 'Cyrillic content must yield non-zero ratio');
+  assert.ok(Number.isInteger(ev.est_tokens) && ev.est_tokens >= 0);
+});
+
+test('event schema validates an event carrying est_tokens + non_ascii_ratio', () => {
+  const Ajv2020 = require('ajv/dist/2020');
+  const addFormats = require('ajv-formats');
+  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  addFormats(ajv);
+  const schema = JSON.parse(fs.readFileSync(
+    path.join(root, 'docs/schemas/event.schema.json'), 'utf-8'));
+  const validate = ajv.compile(schema);
+  const ev = buildEvent({ tool_name: 'Read', tool_input: { file_path: 'a.md' },
+    tool_response: { content: 'абвгд' } }, 'sess-1');
+  assert.equal(validate(ev), true, JSON.stringify(validate.errors));
+});
