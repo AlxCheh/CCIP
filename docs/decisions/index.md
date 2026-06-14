@@ -46,6 +46,7 @@
 - [ADR-019-cross-process-state-lock.md](ADR-019-cross-process-state-lock.md) — межпроцессный лок session-state (HA-2/E-2) + честная градация INV-STATE-CONTRACT (signal→enforced через exemption)
 - [ADR-020-main-agent-token-estimate.md](ADR-020-main-agent-token-estimate.md) — эвристическая оценка токенов tool-I/O (bytes/K с кириллической поправкой) поверх events.jsonl; частичное закрытие token-blindness ADR-016 [ЧАСТ.]
 - [ADR-021-deterministic-auto-remediation.md](ADR-021-deterministic-auto-remediation.md) — детерминированный `--fix` для path-canonical prefix-дрейфа (advisory, не blocking); первый класс авто-коррекции (#1)
+- [ADR-022-fail-closed-lock.md](ADR-022-fail-closed-lock.md) — fail-closed opt-in для state-lock (`CCIP_STATE_LOCK_FAILCLOSED=1`): пропуск fn + durable stderr на таймауте, дефолт fail-open неизменён (#4)
 
 ---
 

@@ -40,7 +40,7 @@
 | За Production/Enterprise | Против High-Reliability/Mission-Critical |
 |---|---|
 | 4 machine-enforced инварианта **[ПОДТВ.]** | Один узел, один оркестратор; нет HA **[ОТСУТ.]** |
-| Атомарность состояния между процессами, N-way тест **[ПОДТВ.]** | Lock fail-open под контенцией (наблюдаемый остаток) **[ПОДТВ.]** |
+| Атомарность состояния между процессами, N-way тест **[ПОДТВ.]** | Lock fail-open под контенцией (дефолт, наблюдаемый) + fail-closed opt-in (ADR-022) **[ПОДТВ.]** |
 | Детерминированный 362/362 + audit 22/22 **[ПОДТВ.]** | Нет формальной верификации **[ОТСУТ.]** |
 | Видимая recovery (.bak, R-1), detect→react **[ПОДТВ.]** | Нет distributed state / консенсуса **[ОТСУТ.]** |
 | Семантическая целостность doc↔manifest↔settings **[ПОДТВ.]** | tool-I/O token-estimate есть (ADR-020) **[ЧАСТ.]**; reasoning-токены главного агента слепы, ADR-016 **[ПОДТВ. как слепое пятно]** |
@@ -227,7 +227,7 @@
 3. **Persisted DAG-журнал между сессиями** — превращает долгоживущие workflow (45%) в реально длинные без нового runtime.
 
 ### Архитектурные усиления
-4. **Снять fail-open-остаток лока** для high-assurance-режима (опц. fail-closed под флагом).
+4. **Снять fail-open-остаток лока** для high-assurance-режима (опц. fail-closed под флагом). ✅ Реализовано (ADR-022): `CCIP_STATE_LOCK_FAILCLOSED=1` + `opts.failClosed`; дефолт fail-open неизменён.
 5. **Token-attribution через доступный канал** (даже грубый, per-tool) — закрывает слепое пятно ADR-016. ✅ Реализовано (ADR-020): эвристическая per-tool оценка `est_tokens` поверх `events.jsonl`, частичное закрытие [ЧАСТ.] (tool-I/O; reasoning остаётся слеп).
 6. **Машинный счётчик failures/agent → авто-switch на backup** — переводит ключевую routing-конвенцию (CLAUDE.md §18) в [ПОДТВ.].
 
@@ -261,3 +261,4 @@
 | 2026-06-12 | Первая версия. Состояние post-ADR-019 (86/100). | re-cert 2026-06-11, ADR-019, 362/362, 22/22 |
 | 2026-06-14 | Волна 1 / §XII.5 реализован: token-attribution [НЕДОК.]→[ЧАСТ.] (tool-I/O эвристика). Промоут §I, §VII, §XI(c), §XII.5. | ADR-020, token-estimate тесты, canonical 372/372, audit 22/22 |
 | 2026-06-14 | Волна 1 / §XII.1 реализован частично: детерминированный path-canonical `--fix` (advisory). Промоут §VII, §XII.1. | ADR-021, path-canonical тесты (оба режима), canonical 374/374, audit 22/22 |
+| 2026-06-14 | Волна 1 / §XII.4 реализован: fail-closed opt-in для state-lock. Промоут §I. | ADR-022, state-lock тесты (оба режима), canonical 374/374, audit 22/22 |
