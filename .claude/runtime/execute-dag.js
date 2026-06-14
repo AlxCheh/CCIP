@@ -29,6 +29,7 @@ const path = require('path');
 const cp   = require('child_process');
 const rl   = require('readline');
 const { buildFallbackContext } = require('./fallback-context');
+const { isContractExempt } = require('./contract-exempt');
 
 // ── config ────────────────────────────────────────────────────────────────────
 
@@ -254,6 +255,15 @@ function applyStepResult(state, step, output) {
   // [INV-STATE-CONTRACT-DAG] ADR-017 — DAG-writer parity
   if (upd === null) {
     console.error(`[execute-dag] ⚠ ${step.agent}: no valid ## State Update block`);
+    if (!isContractExempt(step.agent)) {
+      state.governance_alerts = state.governance_alerts || [];
+      state.governance_alerts.push({
+        kind: 'state_contract_degraded',
+        at: new Date().toISOString(),
+        agent: step.agent,
+        source: 'execute-dag',
+      });
+    }
   }
   state.agent_outputs = state.agent_outputs || {};
   state.agent_outputs[step.agent] = {
