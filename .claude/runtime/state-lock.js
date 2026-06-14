@@ -16,6 +16,7 @@ const fs = require('fs');
 const LOCK_TTL_MS     = parseInt(process.env.CCIP_STATE_LOCK_TTL_MS     || '5000', 10);
 const ACQUIRE_TIMEOUT = parseInt(process.env.CCIP_STATE_LOCK_TIMEOUT_MS || '4000', 10);
 const RETRY_MS        = 25;
+const ENV_FAIL_CLOSED = process.env.CCIP_STATE_LOCK_FAILCLOSED === '1';
 
 function pidAlive(pid) {
   if (!pid) return false;
@@ -32,8 +33,10 @@ function sleepSync(ms) {
  * Захватывает лок на `${stateFile}.lock`, выполняет fn(), освобождает лок.
  * @param {string} stateFile  путь к state-файлу (лок = stateFile + '.lock')
  * @param {Function} fn  синхронная критическая секция; её результат возвращается
- * @param {object} [opts]  { onFailOpen?: (reason)=>void } вызывается, если лок не взят
- * @returns результат fn()
+ * @param {object} [opts]  { onFailOpen?, onFailClosed?, failClosed? } — наблюдаемость таймаута.
+ *   failClosed: true/false — per-call override; если не задан, берётся CCIP_STATE_LOCK_FAILCLOSED.
+ *   Fail-closed (§XII.4, ADR-022): fn НЕ вызывается, возвращается null; fn вызывается только с локом.
+ * @returns результат fn() | null (fail-closed timeout)
  */
 function withStateLock(stateFile, fn, opts = {}) {
   const lockFile = stateFile + '.lock';
@@ -60,9 +63,20 @@ function withStateLock(stateFile, fn, opts = {}) {
       );
       if (stale) { try { fs.unlinkSync(lockFile); } catch {} continue; }
       if (Date.now() > deadline) {
-        // Наблюдаемый fail-open: НЕ дедлочим writer'а — выполняем без лока, сигналим.
+        const failClosed = opts.failClosed != null ? Boolean(opts.failClosed) : ENV_FAIL_CLOSED;
+        const holderPid = holder && holder.pid;
+        const reason = `acquire timeout (holder pid ${holderPid})`;
+        if (failClosed) {
+          // §XII.4 / ADR-022: fail-closed — fn НЕ вызывается, governance не ломает сессию.
+          process.stderr.write(`[state-lock] fail-closed: ${reason}\n`);
+          if (typeof opts.onFailClosed === 'function') {
+            try { opts.onFailClosed(reason); } catch {}
+          }
+          return null;
+        }
+        // Наблюдаемый fail-open (дефолт): НЕ дедлочим writer'а — выполняем без лока, сигналим.
         if (typeof opts.onFailOpen === 'function') {
-          try { opts.onFailOpen(`acquire timeout (holder pid ${holder.pid})`); } catch {}
+          try { opts.onFailOpen(reason); } catch {}
         }
         return fn();
       }
