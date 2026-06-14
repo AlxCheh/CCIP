@@ -149,7 +149,8 @@
 - **Fully Ready (строй смело):** целостность состояния · self-audit & semantic-integrity-as-code · ADR-governance · детерминированная регрессия · видимая recovery · наблюдаемый fail-open · security co-agent enforcement · budget enforcement · contract-enforced handoff (FPR=0).
 - **Mostly Ready:** DAG multi-step pipeline · fallback при degraded · session continuity · telemetry (session-scoped) · detect→react.
 - **Partially Ready:** автономные многоагентные прогоны (≤3) · resume долгих прогонов · token-efficiency self-learning (узкий) · tool-I/O token estimate (heuristic, ADR-020).
-- **Experimental:** adaptive/confidence-based execution · recursive planning · auto-doc generation · авто-ремедиация дрейфа.
+- **Experimental:** adaptive/confidence-based execution · recursive planning · auto-doc generation.
+- **Partially Ready (доп.):** авто-ремедиация дрейфа — детерминированный path-canonical `--fix`, advisory (ADR-021).
 - **Not Ready:** distributed state/консенсус · формальная верификация · масштаб >3 агентов как гарантия · multi-tenant governance · main-agent reasoning-token attribution (только tool-I/O оценивается, ADR-020) · enforced intelligent routing.
 
 ---
@@ -221,7 +222,7 @@
 ## XII. Strategic Recommendations
 
 ### Максимальный ROI (минимум изменений, большой эффект)
-1. **Авто-ремедиация семантического дрейфа** — поверх 22-чек audit добавить авто-fix детерминированных классов (anchor/dead-ref).
+1. **Авто-ремедиация семантического дрейфа** — поверх 22-чек audit добавить авто-fix детерминированных классов. ✅ Частично (ADR-021): детерминированный `--fix` для path-canonical prefix-дрейфа (advisory). anchor/dead-ref оказались не детерминированно-восстановимыми — вне класса.
 2. **Перевод 1-2 зрелых signal→enforced по FPR-методике** (как INV-STATE-CONTRACT), после накопления данных.
 3. **Persisted DAG-журнал между сессиями** — превращает долгоживущие workflow (45%) в реально длинные без нового runtime.
 
@@ -259,3 +260,4 @@
 |---|---|---|
 | 2026-06-12 | Первая версия. Состояние post-ADR-019 (86/100). | re-cert 2026-06-11, ADR-019, 362/362, 22/22 |
 | 2026-06-14 | Волна 1 / §XII.5 реализован: token-attribution [НЕДОК.]→[ЧАСТ.] (tool-I/O эвристика). Промоут §I, §VII, §XI(c), §XII.5. | ADR-020, token-estimate тесты, canonical 372/372, audit 22/22 |
+| 2026-06-14 | Волна 1 / §XII.1 реализован частично: детерминированный path-canonical `--fix` (advisory). Промоут §VII, §XII.1. | ADR-021, path-canonical тесты (оба режима), canonical 374/374, audit 22/22 |

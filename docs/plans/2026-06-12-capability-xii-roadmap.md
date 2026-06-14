@@ -155,3 +155,4 @@
 |---|---|---|
 | 2026-06-12 | Первая версия roadmap. Последовательность выведена из графа зависимостей, сверенного с кодом. | capability-assessment §XII; `.claude/runtime/` + `tools/audit/` на HEAD b9dcb27 |
 | 2026-06-14 | Волна 1 / #5 (token-attribution) реализован: эвристический эстиматор + per-event `est_tokens` + session-роллап + ADR-020. Метка [ЧАСТ.]. Следующий по плану: #1 (auto-remediation). | ADR-020; wave1-tdd-plan Tasks 5.1–5.4; canonical 372/372, audit 22/22 |
+| 2026-06-14 | Волна 1 / #1 (auto-remediation) реализован частично + ADR-021. Пивот: section-anchors не детерминированно-восстановим (нечего чинить) → авто-фикс направлен на path-canonical prefix-дрейф (детерминированный, advisory). Следующий: #4 (fail-closed) / #3 (persisted DAG). | ADR-021; path-canonical `--fix` тесты; canonical 374/374, audit 22/22 |

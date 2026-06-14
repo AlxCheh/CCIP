@@ -348,12 +348,13 @@ git commit -m "docs(token): ADR-020 + honest [ЧАСТ.] promotion of token-attr
 
 > Те же правила, что и для #5: каждый пункт детализируется в bite-sized шаги только ПОСЛЕ разрешения его design-развилки (design-question-first). Ниже — границы и открытые вопросы, не готовые шаги (no-placeholder-code).
 
-### #1 Auto-remediation семантического дрейфа
-**Scope:** добавить `--fix` к детерминированным классам поверх существующих detect-only аудиторов (`tools/audit/dead-refs`, `section-anchors`, `phantom-section-refs`, `path-canonical`). `audit-suite.js --fix` уже существует (`audit-suite:fix`) — проверить, что именно он сейчас чинит.
-**Развилки:**
-- Какой класс авто-фиксим первым — anchor-restore или dead-ref? (anchor безопаснее: детерминированная цель; dead-ref может требовать выбора цели.)
-- Авто-fix в pre-commit (блокирует) или только в CI/manual (advisory)? Влияет на риск ложной правки.
-- Где граница «детерминированный» (чиним) vs «требует решения» (только флаг)?
+### #1 Auto-remediation семантического дрейфа — ✅ РЕАЛИЗОВАНО (ADR-021)
+**Scope:** добавить `--fix` к детерминированным классам поверх существующих detect-only аудиторов. `audit-suite.js` прокидывает `--fix` в дочерние через `process.argv.slice(2)`, но никто флаг не реализовывал (no-op).
+**Разрешение развилок (design-question-first + сверка с кодом):**
+- *Какой класс первым:* выбран **path-canonical** (не section-anchors). При чтении кода выяснилось: `section-anchors` детектирует висячую `(§N)` без заголовка — **нет цели восстановления** (нельзя синтезировать заголовок); `dead-refs` требует выбора цели. Единственный строго детерминированный обратимый класс — prefix-rewrite в `path-canonical`.
+- *Где fix:* **Manual/CI advisory** (`npm run audit-suite:fix`), НЕ pre-commit. Default-режим байт-в-байт detect-only blocking.
+- *Граница «детерминированный»:* фиксим `W:/Claude/<repo>/` и `CCIP/`-префиксы → relative; абсолютные `C:\Users\` / `/home/` остаются detect-only (нет детерминированной цели).
+**Артефакты:** `tools/audit/path-canonical.js` (`--fix`), тест обоих режимов, ADR-021.
 
 ### #4 Fail-closed flag для state-lock
 **Scope:** под env-флагом (напр. `CCIP_STATE_LOCK_FAILCLOSED=1`) при таймауте `withStateLock` НЕ выполнять fn без лока, а бросать/сигналить отказ (high-assurance). Дефолт остаётся fail-open (наблюдаемый).
