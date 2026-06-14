@@ -36,12 +36,13 @@ function run() {
   const ssc = agents ? Number(((agents - missing) / agents).toFixed(2)) : 1;
   const toolCalls = events.length;
   const fullReads = events.filter(e => e && e.full_read === true).length;
+  const estTokens = events.reduce((s, e) => s + (Number(e.est_tokens) || 0), 0);
   const inline = toolCalls > 0;
 
   if (agents === 0 && toolCalls === 0) return; // nothing happened this session
 
   const line = `> 📊 ${sessionId.slice(0, 10)}: tool_calls=${toolCalls} full_reads=${fullReads}`
-    + ` agents=${agents} SSC=${ssc} inline=${inline}`;
+    + ` est_tokens=${estTokens} agents=${agents} SSC=${ssc} inline=${inline}`;
   const idemKey = `metrics:${sessionId}:${crypto.createHash('sha1')
     .update(`${toolCalls}|${fullReads}|${agents}|${missing}`).digest('hex').slice(0, 8)}`;
 

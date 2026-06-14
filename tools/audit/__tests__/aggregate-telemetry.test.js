@@ -95,6 +95,27 @@ test('T-1/UU-3: events from other sessions are excluded from this session metric
   }
 });
 
+test('aggregate sums est_tokens for THIS session into the §5 line', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ccip-agg-tok-'));
+  const feedback = path.join(tmp, 'feedback-loop.md');
+  const events = path.join(tmp, 'events.jsonl');
+  const sf = mkState([obs('ccip-architect', false)]);
+  // two THIS-session events (est_tokens 100 + 250) + one other-session (ignored)
+  fs.writeFileSync(events, [
+    ev({ tool: 'Read', est_tokens: 100 }),
+    ev({ tool: 'Bash', target: 'ls', est_tokens: 250 }),
+    ev({ session: 'other-session', tool: 'Read', est_tokens: 9999 }),
+  ].join('\n') + '\n', 'utf-8');
+  try {
+    runHook(sf, events, feedback);
+    const md = fs.readFileSync(feedback, 'utf-8');
+    assert.match(md, /est_tokens=350\b/, 'only this session est_tokens summed (100+250)');
+  } finally {
+    fs.rmSync(sf, { force: true });
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('T-1: filter is skipped when session_id is uninitialised (graceful degrade)', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ccip-agg-deg-'));
   const feedback = path.join(tmp, 'feedback-loop.md');
