@@ -14,6 +14,15 @@ const FORBIDDEN = [
   { pat: /\bCCIP\/(docs|apps|packages|\.claude|infra|tools)\//g, why: 'CCIP/ prefix; use relative path' },
 ];
 
+// Детерминированные авто-фиксы (#1, ADR-021): только обратимые prefix→relative rewrite.
+// Порядок важен: абсолютный repo-префикс (W:/Claude/<repo>/) снимается ПЕРВЫМ, иначе
+// вложенный CCIP/ внутри него исказил бы путь. Абсолютные C:\Users\ / /home/ НЕ чинятся
+// (нет детерминированной цели) — остаются detect-only.
+const FIX_RULES = [
+  { pat: /W:\/Claude\/CCIP\//g, to: '' },
+  { pat: /\bCCIP\/(docs|apps|packages|\.claude|infra|tools)\//g, to: '$1/' },
+];
+
 // Allowlist файлов, где упоминания W:/... легитимны (например, test fixtures или plan docs).
 const ALLOWLIST = [
   'docs/plans/archive/2026-05-12-zero-drift-compliance-section10.md', // plan doc — contains literal examples
@@ -29,6 +38,7 @@ const args = process.argv.slice(2);
 const targetIdx = args.indexOf('--target');
 const targets = targetIdx >= 0 ? [args[targetIdx + 1]] : null;
 const useAllowlist = targets === null; // allowlist applies only in full-repo scan mode
+const doFix = args.includes('--fix'); // advisory auto-remediation (#1); default = detect-only
 
 const root = gitRoot();
 const files = targets || walk(root, ['**/*.md', '**/*.json', '**/*.js', '**/*.ts']);
@@ -37,7 +47,16 @@ let violations = 0;
 for (const file of files) {
   const rel = path.relative(root, file).replace(/\\/g, '/');
   if (useAllowlist && ALLOWLIST.includes(rel)) continue;
-  const content = fs.readFileSync(file, 'utf-8');
+  let content = fs.readFileSync(file, 'utf-8');
+  if (doFix) {
+    let fixed = content;
+    for (const { pat, to } of FIX_RULES) fixed = fixed.replace(pat, to);
+    if (fixed !== content) {
+      fs.writeFileSync(file, fixed, 'utf-8');
+      process.stdout.write(`[path-canonical] fixed ${rel}\n`);
+      content = fixed;
+    }
+  }
   for (const { pat, why } of FORBIDDEN) {
     const m = content.match(pat);
     if (m) {
