@@ -103,7 +103,7 @@
 | Runtime ↔ Hooks | Среднее | fail-open by design | да (наблюдаемо) | n/a | средняя | **[ПОДТВ. условно]** хук harness-зависим |
 | Fallback ↔ Specialist | Среднее | advisory (observed) | да | да | средняя | **[ЧАСТ.]** не block |
 | Runtime ↔ Routing | Низко-среднее | только budget/security | частично | n/a | средняя | **[ЧАСТ.]** |
-| Feedback ↔ Routing | Низкое | нет | да (flush) | n/a | высокая | **[НЕДОК.]** реакция LLM |
+| Feedback ↔ Routing | Низко-среднее | частично: DAG auto-switch machine-enforced (ADR-025) | да (flush+alerts) | n/a | средняя | **[ЧАСТ.]** DAG: machine; inline: LLM-реакция |
 | Feedback ↔ Planner | Низкое | нет | да | n/a | высокая | **[НЕДОК.]** |
 | Routing ↔ Planner | Низкое | нет (CLAUDE.md §18) | n/a | n/a | высокая | **[НЕДОК.]** конвенция |
 
@@ -229,7 +229,7 @@
 ### Архитектурные усиления
 4. **Снять fail-open-остаток лока** для high-assurance-режима (опц. fail-closed под флагом). ✅ Реализовано (ADR-022): `CCIP_STATE_LOCK_FAILCLOSED=1` + `opts.failClosed`; дефолт fail-open неизменён.
 5. **Token-attribution через доступный канал** (даже грубый, per-tool) — закрывает слепое пятно ADR-016. ✅ Реализовано (ADR-020): эвристическая per-tool оценка `est_tokens` поверх `events.jsonl`, частичное закрытие [ЧАСТ.] (tool-I/O; reasoning остаётся слеп).
-6. **Машинный счётчик failures/agent → авто-switch на backup** — переводит ключевую routing-конвенцию (CLAUDE.md §18) в [ПОДТВ.].
+6. **Машинный счётчик failures/agent → авто-switch на backup** ✅ Реализовано (ADR-025): `agent_failure_counts` + `selectEffectiveAgent` (DAG auto-switch) + `detectAgentFailures` alert (inline). CLAUDE.md §18 строка переведена из «LLM-оркестратор» в «DAG: machine / Inline: LLM-реакция на alert». **Волна 2 — ЗАКРЫТА.**
 
 ### Новые классы возможностей
 7. **Безопасное расширение лимита агентов** с per-agent изоляцией состояния (теперь RMW атомарен между процессами).

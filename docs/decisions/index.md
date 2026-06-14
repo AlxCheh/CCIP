@@ -49,6 +49,7 @@
 - [ADR-022-fail-closed-lock.md](ADR-022-fail-closed-lock.md) — fail-closed opt-in для state-lock (`CCIP_STATE_LOCK_FAILCLOSED=1`): пропуск fn + durable stderr на таймауте, дефолт fail-open неизменён (#4)
 - [ADR-023-persisted-dag-journal.md](ADR-023-persisted-dag-journal.md) — append-only NDJSON dag-journal.jsonl: cross-session resume done-шагов по dag_hash + TTL 7 дней (#3)
 - [ADR-024-signal-to-enforced-promotion.md](ADR-024-signal-to-enforced-promotion.md) — Wave 2 #2: INV-STATE-CONTRACT-DAG (execute-dag alert-push) + INV-TOOL-TELEMETRY (structural guarantee + blackout detection) → enforced; RGS 0.46→0.96
+- [ADR-025-per-agent-failure-counter.md](ADR-025-per-agent-failure-counter.md) — Wave 2 #6: per-agent failure counter (agent_failure_counts) + DAG auto-switch (selectEffectiveAgent + AGENT_BACKUP_MAP) + detectAgentFailures alert
 
 ---
 
