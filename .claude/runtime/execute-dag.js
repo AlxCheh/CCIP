@@ -88,6 +88,7 @@ function updateState(fn) {
 
 // ── sanitize handoff ──────────────────────────────────────────────────────────
 const { sanitizeHandoff, parseStateUpdate } = require('./sanitize-utils'); // D-04/D-13/UU-5
+const dagJournal = require('./dag-journal'); // §XII.3 / ADR-023: cross-session DAG journal
 
 // ── agent loading ─────────────────────────────────────────────────────────────
 
@@ -321,8 +322,13 @@ async function main() {
     );
   }
 
+  // ── journal init (#3 / ADR-023) ───────────────────────────────────────────────
+  const dagHash = dagJournal.hashDAG(state.dag);
+  dagJournal.prune(); // TTL-prune старых записей (7 дней по умолчанию)
+
+  let runId;
+
   // ── checkpoint / resume ───────────────────────────────────────────────────────
-  const doneSteps    = state.dag.filter(s => s.status === 'done');
   const blockedSteps = state.dag.filter(s => s.status === 'failed' || s.status === 'running');
 
   if (state.status === 'done' && !RESUME) {
@@ -346,12 +352,39 @@ async function main() {
       console.log(`[execute-dag] ↻ resetting ${blockedSteps.length} interrupted step(s) → pending`);
       blockedSteps.forEach(({ step }) => { state.dag.find(s => s.step === step).status = 'pending'; });
     }
-    if (doneSteps.length)
-      console.log(`[execute-dag] ⏭ skipping ${doneSteps.length} done: ${doneSteps.map(s => `${s.agent}(${s.step})`).join(', ')}`);
+
+    // ── journal-based cross-session restore (#3) ───────────────────────────────
+    const resumable = dagJournal.findResumableRun(dagHash);
+    if (resumable) {
+      runId = resumable.run_id;
+      const journalDone = dagJournal.getDoneSteps(runId);
+      if (journalDone.length) {
+        journalDone.forEach(stepNum => {
+          const s = state.dag.find(d => d.step === stepNum);
+          if (s && s.status !== 'done') s.status = 'done';
+        });
+        console.log(`[execute-dag] ↻ journal resume run ${runId}: ${journalDone.length} step(s) restored from journal`);
+      }
+    }
+
+    const doneAfterRestore = state.dag.filter(s => s.status === 'done');
+    if (doneAfterRestore.length)
+      console.log(`[execute-dag] ⏭ skipping ${doneAfterRestore.length} done: ${doneAfterRestore.map(s => `${s.agent}(${s.step})`).join(', ')}`);
     state.status = 'executing';
     writeState(state);
-  } else if (doneSteps.length > 0) {
-    console.warn(`[execute-dag] ⚠  ${doneSteps.length} step(s) already done — continuing with remaining. Use --resume to be explicit.`);
+  } else {
+    const doneSteps = state.dag.filter(s => s.status === 'done');
+    if (doneSteps.length > 0)
+      console.warn(`[execute-dag] ⚠  ${doneSteps.length} step(s) already done — continuing with remaining. Use --resume to be explicit.`);
+  }
+
+  // Start new run if not resuming an existing journal run
+  if (!runId) {
+    runId = dagJournal.newRunId();
+    dagJournal.appendEntry({
+      run_id: runId, session_id: state.session_id, dag_hash: dagHash,
+      event: 'run_start', ts: new Date().toISOString(),
+    });
   }
 
   // ── display ───────────────────────────────────────────────────────────────────
@@ -426,6 +459,10 @@ async function main() {
       }
 
       await updateState(s => applyStepResult(s, step, result.output));
+      dagJournal.appendEntry({
+        run_id: runId, session_id: state.session_id, dag_hash: dagHash,
+        event: 'step_done', step: step.step, agent: step.agent, ts: new Date().toISOString(),
+      });
       if (!DRY_RUN) {
         const summary = readState().agent_outputs?.[step.agent]?.summary || '';
         console.log(`   ✓ ${step.agent} — ${summary.slice(0, 80)}`);
@@ -440,6 +477,10 @@ async function main() {
   }
 
   await updateState(s => { s.status = 'done'; });
+  dagJournal.appendEntry({
+    run_id: runId, session_id: state.session_id, dag_hash: dagHash,
+    event: 'run_done', ts: new Date().toISOString(),
+  });
   console.log(`\n[execute-dag] ✓ all steps done — session ${readState().session_id}`);
 }
 
