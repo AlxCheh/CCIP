@@ -41,7 +41,7 @@
 |---|---|
 | 4 machine-enforced инварианта **[ПОДТВ.]** | Один узел, один оркестратор; нет HA **[ОТСУТ.]** |
 | Атомарность состояния между процессами, N-way тест **[ПОДТВ.]** | Lock fail-open под контенцией (дефолт, наблюдаемый) + fail-closed opt-in (ADR-022) **[ПОДТВ.]** |
-| Детерминированный 362/362 + audit 22/22 **[ПОДТВ.]** | Нет формальной верификации **[ОТСУТ.]** |
+| Детерминированный 362/362 + audit 22/22 **[ПОДТВ.]** | Формальная верификация (TLA+ / ADR-028) **[ПОДТВ.]** |
 | Видимая recovery (.bak, R-1), detect→react **[ПОДТВ.]** | Нет distributed state / консенсуса **[ОТСУТ.]** |
 | Семантическая целостность doc↔manifest↔settings **[ПОДТВ.]** | tool-I/O token-estimate есть (ADR-020) **[ЧАСТ.]**; reasoning-токены главного агента слепы, ADR-016 **[ПОДТВ. как слепое пятно]** |
 | Аудируемый override, наблюдаемый fail-open **[ПОДТВ.]** | Routing-правила — LLM-конвенция (CLAUDE.md §18) **[НЕДОК.]** |
@@ -151,7 +151,7 @@
 - **Partially Ready:** автономные многоагентные прогоны (≤5, ADR-026) · resume долгих прогонов · token-efficiency self-learning (узкий) · tool-I/O token estimate (heuristic, ADR-020).
 - **Experimental:** adaptive/confidence-based execution · recursive planning · auto-doc generation.
 - **Partially Ready (доп.):** авто-ремедиация дрейфа — детерминированный path-canonical `--fix`, advisory (ADR-021).
-- **Not Ready:** distributed state/консенсус · формальная верификация · масштаб >5 агентов как гарантия · multi-tenant governance · main-agent reasoning-token attribution (только tool-I/O оценивается, ADR-020) · enforced intelligent routing.
+- **Not Ready:** distributed state/консенсус · масштаб >5 агентов как гарантия · multi-tenant governance · main-agent reasoning-token attribution (только tool-I/O оценивается, ADR-020) · enforced intelligent routing.
 
 ---
 
@@ -164,7 +164,7 @@
 5. **Устранённые ограничения:** lost-update (HA-2/E-2) · тихий fail-open · cross-session telemetry leak (T-1) · ADR-дрейф (S-1) · FPR-шум контракта · недетерминизм тестов (M-1).
 6. **Открывшиеся возможности:** см. §V.
 7. **Превосходит типичные AI-оркестраторы:** machine-enforced инварианты с durable-аудитом · semantic-integrity-as-code · detect→react · observable-fail-safe · execution-based самосертификация.
-8. **Объективные остатки:** single-node · routing/feedback = конвенция · token-blindness · fail-open-остаток · нет формальной верификации/распределённости.
+8. **Объективные остатки:** single-node · routing/feedback = конвенция · token-blindness · fail-open-остаток · нет распределённости/консенсуса (формальная верификация — ADR-028).
 
 ---
 
@@ -178,7 +178,7 @@
 | Enterprise Workflow Engine | **Ниже** — нет persistence/распределённости/throughput; **выше** по семантической governance процесса |
 | Orchestration Platform | **Ниже** по масштабу/HA/multi-tenancy; **выше** по самосертификации и инвариант-аудиту |
 | Internal Developer Platform | **Ниже** по охвату; **сопоставим** по audit-as-gate дисциплине |
-| Mission-Critical Runtime | **Существенно ниже** — нет формальной верификации, redundancy, консенсуса |
+| Mission-Critical Runtime | **Существенно ниже** — нет redundancy, консенсуса (формальная верификация есть — ADR-028) |
 
 **Дифференциатор:** не оркестрация как таковая, а **governance-плоскость поверх оркестрации** — machine-enforced инварианты + self-audit + observable-fail-safe + execution-based сертификация.
 
@@ -250,7 +250,7 @@
 **Разделение уверенности:**
 - **Подтверждено фактами:** вердикт §I, машинные инварианты, атомарность состояния, self-audit, recovery, observable-fail-safe.
 - **Вероятно (механизм есть, advisory):** DAG-оркестрация глубже, fallback-адаптация, resume долгих прогонов.
-- **Потенциально (направление, не свойство):** enforced intelligent routing, distributed state, autonomous engineering без надзора, формальная верификация.
+- **Потенциально (направление, не свойство):** enforced intelligent routing, distributed state, autonomous engineering без надзора.
 
 ---
 
@@ -267,3 +267,4 @@
 | 2026-06-14 | Волна 2 / §XII.6 реализован: per-agent failure counter + DAG auto-switch. CLAUDE.md §18 DAG-строка machine-enforced. **Волна 2 — ЗАКРЫТА.** | ADR-025, canonical 402/402, audit 22/22 |
 | 2026-06-15 | Волна 3 / §XII.7 реализован: composite key agent:step + CCIP_MAX_AGENTS 3→5 + per-step state isolation. Промоут §II(Сложные orchestr.), §III(AI Infra.), §VI(Autonomous Engineering). | ADR-026, canonical 406/406, audit 22/22 |
 | 2026-06-15 | Волна 3 / §XII.9 реализован: AUTO_CORRECTIONS словарь + CCIP_SELF_GOVERN=1 + auto_corrected:true маркировка. Self-Governed Runtime 70%→75% [ПОДТВ.]. **Волна 3 — ЗАКРЫТА.** | ADR-027, canonical 410/410, audit 22/22 |
+| 2026-06-15 | Волна 4 / §I формальная верификация [ОТСУТ.]→[ПОДТВ.]: TLA+ CCIPInvariants (INV-AGENT-BUDGET, INV-STATE-CONTRACT, INV-SECURITY-COAGENT, cross-process lock). TLC: 3.88M states, verified. Промоут §I, §VII, §XIII. | ADR-028, TLA+ model + TLC verification, canonical 410/410, audit 22/22 |

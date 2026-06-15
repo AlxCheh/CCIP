@@ -52,6 +52,7 @@
 - [ADR-025-per-agent-failure-counter.md](ADR-025-per-agent-failure-counter.md) — Wave 2 #6: per-agent failure counter (agent_failure_counts) + DAG auto-switch (selectEffectiveAgent + AGENT_BACKUP_MAP) + detectAgentFailures alert
 - [ADR-026-per-agent-isolation.md](ADR-026-per-agent-isolation.md) — Wave 3 #7: composite key agent:step в DAG agent_outputs (per-step write isolation) + CCIP_MAX_AGENTS 3→5 (per-step isolation eliminates state collision risk)
 - [ADR-027-self-governed-runtime.md](ADR-027-self-governed-runtime.md) — Wave 3 #9: AUTO_CORRECTIONS словарь в governance-reactor + CCIP_SELF_GOVERN=1 → repair-директива + auto_corrected:true в state (≥1 класс аномалии с end-to-end авто-коррекцией)
+- [ADR-028-formal-invariant-model.md](ADR-028-formal-invariant-model.md) — Wave 4: TLA+ formal model (CCIPInvariants.tla + TLC model checker) для 4 block-инвариантов (INV-AGENT-BUDGET, INV-STATE-CONTRACT, INV-SECURITY-COAGENT, cross-process lock); 3.88M states verified
 
 ---
 
