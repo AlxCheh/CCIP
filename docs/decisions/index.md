@@ -48,6 +48,10 @@
 - [ADR-021-deterministic-auto-remediation.md](ADR-021-deterministic-auto-remediation.md) — детерминированный `--fix` для path-canonical prefix-дрейфа (advisory, не blocking); первый класс авто-коррекции (#1)
 - [ADR-022-fail-closed-lock.md](ADR-022-fail-closed-lock.md) — fail-closed opt-in для state-lock (`CCIP_STATE_LOCK_FAILCLOSED=1`): пропуск fn + durable stderr на таймауте, дефолт fail-open неизменён (#4)
 - [ADR-023-persisted-dag-journal.md](ADR-023-persisted-dag-journal.md) — append-only NDJSON dag-journal.jsonl: cross-session resume done-шагов по dag_hash + TTL 7 дней (#3)
+- [ADR-024-signal-to-enforced-promotion.md](ADR-024-signal-to-enforced-promotion.md) — Wave 2 #2: INV-STATE-CONTRACT-DAG (execute-dag alert-push) + INV-TOOL-TELEMETRY (structural guarantee + blackout detection) → enforced; RGS 0.46→0.96
+- [ADR-025-per-agent-failure-counter.md](ADR-025-per-agent-failure-counter.md) — Wave 2 #6: per-agent failure counter (agent_failure_counts) + DAG auto-switch (selectEffectiveAgent + AGENT_BACKUP_MAP) + detectAgentFailures alert
+- [ADR-026-per-agent-isolation.md](ADR-026-per-agent-isolation.md) — Wave 3 #7: composite key agent:step в DAG agent_outputs (per-step write isolation) + CCIP_MAX_AGENTS 3→5 (per-step isolation eliminates state collision risk)
+- [ADR-027-self-governed-runtime.md](ADR-027-self-governed-runtime.md) — Wave 3 #9: AUTO_CORRECTIONS словарь в governance-reactor + CCIP_SELF_GOVERN=1 → repair-директива + auto_corrected:true в state (≥1 класс аномалии с end-to-end авто-коррекцией)
 
 ---
 

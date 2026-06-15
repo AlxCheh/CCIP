@@ -250,7 +250,7 @@ test('main: enforce mode emits permissionDecision deny over budget', () => {
   const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
-      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile, CCIP_MAX_AGENTS: '3' } });
     assert.strictEqual(res.status, 0);
     const out = JSON.parse(res.stdout);
     assert.strictEqual(out.hookSpecificOutput.permissionDecision, 'deny');
@@ -263,7 +263,7 @@ test('main: shadow mode (default) allows but warns on stderr', () => {
   const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
-      env: { ...process.env, CCIP_STATE_FILE: stateFile } });
+      env: { ...process.env, CCIP_STATE_FILE: stateFile, CCIP_MAX_AGENTS: '3' } });
     assert.strictEqual(res.status, 0);
     assert.strictEqual(res.stdout.trim(), '', 'shadow must not emit a deny decision');
     assert.match(res.stderr, /would-deny/i);
@@ -298,7 +298,7 @@ test('E-1 main: override applied writes a durable governance-audit.jsonl line', 
     tool_input: { subagent_type: 'ccip-dba', override: 'pilot needs 4th agent' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
-      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile, CCIP_GOV_AUDIT_FILE: auditFile } });
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile, CCIP_GOV_AUDIT_FILE: auditFile, CCIP_MAX_AGENTS: '3' } });
     assert.strictEqual(res.status, 0);
     assert.strictEqual(res.stdout.trim(), '', 'override must allow (no deny output)');
     const lines = fs.readFileSync(auditFile, 'utf-8').trim().split('\n').filter(Boolean).map(JSON.parse);
@@ -340,7 +340,7 @@ test('E-1 main: CCIP_OVERRIDE_DISABLED=1 → override ignored, deny stands', () 
     tool_input: { subagent_type: 'ccip-dba', override: 'valid reason' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
-      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_OVERRIDE_DISABLED: '1', CCIP_STATE_FILE: stateFile } });
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_OVERRIDE_DISABLED: '1', CCIP_STATE_FILE: stateFile, CCIP_MAX_AGENTS: '3' } });
     assert.strictEqual(res.status, 0);
     assert.strictEqual(JSON.parse(res.stdout).hookSpecificOutput.permissionDecision, 'deny');
   } finally { fs.rmSync(stateFile, { force: true }); }
@@ -367,7 +367,7 @@ test('E-2 main: a denied spawn does NOT record inflight', () => {
   const payload = JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: 'ccip-dba' } });
   try {
     const res = cp.spawnSync(process.execPath, [HOOK], { input: payload, encoding: 'utf-8',
-      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+      env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile, CCIP_MAX_AGENTS: '3' } });
     assert.strictEqual(JSON.parse(res.stdout).hookSpecificOutput.permissionDecision, 'deny');
     const st = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
     assert.ok(!st.inflight_spawns || st.inflight_spawns.length === 0, 'denied spawn must not be tracked');
@@ -378,7 +378,7 @@ test('E-2 burst: 4 sequential pre-gate calls — 4th denied (inflight accumulate
   const stateFile = writeTmpState({ session_id: 's', risk: 'LOW', agent_outputs: {}, dag: [] });
   const spawn = (name) => cp.spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ tool_name: 'Agent', tool_input: { subagent_type: name } }),
-    encoding: 'utf-8', env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile } });
+    encoding: 'utf-8', env: { ...process.env, CCIP_GATE_ENFORCE: '1', CCIP_STATE_FILE: stateFile, CCIP_MAX_AGENTS: '3' } });
   try {
     assert.strictEqual(spawn('ccip-dba').stdout.trim(), '', '1st allowed');
     assert.strictEqual(spawn('ccip-frontend').stdout.trim(), '', '2nd allowed');
@@ -386,4 +386,35 @@ test('E-2 burst: 4 sequential pre-gate calls — 4th denied (inflight accumulate
     const r4 = spawn('ccip-qa');
     assert.strictEqual(JSON.parse(r4.stdout).hookSpecificOutput.permissionDecision, 'deny', '4th denied');
   } finally { fs.rmSync(stateFile, { force: true }); }
+});
+
+// ── #7 Wave3: expanded agent budget (default maxAgents=5) ────────────────────
+
+test('#7 evaluateGate: 4th agent allowed by default budget (maxAgents=5)', () => {
+  // 3 completed (composite DAG keys, as produced after Task 7.1)
+  const state = {
+    agent_outputs: {
+      'ccip-architect:1': {}, 'ccip-dba:2': {}, 'ccip-backend-core:3': {},
+    },
+    dag: [], inflight_spawns: [],
+  };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-frontend' } };
+  const r = evaluateGate(state, payload, { enforce: true });
+  assert.strictEqual(r.decision, 'allow',
+    '4th agent must be allowed; default maxAgents was 3, now must be 5');
+});
+
+test('#7 evaluateGate: 6th agent DENIED by default budget (maxAgents=5)', () => {
+  const state = {
+    agent_outputs: {
+      'ccip-architect:1': {}, 'ccip-dba:2': {}, 'ccip-backend-core:3': {},
+      'ccip-frontend:4': {}, 'ccip-devops:5': {},
+    },
+    dag: [], inflight_spawns: [],
+  };
+  const payload = { tool_name: 'Agent', tool_input: { subagent_type: 'ccip-mobile' } };
+  const r = evaluateGate(state, payload, { enforce: true });
+  assert.strictEqual(r.decision, 'deny',
+    '6th agent must be denied; 5 outputs consumed entire default budget');
+  assert.match(r.reason, /budget/i);
 });

@@ -88,3 +88,56 @@ test('main: fail-open on malformed stdin (exit 0, no output)', () => {
   assert.strictEqual(res.status, 0);
   assert.strictEqual(res.stdout.trim(), '');
 });
+
+// ── #9 Wave3: self-governed auto-corrections ──────────────────────────────────
+
+test('#9 buildReaction: selfGoverned=false → correctedKinds empty, no AUTO-REPAIR marker', () => {
+  const r = buildReaction({ governance_alerts: [
+    { kind: 'state_contract_degraded', agent: 'ccip-architect' },
+  ] });
+  // correctedKinds must exist in return value (even when selfGoverned=false)
+  assert.ok(Array.isArray(r.correctedKinds), 'correctedKinds must always be an array');
+  assert.deepEqual(r.correctedKinds, [], 'no auto-corrections in default advisory mode');
+  assert.ok(!r.msg.includes('AUTO-REPAIR'), 'no repair marker in advisory-only mode');
+});
+
+test('#9 buildReaction: selfGoverned=true + correctable kind → SELF-CORRECTED in msg + correctedKinds', () => {
+  const r = buildReaction(
+    { governance_alerts: [{ kind: 'state_contract_degraded', agent: 'ccip-architect' }] },
+    { selfGoverned: true },
+  );
+  assert.deepEqual(r.correctedKinds, ['state_contract_degraded']);
+  assert.match(r.msg, /SELF-CORRECTED/,   'message must contain SELF-CORRECTED marker');
+  assert.match(r.msg, /AUTO-REPAIR/,      'message must contain AUTO-REPAIR repair block');
+  assert.match(r.msg, /State Update/,     'repair block must include State Update template reference');
+});
+
+test('#9 buildReaction: selfGoverned=true + unknown kind → advisory only, no crash, correctedKinds empty', () => {
+  const r = buildReaction(
+    { governance_alerts: [{ kind: 'unknown_future_kind_xyz' }] },
+    { selfGoverned: true },
+  );
+  assert.deepEqual(r.correctedKinds, [], 'unknown kinds have no correction entry — advisory only');
+  assert.match(r.msg, /unknown_future_kind_xyz/, 'unknown kind still surfaced generically');
+  assert.ok(!r.msg.includes('AUTO-REPAIR'), 'no repair marker for unknown kinds');
+});
+
+test('#9 main: CCIP_SELF_GOVERN=1 + state_contract_degraded → auto_corrected:true in state', () => {
+  const sf = writeState({ session_id: 's', governance_alerts: [
+    { kind: 'state_contract_degraded', agent: 'ccip-architect' },
+  ] });
+  try {
+    const res = cp.spawnSync(process.execPath, [HOOK], {
+      input: promptPayload, encoding: 'utf-8',
+      env: { ...process.env, CCIP_STATE_FILE: sf, CCIP_SELF_GOVERN: '1' },
+    });
+    assert.strictEqual(res.status, 0);
+    const out = JSON.parse(res.stdout);
+    assert.match(out.hookSpecificOutput.additionalSystemPrompt, /SELF-CORRECTED/,
+      'prompt must contain SELF-CORRECTED when CCIP_SELF_GOVERN=1');
+    const after = JSON.parse(fs.readFileSync(sf, 'utf-8'));
+    assert.strictEqual(after.governance_alerts[0].surfaced, true, 'alert must be marked surfaced');
+    assert.strictEqual(after.governance_alerts[0].auto_corrected, true,
+      'alert must be marked auto_corrected when CCIP_SELF_GOVERN=1');
+  } finally { fs.rmSync(sf, { force: true }); }
+});

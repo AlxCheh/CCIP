@@ -35,10 +35,14 @@ const DIRECTIVES = {
   state_lock_failed_open:   'a state-write lock could not be acquired and the write proceeded WITHOUT mutual exclusion — possible lost update under contention; verify recent state mutations persisted',
 };
 
-/** Pure: { msg, surfacedIdx:[indices] }. Empty msg when nothing fresh to surface. */
-function buildReaction(state) {
+/** Pure: { msg, surfacedIdx:[indices], correctedKinds:[kinds] }.
+ *  Empty msg when nothing fresh to surface.
+ *  opts.selfGoverned=true activates AUTO_CORRECTIONS (ADR-027). */
+function buildReaction(state, opts = {}) {
+  const { selfGoverned = false } = opts;
   const alerts = Array.isArray(state && state.governance_alerts) ? state.governance_alerts : [];
   const surfacedIdx = [];
+  const correctedKinds = [];
   const lines = [];
   alerts.forEach((a, idx) => {
     if (!a || a.surfaced === true) return;
@@ -52,15 +56,54 @@ function buildReaction(state) {
       : a.ratio != null ? ` (ratio ${a.ratio})`
       : a.ssc != null ? ` (SSC ${a.ssc})`
       : '';
-    lines.push(`• ${kind}${detail}: ${directive}`);
+
+    if (selfGoverned && AUTO_CORRECTIONS[kind]) {
+      const correction = AUTO_CORRECTIONS[kind];
+      correctedKinds.push(kind);
+      lines.push(`• ${kind}${detail}: [SELF-CORRECTED] ${directive}\n  ${correction.template}`);
+    } else {
+      lines.push(`• ${kind}${detail}: ${directive}`);
+    }
   });
-  if (lines.length === 0) return { msg: '', surfacedIdx: [] };
+  if (lines.length === 0) return { msg: '', surfacedIdx: [], correctedKinds: [] };
   const msg = `⚠️ GOVERNANCE REMINDER — ${lines.length} unacknowledged alert(s) from the previous turn. `
     + `Address these before/while routing the next step:\n${lines.join('\n')}`;
-  return { msg, surfacedIdx };
+  return { msg, surfacedIdx, correctedKinds };
 }
 
-module.exports = { buildReaction, DIRECTIVES };
+// Structured auto-corrections for reproducible anomaly classes (ADR-027).
+// Keyed by alert kind — only kinds listed here are self-correctable.
+// type 'inject': add a concrete repair directive to the surfaced prompt.
+const AUTO_CORRECTIONS = {
+  state_contract_degraded: {
+    type: 'inject',
+    label: 'state-contract-repair',
+    template: [
+      '🛠 AUTO-REPAIR: the next agent MUST end its response with the exact block:',
+      '```',
+      '## State Update',
+      '```json',
+      '{ "summary": "one-sentence summary", "artifacts": [], "handoff_notes": "what the next agent needs" }',
+      '```',
+      '```',
+    ].join('\n'),
+  },
+  contract_collapse: {
+    type: 'inject',
+    label: 'contract-collapse-repair',
+    template: [
+      '🛠 AUTO-REPAIR: contract debt CRITICAL — every agent from this point MUST include ## State Update.',
+      'Required format:\n```\n## State Update\n```json\n{ "summary": "...", "artifacts": [], "handoff_notes": "..." }\n```\n```',
+    ].join('\n'),
+  },
+  agent_failure_degraded: {
+    type: 'inject',
+    label: 'routing-repair',
+    template: '🛠 AUTO-REPAIR: degraded agent(s) detected — consult AGENT_BACKUP_MAP in execute-dag.js and re-route to backup before the next spawn.',
+  },
+};
+
+module.exports = { buildReaction, DIRECTIVES, AUTO_CORRECTIONS };
 
 // ── main (UserPromptSubmit entrypoint) ─────────────────────────────────────────
 if (require.main === module) {
@@ -70,6 +113,7 @@ if (require.main === module) {
   const ROOT = path.resolve(__dirname, '../..');
   const STATE_FILE = process.env.CCIP_STATE_FILE
     || path.join(ROOT, '.claude/runtime/session-state.json');
+  const SELF_GOVERN = process.env.CCIP_SELF_GOVERN === '1'; // ADR-027
 
   let raw = '';
   process.stdin.setEncoding('utf-8');
@@ -78,7 +122,7 @@ if (require.main === module) {
     try {
       JSON.parse(raw); // validate the UserPromptSubmit payload
       const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-      const { msg, surfacedIdx } = buildReaction(state);
+      const { msg, surfacedIdx, correctedKinds } = buildReaction(state, { selfGoverned: SELF_GOVERN });
       if (!msg) { process.exit(0); }
 
       // Mark surfaced alerts so they are not re-injected every turn (anti-spam).
@@ -86,7 +130,13 @@ if (require.main === module) {
       try {
         updateStateLocked(STATE_FILE, (fresh) => {
           if (Array.isArray(fresh.governance_alerts))
-            for (const i of surfacedIdx) if (fresh.governance_alerts[i]) fresh.governance_alerts[i].surfaced = true;
+            for (const i of surfacedIdx) {
+              if (fresh.governance_alerts[i]) {
+                fresh.governance_alerts[i].surfaced = true;
+                if (correctedKinds.includes(fresh.governance_alerts[i].kind))
+                  fresh.governance_alerts[i].auto_corrected = true;
+              }
+            }
         });
       } catch (e) {
         process.stderr.write(`[governance-reactor] mark-surfaced failed: ${e.message}\n`); // still inject

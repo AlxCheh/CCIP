@@ -33,7 +33,7 @@ const SECURITY_RE =
  *  so the caller can durably record the attempt. `bypassed` = waived violation messages;
  *  `remaining` = violation messages that still stand. */
 function evaluateGate(state, payload, opts = {}) {
-  const { enforce = false, maxAgents = 3, overrideDisabled = false,
+  const { enforce = false, maxAgents = 5, overrideDisabled = false,
     inflightTtlMs = parseInt(process.env.CCIP_INFLIGHT_TTL_MS || '600000', 10) } = opts;
   if (!payload || payload.tool_name !== 'Agent') return { decision: 'allow' };
   const input = payload.tool_input || {};
@@ -117,7 +117,7 @@ if (require.main === module) {
     || path.join(ROOT, '.claude/runtime/governance-audit.jsonl');
   const ENFORCE = process.env.CCIP_GATE_ENFORCE === '1';
   const OVERRIDE_DISABLED = process.env.CCIP_OVERRIDE_DISABLED === '1';
-  const MAX = parseInt(process.env.CCIP_MAX_AGENTS || '3', 10);
+  const MAX = parseInt(process.env.CCIP_MAX_AGENTS || '5', 10);
   const MAX_BYTES = 5 * 1024 * 1024;
 
   const readState = () => {

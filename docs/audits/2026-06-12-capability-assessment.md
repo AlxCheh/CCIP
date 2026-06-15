@@ -56,7 +56,7 @@
 
 | Возможность | Готовность | Подтверждающий механизм | Ограничение / риск |
 |---|---|---|---|
-| Сложные orchestration | **70%** [ЧАСТ.] | `execute-dag.js` (preflight, async-spawn, retries, write-lock); budget+security enforced | Спавн в live-сессии — LLM-driven; лимит 3; routing-конвенции не enforced |
+| Сложные orchestration | **75%** [ЧАСТ.] | `execute-dag.js` (preflight, async-spawn, retries, write-lock); budget+security enforced; per-step state isolation (ADR-026) | Спавн в live-сессии — LLM-driven; лимит 5 (ADR-026); routing-конвенции не enforced |
 | Долгоживущие workflow | **60%** [ЧАСТ.] | session-state + dag-journal.jsonl (ADR-023): cross-session resume done-шагов по dag_hash | Журнал возобновляет DAG между сессиями; reasoning/output всё ещё session-bound |
 | Многоступенчатые pipeline | **75%** [ПОДТВ. для DAG] | DAG depends_on, atomic advance, handoff sanitize | Один процесс-оркестратор |
 | Автоматическая маршрутизация | **35%** [НЕДОК.] | Intent→Agent таблица; budget/security gate | «intents→agent», «2→co-agent», «≥3→planner» не машинные (CLAUDE.md §18) |
@@ -77,7 +77,7 @@
 
 **Backend.** [ПОДТВ. как процесс-каркас] workflow/state-machine/pipeline для оркестрации сборки (DAG); retry/очереди в DAG-исполнителе. [ОТСУТ. как продуктовый примитив] orchestration-engine/scheduler/saga/event-sourcing самого продукта — это код CCIP (ADR-001/005), не функции governance-слоя.
 
-**AI Infrastructure.** [ПОДТВ.] многоагентные сценарии (≤3, budget-enforced), planner/decomposition (`ccip-routing-planner`, DAG), chain execution (depends_on), fallback при degraded. [ЧАСТ./НЕДОК.] recursive planning, confidence-based execution, capability routing, adaptive orchestration — конвенции/эвристики, не enforced.
+**AI Infrastructure.** [ПОДТВ.] многоагентные сценарии (≤5, budget-enforced, per-step isolated — ADR-026), planner/decomposition (`ccip-routing-planner`, DAG), chain execution (depends_on), fallback при degraded. [ЧАСТ./НЕДОК.] recursive planning, confidence-based execution, capability routing, adaptive orchestration — конвенции/эвристики, не enforced.
 
 **Runtime.** [ПОДТВ.] восстановление (.bak), fallback, telemetry (session-scoped), session continuity, state synchronization между процессами (новое, доказано). [ОТСУТ.] distributed state, само-перенастройка политик.
 
@@ -98,12 +98,12 @@
 | Audit ↔ Runtime | Высокое | да | да | n/a | низкая | **[ПОДТВ.]** |
 | Documentation ↔ Runtime | Высокое | да (ADR-immut, anchor) | частично | n/a | низкая | **[ПОДТВ.]** |
 | Hooks ↔ Telemetry | Средне-высокое | частично | да | n/a | средняя | **[ПОДТВ. с дырой]** main-agent слеп |
-| Agents ↔ State | Средне-высокое | да (contract enforced, FPR=0) | да | да | средняя | **[ПОДТВ.]** |
+| Agents ↔ State | Средне-высокое | да (contract enforced, FPR=0, inline+DAG) | да | да | средняя | **[ПОДТВ.]** ADR-024: DAG-parity |
 | Planner ↔ Agents | Среднее | частично (DAG preflight) | да | да | средняя | **[ЧАСТ.]** spawn live = LLM |
 | Runtime ↔ Hooks | Среднее | fail-open by design | да (наблюдаемо) | n/a | средняя | **[ПОДТВ. условно]** хук harness-зависим |
 | Fallback ↔ Specialist | Среднее | advisory (observed) | да | да | средняя | **[ЧАСТ.]** не block |
 | Runtime ↔ Routing | Низко-среднее | только budget/security | частично | n/a | средняя | **[ЧАСТ.]** |
-| Feedback ↔ Routing | Низкое | нет | да (flush) | n/a | высокая | **[НЕДОК.]** реакция LLM |
+| Feedback ↔ Routing | Низко-среднее | частично: DAG auto-switch machine-enforced (ADR-025) | да (flush+alerts) | n/a | средняя | **[ЧАСТ.]** DAG: machine; inline: LLM-реакция |
 | Feedback ↔ Planner | Низкое | нет | да | n/a | высокая | **[НЕДОК.]** |
 | Routing ↔ Planner | Низкое | нет (CLAUDE.md §18) | n/a | n/a | высокая | **[НЕДОК.]** конвенция |
 
@@ -134,9 +134,9 @@
 
 | Направление | Готовность | Преимущество (подтв.) | Недостаёт | Сложность |
 |---|---|---|---|---|
-| Self-Governed Runtime | **70%** | enforced-инварианты, detect→react, manifest | signal→enforced, формальная модель | средняя |
+| Self-Governed Runtime | **75%** | enforced-инварианты, detect→react, manifest, AUTO_CORRECTIONS repair-слой (ADR-027) [ПОДТВ.] | shell-авто-коррекция, формальная модель | средняя |
 | Continuous Architecture Governance | **75%** | 22-чек audit, ADR-immut, anchor-integrity, RGS | авто-ремедиация дрейфа | низкая-средняя |
-| Autonomous Engineering System | **50%** | DAG+preflight+retry+fallback, contract-enforced handoff | enforced routing, recursive planning, >3 агентов | высокая |
+| Autonomous Engineering System | **55%** | DAG+preflight+retry+fallback, contract-enforced handoff, per-step isolation (ADR-026) | enforced routing, recursive planning, >5 агентов | высокая |
 | Knowledge Platform | **40%** | doc-truth аудит, ADR-граф, KB-связь | семантический слой, авто-онтология | средняя |
 | Full AI Platform | **40%** | зрелый governance-каркас | token-attribution, масштаб, throughput | высокая |
 | Enterprise Orchestrator | **35%** | DAG-исполнитель, state-контракт | multi-process/tenant, persistence | высокая |
@@ -148,17 +148,17 @@
 
 - **Fully Ready (строй смело):** целостность состояния · self-audit & semantic-integrity-as-code · ADR-governance · детерминированная регрессия · видимая recovery · наблюдаемый fail-open · security co-agent enforcement · budget enforcement · contract-enforced handoff (FPR=0).
 - **Mostly Ready:** DAG multi-step pipeline · fallback при degraded · session continuity · telemetry (session-scoped) · detect→react.
-- **Partially Ready:** автономные многоагентные прогоны (≤3) · resume долгих прогонов · token-efficiency self-learning (узкий) · tool-I/O token estimate (heuristic, ADR-020).
+- **Partially Ready:** автономные многоагентные прогоны (≤5, ADR-026) · resume долгих прогонов · token-efficiency self-learning (узкий) · tool-I/O token estimate (heuristic, ADR-020).
 - **Experimental:** adaptive/confidence-based execution · recursive planning · auto-doc generation.
 - **Partially Ready (доп.):** авто-ремедиация дрейфа — детерминированный path-canonical `--fix`, advisory (ADR-021).
-- **Not Ready:** distributed state/консенсус · формальная верификация · масштаб >3 агентов как гарантия · multi-tenant governance · main-agent reasoning-token attribution (только tool-I/O оценивается, ADR-020) · enforced intelligent routing.
+- **Not Ready:** distributed state/консенсус · формальная верификация · масштаб >5 агентов как гарантия · multi-tenant governance · main-agent reasoning-token attribution (только tool-I/O оценивается, ADR-020) · enforced intelligent routing.
 
 ---
 
 ## VIII. Архитектурный потенциал — прямые ответы
 
 1. **Смело:** многошаговая TDD-разработка с per-commit audit-гейтами; крупные refactor'ы под dead-ref/anchor; ADR-управляемые решения; параллельная обработка состояния; security-gated изменения; автономные DAG-прогоны малой глубины.
-2. **Без высокого риска:** всё в пределах *один оркестратор, ≤3 агента, один репозиторий, состояние в одном файле*.
+2. **Без высокого риска:** всё в пределах *один оркестратор, ≤5 агентов (ADR-026), один репозиторий, состояние в одном файле*.
 3. **Доступные классы (для governance-слоя):** machine-enforced invariant runtime · observable-fail-safe · semantic-integrity-as-code · audit-as-gate.
 4. **Оправданные практики:** TDD с serial-guard · commit-per-finding · live execution-based ре-сертификация · design-question-first на governance-развилках · reading-discipline.
 5. **Устранённые ограничения:** lost-update (HA-2/E-2) · тихий fail-open · cross-session telemetry leak (T-1) · ADR-дрейф (S-1) · FPR-шум контракта · недетерминизм тестов (M-1).
@@ -190,7 +190,7 @@
 2. Параллельные хук-мутации состояния без потерь (доказано)
 3. Автономные DAG-прогоны с preflight+retry+fallback
 4. Security-изменения с обязательным co-agent (non-waivable)
-5. Budget-ограниченная оркестрация (≤3, без runaway)
+5. Budget-ограниченная оркестрация (≤5, ADR-026, без runaway)
 6. Reading-discipline экономия токенов
 7. ADR-управляемые решения с immutability + anchor-integrity
 8. Self-audit doc↔runtime (22 чека) в pre-commit/CI
@@ -211,7 +211,7 @@
 
 ## XI. Риски при дальнейшем масштабировании
 
-- **(a)** >3 агентов или второй оркестратор-процесс → routing-конвенции (CLAUDE.md §18) не удержат без enforcement-счётчиков.
+- **(a)** >5 агентов или второй оркестратор-процесс → routing-конвенции (CLAUDE.md §18) не удержат без enforcement-счётчиков.
 - **(b)** Рост числа хук-writer'ов → контенция лока → чаще fail-open (наблюдаемо, но реально).
 - **(c)** token-blindness главного агента искажает оценку стоимости при росте автономности — снижена для tool-I/O (эвристическая оценка, ADR-020), сохраняется для reasoning-токенов.
 - **(d)** Отсутствие persistence ограничивает длину workflow.
@@ -223,16 +223,16 @@
 
 ### Максимальный ROI (минимум изменений, большой эффект)
 1. **Авто-ремедиация семантического дрейфа** — поверх 22-чек audit добавить авто-fix детерминированных классов. ✅ Частично (ADR-021): детерминированный `--fix` для path-canonical prefix-дрейфа (advisory). anchor/dead-ref оказались не детерминированно-восстановимыми — вне класса.
-2. **Перевод 1-2 зрелых signal→enforced по FPR-методике** (как INV-STATE-CONTRACT), после накопления данных.
+2. **Перевод 1-2 зрелых signal→enforced по FPR-методике** ✅ Реализовано (ADR-024): INV-STATE-CONTRACT-DAG (execute-dag alert-push, FPR=0 via contract-exempt) + INV-TOOL-TELEMETRY (structural PostToolUse guarantee + blackout detection). RGS 0.46→0.96.
 3. **Persisted DAG-журнал между сессиями** — превращает долгоживущие workflow (45%) в реально длинные без нового runtime. ✅ Реализовано (ADR-023): dag-journal.jsonl, cross-session resume, TTL 7 дней. «Долгоживущие workflow» 45%→60%.
 
 ### Архитектурные усиления
 4. **Снять fail-open-остаток лока** для high-assurance-режима (опц. fail-closed под флагом). ✅ Реализовано (ADR-022): `CCIP_STATE_LOCK_FAILCLOSED=1` + `opts.failClosed`; дефолт fail-open неизменён.
 5. **Token-attribution через доступный канал** (даже грубый, per-tool) — закрывает слепое пятно ADR-016. ✅ Реализовано (ADR-020): эвристическая per-tool оценка `est_tokens` поверх `events.jsonl`, частичное закрытие [ЧАСТ.] (tool-I/O; reasoning остаётся слеп).
-6. **Машинный счётчик failures/agent → авто-switch на backup** — переводит ключевую routing-конвенцию (CLAUDE.md §18) в [ПОДТВ.].
+6. **Машинный счётчик failures/agent → авто-switch на backup** ✅ Реализовано (ADR-025): `agent_failure_counts` + `selectEffectiveAgent` (DAG auto-switch) + `detectAgentFailures` alert (inline). CLAUDE.md §18 строка переведена из «LLM-оркестратор» в «DAG: machine / Inline: LLM-реакция на alert». **Волна 2 — ЗАКРЫТА.**
 
 ### Новые классы возможностей
-7. **Безопасное расширение лимита агентов** с per-agent изоляцией состояния (теперь RMW атомарен между процессами).
+7. **Безопасное расширение лимита агентов** с per-agent изоляцией состояния (теперь RMW атомарен между процессами). ✅ Реализовано (ADR-026): composite key `agent:step` в DAG agent_outputs + CCIP_MAX_AGENTS 3→5.
 8. **Формальная модель ключевых инвариантов (TLA+/Alloy)** для 3-4 block-инвариантов — путь к Mission-Critical.
 9. **Self-governed runtime-профиль** — связать detect→react с авто-корректирующими директивами для воспроизводимых классов аномалий.
 
@@ -263,3 +263,7 @@
 | 2026-06-14 | Волна 1 / §XII.1 реализован частично: детерминированный path-canonical `--fix` (advisory). Промоут §VII, §XII.1. | ADR-021, path-canonical тесты (оба режима), canonical 374/374, audit 22/22 |
 | 2026-06-14 | Волна 1 / §XII.4 реализован: fail-closed opt-in для state-lock. Промоут §I. | ADR-022, state-lock тесты (оба режима), canonical 374/374, audit 22/22 |
 | 2026-06-14 | Волна 1 / §XII.3 реализован: persisted dag-journal.jsonl + cross-session resume. «Долгоживущие workflow» 45%→60%. | ADR-023, dag-journal 10/10 + smoke 2/2, canonical 389/389, audit 22/22 |
+| 2026-06-14 | Волна 2 / §XII.2 реализован: INV-STATE-CONTRACT-DAG + INV-TOOL-TELEMETRY → enforced. RGS 0.46→0.96. Промоут §VII, §XII.2. | ADR-024, canonical 393/393, audit 22/22 |
+| 2026-06-14 | Волна 2 / §XII.6 реализован: per-agent failure counter + DAG auto-switch. CLAUDE.md §18 DAG-строка machine-enforced. **Волна 2 — ЗАКРЫТА.** | ADR-025, canonical 402/402, audit 22/22 |
+| 2026-06-15 | Волна 3 / §XII.7 реализован: composite key agent:step + CCIP_MAX_AGENTS 3→5 + per-step state isolation. Промоут §II(Сложные orchestr.), §III(AI Infra.), §VI(Autonomous Engineering). | ADR-026, canonical 406/406, audit 22/22 |
+| 2026-06-15 | Волна 3 / §XII.9 реализован: AUTO_CORRECTIONS словарь + CCIP_SELF_GOVERN=1 + auto_corrected:true маркировка. Self-Governed Runtime 70%→75% [ПОДТВ.]. **Волна 3 — ЗАКРЫТА.** | ADR-027, canonical 410/410, audit 22/22 |
