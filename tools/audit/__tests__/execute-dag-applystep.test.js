@@ -100,3 +100,32 @@ test('#6 selectEffectiveAgent: no backup defined → returns step unchanged even
   const eff = selectEffectiveAgent(state, step, { threshold: 2 });
   assert.strictEqual(eff.agent, 'general-purpose', 'no backup for general-purpose → keep original');
 });
+
+// ── #7 Wave3: per-agent composite key ────────────────────────────────────────
+
+test('#7 applyStepResult: agent_outputs keyed by composite agent:step, not bare agent', () => {
+  const state = freshState();
+  const out = '## State Update\n```json\n{"summary":"s","artifacts":[],"handoff_notes":"h1"}\n```';
+  applyStepResult(state, { step: 1, agent: 'ccip-architect' }, out);
+  assert.ok('ccip-architect:1' in state.agent_outputs, 'composite key ccip-architect:1 must exist');
+  assert.ok(!('ccip-architect' in state.agent_outputs), 'bare agent key must NOT exist in DAG mode');
+});
+
+test('#7 applyStepResult: same agent at two steps → distinct keys, no collision', () => {
+  const state = {
+    session_id: '2026-01-01-1200',
+    dag: [
+      { step: 1, agent: 'ccip-architect', status: 'running' },
+      { step: 3, agent: 'ccip-architect', status: 'running' },
+    ],
+    current_step: 0, agent_outputs: {}, observations: [],
+  };
+  const out1 = '## State Update\n```json\n{"summary":"first","artifacts":[],"handoff_notes":"h1"}\n```';
+  const out2 = '## State Update\n```json\n{"summary":"second","artifacts":[],"handoff_notes":"h2"}\n```';
+  applyStepResult(state, { step: 1, agent: 'ccip-architect' }, out1);
+  applyStepResult(state, { step: 3, agent: 'ccip-architect' }, out2);
+  assert.strictEqual(state.agent_outputs['ccip-architect:1'].summary, 'first',
+    'step-1 output must be preserved under composite key');
+  assert.strictEqual(state.agent_outputs['ccip-architect:3'].summary, 'second',
+    'step-3 output must be independent of step-1 under its own composite key');
+});
