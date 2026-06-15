@@ -46,7 +46,7 @@
 | Семантическая целостность doc↔manifest↔settings **[ПОДТВ.]** | tool-I/O token-estimate есть (ADR-020) **[ЧАСТ.]**; reasoning-токены главного агента слепы, ADR-016 **[ПОДТВ. как слепое пятно]** |
 | Аудируемый override, наблюдаемый fail-open **[ПОДТВ.]** | Routing-правила — LLM-конвенция (CLAUDE.md §18) **[НЕДОК.]** |
 
-Почему не выше: High-Reliability требует устранения SPOF и доказанной деградации под отказами узлов — узел один, fail-open сознательно оставлен наблюдаемым. Mission-Critical требует формальной верификации/консенсуса — не начато. Оба честно зафиксированы как путь, не свойство.
+Почему не выше: High-Reliability требует устранения SPOF и доказанной деградации под отказами узлов — узел один, fail-open сознательно оставлен наблюдаемым. Mission-Critical требует формальной верификации/консенсуса — верификация block-инвариантов выполнена (ADR-028, TLC); distributed консенсус отсутствует. Оба честно зафиксированы как путь, не свойство.
 
 ---
 
@@ -146,7 +146,7 @@
 
 ## VII. Capability Heat Map
 
-- **Fully Ready (строй смело):** целостность состояния · self-audit & semantic-integrity-as-code · ADR-governance · детерминированная регрессия · видимая recovery · наблюдаемый fail-open · security co-agent enforcement · budget enforcement · contract-enforced handoff (FPR=0).
+- **Fully Ready (строй смело):** целостность состояния · self-audit & semantic-integrity-as-code · ADR-governance · детерминированная регрессия · видимая recovery · наблюдаемый fail-open · security co-agent enforcement · budget enforcement · contract-enforced handoff (FPR=0) · формальная верификация block-инвариантов (TLC, ADR-028).
 - **Mostly Ready:** DAG multi-step pipeline · fallback при degraded · session continuity · telemetry (session-scoped) · detect→react.
 - **Partially Ready:** автономные многоагентные прогоны (≤5, ADR-026) · resume долгих прогонов · token-efficiency self-learning (узкий) · tool-I/O token estimate (heuristic, ADR-020).
 - **Experimental:** adaptive/confidence-based execution · recursive planning · auto-doc generation.
@@ -233,7 +233,7 @@
 
 ### Новые классы возможностей
 7. **Безопасное расширение лимита агентов** с per-agent изоляцией состояния (теперь RMW атомарен между процессами). ✅ Реализовано (ADR-026): composite key `agent:step` в DAG agent_outputs + CCIP_MAX_AGENTS 3→5.
-8. **Формальная модель ключевых инвариантов (TLA+/Alloy)** для 3-4 block-инвариантов — путь к Mission-Critical.
+8. **Формальная модель ключевых инвариантов (TLA+/Alloy)** для 3-4 block-инвариантов — путь к Mission-Critical. ✅ Реализовано (ADR-028): 4 block-инварианта (Safety + Liveness), TLC CI-green, 3.88M states.
 9. **Self-governed runtime-профиль** — связать detect→react с авто-корректирующими директивами для воспроизводимых классов аномалий.
 
 ---
@@ -248,7 +248,7 @@
 - **Максимальная ценность в ближайшей перспективе:** авто-ремедиация дрейфа · ещё один честный signal→enforced · persisted DAG · token-attribution.
 
 **Разделение уверенности:**
-- **Подтверждено фактами:** вердикт §I, машинные инварианты, атомарность состояния, self-audit, recovery, observable-fail-safe.
+- **Подтверждено фактами:** вердикт §I, машинные инварианты, атомарность состояния, self-audit, recovery, observable-fail-safe, формальная верификация block-инвариантов (ADR-028, TLC CI-green).
 - **Вероятно (механизм есть, advisory):** DAG-оркестрация глубже, fallback-адаптация, resume долгих прогонов.
 - **Потенциально (направление, не свойство):** enforced intelligent routing, distributed state, autonomous engineering без надзора.
 
