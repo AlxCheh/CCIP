@@ -39,6 +39,7 @@
     "current_step": { "type": "integer", "minimum": 0 },
     "agent_outputs": {
       "type": "object",
+      "description": "Per-step agent outputs. DAG mode: keys are composite '${agent}:${step}' (ADR-026); inline mode: keys are bare agent names. additionalProperties allows both formats.",
       "additionalProperties": {
         "type": "object",
         "required": ["summary", "artifacts", "handoff_notes"],

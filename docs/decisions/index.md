@@ -50,6 +50,7 @@
 - [ADR-023-persisted-dag-journal.md](ADR-023-persisted-dag-journal.md) — append-only NDJSON dag-journal.jsonl: cross-session resume done-шагов по dag_hash + TTL 7 дней (#3)
 - [ADR-024-signal-to-enforced-promotion.md](ADR-024-signal-to-enforced-promotion.md) — Wave 2 #2: INV-STATE-CONTRACT-DAG (execute-dag alert-push) + INV-TOOL-TELEMETRY (structural guarantee + blackout detection) → enforced; RGS 0.46→0.96
 - [ADR-025-per-agent-failure-counter.md](ADR-025-per-agent-failure-counter.md) — Wave 2 #6: per-agent failure counter (agent_failure_counts) + DAG auto-switch (selectEffectiveAgent + AGENT_BACKUP_MAP) + detectAgentFailures alert
+- [ADR-026-per-agent-isolation.md](ADR-026-per-agent-isolation.md) — Wave 3 #7: composite key agent:step в DAG agent_outputs (per-step write isolation) + CCIP_MAX_AGENTS 3→5 (per-step isolation eliminates state collision risk)
 
 ---
 
