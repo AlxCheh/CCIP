@@ -169,3 +169,21 @@ jobs:
       - name: Postgres logs (on failure)
         if: failure()
         run: docker logs pg
+
+  formal:
+    name: TLA+ Formal Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Verify TLA+ invariants
+        run: |
+          cd tools/formal
+          java -jar tla2tools.jar -config MC.cfg CCIPInvariants.tla
