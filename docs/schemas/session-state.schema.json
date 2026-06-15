@@ -111,7 +111,8 @@
           "phase":     { "type": "string", "description": "where the gate threw: parse | evaluate (E-6)" },
           "message":   { "type": "string", "description": "error message captured at fail-open (E-6)" },
           "count":     { "type": "integer", "minimum": 0, "description": "failure count for agent_failure_degraded alerts (ADR-025)" },
-          "backup":    { "type": "string", "description": "recommended backup agent for agent_failure_degraded alerts (ADR-025)" }
+          "backup":    { "type": "string", "description": "recommended backup agent for agent_failure_degraded alerts (ADR-025)" },
+          "auto_corrected": { "type": "boolean", "description": "true when AUTO_CORRECTIONS fired for this alert in self-governed mode (ADR-027, CCIP_SELF_GOVERN=1)" }
         },
         "additionalProperties": false
       }

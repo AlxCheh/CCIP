@@ -113,6 +113,7 @@ if (require.main === module) {
   const ROOT = path.resolve(__dirname, '../..');
   const STATE_FILE = process.env.CCIP_STATE_FILE
     || path.join(ROOT, '.claude/runtime/session-state.json');
+  const SELF_GOVERN = process.env.CCIP_SELF_GOVERN === '1'; // ADR-027
 
   let raw = '';
   process.stdin.setEncoding('utf-8');
@@ -121,7 +122,7 @@ if (require.main === module) {
     try {
       JSON.parse(raw); // validate the UserPromptSubmit payload
       const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-      const { msg, surfacedIdx } = buildReaction(state);
+      const { msg, surfacedIdx, correctedKinds } = buildReaction(state, { selfGoverned: SELF_GOVERN });
       if (!msg) { process.exit(0); }
 
       // Mark surfaced alerts so they are not re-injected every turn (anti-spam).
@@ -129,7 +130,13 @@ if (require.main === module) {
       try {
         updateStateLocked(STATE_FILE, (fresh) => {
           if (Array.isArray(fresh.governance_alerts))
-            for (const i of surfacedIdx) if (fresh.governance_alerts[i]) fresh.governance_alerts[i].surfaced = true;
+            for (const i of surfacedIdx) {
+              if (fresh.governance_alerts[i]) {
+                fresh.governance_alerts[i].surfaced = true;
+                if (correctedKinds.includes(fresh.governance_alerts[i].kind))
+                  fresh.governance_alerts[i].auto_corrected = true;
+              }
+            }
         });
       } catch (e) {
         process.stderr.write(`[governance-reactor] mark-surfaced failed: ${e.message}\n`); // still inject
