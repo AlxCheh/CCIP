@@ -64,3 +64,6 @@ docs/errors/sessions/
 .claude/audit/rules/rules-delta.json
 
 .superpowers/
+
+# TLA+ toolchain — auto-generated TLC scratch file
+tools/formal/MC.tla
