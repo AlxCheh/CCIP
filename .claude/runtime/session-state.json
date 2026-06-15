@@ -1,1 +1,89 @@
-{"session_id":"","task":"","intents":[],"risk":"LOW","confidence":"HIGH","routing":"direct","dag":[],"current_step":0,"agent_outputs":{},"status":"init","started_at":"","observations":[]}
+{
+  "session_id": "2026-05-22-1200",
+  "task": "t",
+  "intents": [],
+  "risk": "LOW",
+  "confidence": "HIGH",
+  "routing": "direct",
+  "dag": [],
+  "current_step": 0,
+  "agent_outputs": {
+    "ccip-session-optimizer": {
+      "summary": "ccip-session-optimizer completed (no structured block)",
+      "artifacts": [],
+      "handoff_notes": "—"
+    },
+    "token-efficiency-auditor": {
+      "summary": "T-02 audit Wave 2 (signal→enforced + per-agent failure counter): inline-session, 2239 tokens, 19.6% overhead (IDC). T-07 spike detected (46 tool-calls = first-run ingest bloat). R-018 proposed (rules caching) + R-016/R-017 escalation monitoring. 1 finding accepted (ingest optimization), 2 rejected (noise/not-triggered).",
+      "artifacts": [
+        ".claude/audit/reports/2026-05-22-1200.md",
+        ".claude/audit/evidence/2026-05-22-1200.json",
+        ".claude/audit/metrics/rules-delta.json"
+      ],
+      "handoff_notes": "Rules delta.json contains R-018 proposal (Phase B); apply manually via `/token-rules-apply` after 3+ sessions of testing. active.yaml and quarantine.yaml updated with escalation watch flags (R-016 2/3 threshold, R-017 precision 1.0 eligible for promote at hit_count ≥3). Next audit trigger: T-03 (context ≥70%) or T-09 (periodic checkpoint). Inline-session scope note: token attribution limited; next DAG-heavy session expected to yield richer findings."
+    },
+    "ccip-architect": {
+      "summary": "Task 9.1 complete: AUTO_CORRECTIONS map + selfGoverned flag added to buildReaction() in governance-reactor.js. 3 new TDD tests added and passing. Full suite 409/0, audit 22/22. Committed to feat/wave3-agent-isolation-self-govern.",
+      "artifacts": [
+        ".claude/runtime/governance-reactor.js",
+        "tools/audit/__tests__/governance-reactor.test.js"
+      ],
+      "handoff_notes": "Task 9.2 should extend session-state.schema.json with selfGoverned field and wire opts.selfGoverned into the main entrypoint (the if(require.main===module) block). AUTO_CORRECTIONS is now exported so the main block can pass selfGoverned=true when the session state indicates self-governance mode."
+    }
+  },
+  "status": "executing",
+  "started_at": "",
+  "observations": [],
+  "inflight_spawns": [
+    {
+      "agent": "",
+      "at": "2026-06-15T03:51:54.736Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T04:04:07.836Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T04:10:00.544Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T18:13:21.511Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T18:17:42.663Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T18:23:30.067Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T18:29:34.988Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T18:42:36.477Z"
+    },
+    {
+      "agent": "",
+      "at": "2026-06-15T18:44:17.376Z"
+    }
+  ],
+  "contract_debt": 1,
+  "contract_debt_agents": [
+    "ccip-session-optimizer"
+  ],
+  "governance_alerts": [
+    {
+      "kind": "silent_state_degradation",
+      "ssc": 0,
+      "threshold": 0.8,
+      "at": "2026-06-11T04:17:36.746Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    }
+  ]
+}

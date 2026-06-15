@@ -65,5 +65,9 @@ docs/errors/sessions/
 
 .superpowers/
 
-# TLA+ toolchain — auto-generated TLC scratch file
+# TLA+ toolchain — auto-generated TLC scratch file and state snapshots
 tools/formal/MC.tla
+tools/formal/states/
+
+# Token-efficiency-auditor metrics delta (per-session noise, not cross-machine learning)
+.claude/audit/metrics/rules-delta.json

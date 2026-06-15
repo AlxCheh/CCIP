@@ -701,3 +701,66 @@ file: `docs/errors/sessions/2026-06-09T04-27-52-795Z-122597f.md`
 
 - L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-08-defect-remediation.md]
 - L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-08-defect-remediation.md]
+
+### 2026-06-09T18-27-01-928Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-09T18-27-01-928Z-8cfe4a1.md`
+
+- L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:docs/plans/2026-05-24-dispute-sla-module.md]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/plans/2026-05-24-dispute-sla-module.md]
+- L2_EVIDENCE_ROW_5: anchor_not_found [source=state-memory:.claude/runtime/session-state.json]
+
+### 2026-06-11T04-14-51-744Z — VIOLATIONS detected (6)
+
+file: `docs/errors/sessions/2026-06-11T04-14-51-744Z-54dc0ff.md`
+
+- L2_EVIDENCE_ROW_1: quote_too_long(84B) [source=repo:docs/audits/2026-06-11-recertification-runtime-governance.md]
+- L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:docs/audits/2026-06-11-recertification-runtime-governance.md]
+- L2_EVIDENCE_ROW_4: quote_too_long(99B) [source=repo:docs/audits/2026-06-11-recertification-runtime-governance.md]
+- L2_EVIDENCE_ROW_5: quote_too_long(87B) [source=repo:docs/audits/2026-06-11-recertification-runtime-governance.md]
+- L2_EVIDENCE_ROW_6: quote_not_in_anchor_window [source=repo:docs/audits/2026-06-11-recertification-runtime-governance.md]
+- L2_EVIDENCE_ROW_9: quote_too_long(124B) [source=repo:docs/audits/2026-06-10-certification-runtime-governance.md]
+
+### 2026-06-12T06-09-10-761Z — VIOLATIONS detected (7)
+
+file: `docs/errors/sessions/2026-06-12T06-09-10-761Z-472c55c.md`
+
+- L2_EVIDENCE_ROW_1: quote_too_long(81B) [source=repo:docs/audits/2026-06-11-recertification-advanced-enterprise.md]
+- L2_EVIDENCE_ROW_3: quote_too_long(85B) [source=repo:docs/audits/2026-06-11-recertification-advanced-enterprise.md]
+- L2_EVIDENCE_ROW_7: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-11-advanced-enterprise-cross-process-lock.md]
+- L2_EVIDENCE_ROW_8: quote_too_long(83B) [source=repo:docs/audits/2026-06-11-recertification-advanced-enterprise.md]
+- L2_EVIDENCE_ROW_9: quote_too_long(87B) [source=repo:docs/plans/2026-06-11-advanced-enterprise-cross-process-lock.md]
+- L2_EVIDENCE_ROW_10: quote_too_long(97B) [source=repo:docs/audits/2026-06-12-capability-assessment.md]
+- L2_EVIDENCE_ROW_11: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-11-advanced-enterprise-cross-process-lock.md]
+
+### 2026-06-14T16-25-23-091Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-14T16-25-23-091Z-1212d4e.md`
+
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:.claude/runtime/execute-dag.js]
+- L2_EVIDENCE_ROW_9: anchor_not_found [source=repo:docs/plans/2026-06-12-capability-xii-roadmap.md]
+
+### 2026-06-15T04-40-19-458Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-15T04-40-19-458Z-1eb4c70.md`
+
+- L2_EVIDENCE_ROW_5: quote_too_long(86c) [source=repo:docs/plans/2026-06-12-capability-xii-roadmap.md]
+- L2_EVIDENCE_ROW_8: anchor_not_found [source=repo:docs/audits/2026-06-12-capability-assessment.md]
+
+### 2026-06-15T04-43-07-226Z — VIOLATIONS detected (5)
+
+file: `docs/errors/sessions/2026-06-15T04-43-07-226Z-1eb4c70.md`
+
+- L2_EVIDENCE_ROW_2: quote_too_short(3B) [source=repo:docs/errors/session-opt-index.md]
+- L2_EVIDENCE_ROW_4: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-12-capability-xii-roadmap.md]
+- L2_EVIDENCE_ROW_6: quote_too_short(7B) [source=repo:docs/plans/2026-06-12-capability-xii-roadmap.md]
+- L2_EVIDENCE_ROW_7: source_file_missing [source=repo:docs/decisions/ADR-026.md]
+- L2_EVIDENCE_ROW_9: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-12-capability-xii-roadmap.md]
+
+### 2026-06-15T18-55-17-577Z — VIOLATIONS detected (3)
+
+file: `docs/errors/sessions/2026-06-15T18-55-17-577Z-2811b1d.md`
+
+- L2_EVIDENCE_ROW_1: anchor_not_found [source=repo:docs/audits/2026-06-12-capability-assessment.md]
+- L2_EVIDENCE_ROW_2: anchor_not_found [source=repo:docs/audits/2026-06-12-capability-assessment.md]
+- L2_EVIDENCE_ROW_6: quote_not_in_anchor_window [source=repo:docs/decisions/ADR-028-formal-invariant-model.md]
