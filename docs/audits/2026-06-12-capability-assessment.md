@@ -134,7 +134,7 @@
 
 | Направление | Готовность | Преимущество (подтв.) | Недостаёт | Сложность |
 |---|---|---|---|---|
-| Self-Governed Runtime | **70%** | enforced-инварианты, detect→react, manifest | signal→enforced, формальная модель | средняя |
+| Self-Governed Runtime | **75%** | enforced-инварианты, detect→react, manifest, AUTO_CORRECTIONS repair-слой (ADR-027) [ПОДТВ.] | shell-авто-коррекция, формальная модель | средняя |
 | Continuous Architecture Governance | **75%** | 22-чек audit, ADR-immut, anchor-integrity, RGS | авто-ремедиация дрейфа | низкая-средняя |
 | Autonomous Engineering System | **55%** | DAG+preflight+retry+fallback, contract-enforced handoff, per-step isolation (ADR-026) | enforced routing, recursive planning, >5 агентов | высокая |
 | Knowledge Platform | **40%** | doc-truth аудит, ADR-граф, KB-связь | семантический слой, авто-онтология | средняя |
@@ -266,3 +266,4 @@
 | 2026-06-14 | Волна 2 / §XII.2 реализован: INV-STATE-CONTRACT-DAG + INV-TOOL-TELEMETRY → enforced. RGS 0.46→0.96. Промоут §VII, §XII.2. | ADR-024, canonical 393/393, audit 22/22 |
 | 2026-06-14 | Волна 2 / §XII.6 реализован: per-agent failure counter + DAG auto-switch. CLAUDE.md §18 DAG-строка machine-enforced. **Волна 2 — ЗАКРЫТА.** | ADR-025, canonical 402/402, audit 22/22 |
 | 2026-06-15 | Волна 3 / §XII.7 реализован: composite key agent:step + CCIP_MAX_AGENTS 3→5 + per-step state isolation. Промоут §II(Сложные orchestr.), §III(AI Infra.), §VI(Autonomous Engineering). | ADR-026, canonical 406/406, audit 22/22 |
+| 2026-06-15 | Волна 3 / §XII.9 реализован: AUTO_CORRECTIONS словарь + CCIP_SELF_GOVERN=1 + auto_corrected:true маркировка. Self-Governed Runtime 70%→75% [ПОДТВ.]. **Волна 3 — ЗАКРЫТА.** | ADR-027, canonical 410/410, audit 22/22 |
