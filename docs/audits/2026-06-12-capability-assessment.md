@@ -134,7 +134,7 @@
 
 | Направление | Готовность | Преимущество (подтв.) | Недостаёт | Сложность |
 |---|---|---|---|---|
-| Self-Governed Runtime | **75%** | enforced-инварианты, detect→react, manifest, AUTO_CORRECTIONS repair-слой (ADR-027) [ПОДТВ.] | shell-авто-коррекция, формальная модель | средняя |
+| Self-Governed Runtime | **65%** [ЧАСТ.] | enforced-инварианты, detect→react, manifest, AUTO_CORRECTIONS inject-тип (ADR-027) | shell-авто-коррекция (не реализован V1), формальная модель | средняя |
 | Continuous Architecture Governance | **75%** | 22-чек audit, ADR-immut, anchor-integrity, RGS | авто-ремедиация дрейфа | низкая-средняя |
 | Autonomous Engineering System | **55%** | DAG+preflight+retry+fallback, contract-enforced handoff, per-step isolation (ADR-026) | enforced routing, recursive planning, >5 агентов | высокая |
 | Knowledge Platform | **40%** | doc-truth аудит, ADR-граф, KB-связь | семантический слой, авто-онтология | средняя |
@@ -234,7 +234,7 @@
 ### Новые классы возможностей
 7. **Безопасное расширение лимита агентов** с per-agent изоляцией состояния (теперь RMW атомарен между процессами). ✅ Реализовано (ADR-026): composite key `agent:step` в DAG agent_outputs + CCIP_MAX_AGENTS 3→5.
 8. **Формальная модель ключевых инвариантов (TLA+/Alloy)** для 3-4 block-инвариантов — путь к Mission-Critical. ✅ Реализовано (ADR-028): 4 block-инварианта (Safety + Liveness), TLC CI-green, 3.88M states.
-9. **Self-governed runtime-профиль** — связать detect→react с авто-корректирующими директивами для воспроизводимых классов аномалий.
+9. **Self-governed runtime-профиль** — связать detect→react с авто-корректирующими директивами для воспроизводимых классов аномалий. ✅ Реализовано частично (ADR-027): AUTO_CORRECTIONS словарь + CCIP_SELF_GOVERN=1 + auto_corrected:true маркировка. **[ЧАСТ.]** — реализован только inject-тип (расширенный advisory prompt); shell-тип коррекций не реализован в V1.
 
 ---
 
