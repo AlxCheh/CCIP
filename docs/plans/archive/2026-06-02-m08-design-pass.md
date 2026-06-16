@@ -3,7 +3,7 @@
 **Date:** 2026-06-02
 **Status:** Approved
 **Module:** M-08 Web App — Design Pass
-**Scope:** DashboardPage · ObjectDetailPage · PeriodPage (GP Form — ADR отдельно: `docs/superpowers/specs/2026-06-01-gp-form-design.md`)
+**Scope:** DashboardPage · ObjectDetailPage · PeriodPage (GP Form — ADR отдельно: `docs/plans/archive/2026-06-01-gp-form-design.md`)
 
 ---
 
@@ -225,7 +225,7 @@ background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
   period-page-approved.html   — PeriodPage
 ```
 
-GP Form: `docs/superpowers/specs/2026-06-01-gp-form-design.md`
+GP Form: `docs/plans/archive/2026-06-01-gp-form-design.md`
 
 ---
 
