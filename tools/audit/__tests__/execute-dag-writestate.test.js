@@ -38,3 +38,13 @@ test('writeState cleans up its PID tmp file after rename', () => {
     restore();
   }
 });
+
+// --- HA-1: updateState thenable guard ---
+const { updateState } = require(path.join(root, '.claude/runtime/execute-dag.js'));
+
+test('HA-1: updateState rejects when fn() returns a thenable (async fn guard)', async () => {
+  await assert.rejects(
+    () => updateState(() => Promise.resolve()),
+    /fn\(\) must be synchronous/
+  );
+});

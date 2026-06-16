@@ -161,3 +161,18 @@
 **Принято потому что:** analytics accuracy — не correctness. Ротация файла при >5MB ограничивает накопление.
 
 **Trigger пересмотра:** при использовании метрик для принятия автоматических решений (напр. gate на основе tool_calls).
+
+---
+
+## Re-evaluation — 2026-06-16
+
+Плановый пересмотр по итогам `docs/plans/2026-06-09-known-risks-closure.md`.
+
+| Риск | Статус | Закрыт в |
+|------|--------|----------|
+| UU-3 | **CLOSED** | `1d98846` — filter events.jsonl by session_id |
+| HA-7 | **CLOSED** | `validateIntents()` в `flush-state.js` + 2 теста |
+| HA-1 | **CLOSED** | thenable-guard в `execute-dag.js#updateState` + 1 тест |
+| SPOF-3 | **CLOSED** | `validateTriggerState()` в обоих audit-hook + 2 теста |
+
+Все четыре риска устранены. Файл остаётся историческим артефактом; новые риски фиксировать в следующем аудите.

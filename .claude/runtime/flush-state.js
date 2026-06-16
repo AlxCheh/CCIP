@@ -7,6 +7,16 @@ const path = require('path');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
+
+// HA-7: guard against routing decisions made with unrecognised intent labels
+const VALID_INTENTS = new Set(['ARCH','SCHEMA','BACKEND','AUX','FRONTEND','DEVOPS','QA','MOBILE','SECURITY','DOC']);
+function validateIntents(state) {
+  const intents = Array.isArray(state.intents) ? state.intents : [];
+  const invalid = intents.filter(i => !VALID_INTENTS.has(i));
+  if (invalid.length === 0) return;
+  process.stderr.write(`[flush-state] unknown intents: ${invalid.join(', ')} — expected one of ${[...VALID_INTENTS].join('|')}\n`);
+}
+
 const STATE_FILE = process.env.CCIP_STATE_FILE
   || path.join(ROOT, '.claude/runtime/session-state.json');
 const FEEDBACK_FILE = process.env.CCIP_FEEDBACK_FILE
@@ -22,6 +32,7 @@ function run() {
   } catch {
     return;
   }
+  validateIntents(state);
 
   const observations = state.observations || [];
   if (observations.length === 0) return;
@@ -196,4 +207,4 @@ function readStateSafe(statePath) {
   return defaultState();
 }
 
-module.exports = { writeStateSafe, readStateSafe };
+module.exports = { writeStateSafe, readStateSafe, validateIntents };

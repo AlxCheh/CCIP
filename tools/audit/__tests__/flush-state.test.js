@@ -103,3 +103,32 @@ test('R-1: clean readStateSafe (valid main) adds no recovery alert', () => {
     assert.deepEqual(r.governance_alerts, [], 'no recovery alert on a clean read');
   } finally { cleanup(); }
 });
+
+// --- HA-7: validateIntents ---
+const { validateIntents } = require('../../../.claude/runtime/flush-state');
+
+test('HA-7: validateIntents writes to stderr when intents contain unknown values', () => {
+  const state = { intents: ['BACKEND', 'INVALID_INTENT'] };
+  const chunks = [];
+  const orig = process.stderr.write.bind(process.stderr);
+  process.stderr.write = (c) => { chunks.push(String(c)); return true; };
+  try {
+    validateIntents(state);
+  } finally {
+    process.stderr.write = orig;
+  }
+  assert.ok(chunks.some(c => c.includes('INVALID_INTENT')), 'stderr must mention the invalid intent');
+});
+
+test('HA-7: validateIntents is silent when all intents are valid', () => {
+  const state = { intents: ['BACKEND', 'ARCH', 'QA'] };
+  const chunks = [];
+  const orig = process.stderr.write.bind(process.stderr);
+  process.stderr.write = (c) => { chunks.push(String(c)); return true; };
+  try {
+    validateIntents(state);
+  } finally {
+    process.stderr.write = orig;
+  }
+  assert.equal(chunks.length, 0, 'stderr must be silent for valid intents');
+});

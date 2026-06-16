@@ -96,7 +96,12 @@ const { updateStateLocked } = require('./state-io');
 let writeLock = Promise.resolve();
 function updateState(fn) {
   writeLock = writeLock.then(() => {
-    updateStateLocked(STATE_FILE, (s) => { fn(s); });
+    updateStateLocked(STATE_FILE, (s) => {
+      const result = fn(s);
+      if (result != null && typeof result.then === 'function') {
+        throw new Error('[writeLock] fn() must be synchronous — received a thenable');
+      }
+    });
   });
   return writeLock;
 }
@@ -539,5 +544,5 @@ async function main() {
 if (require.main === module) {
   main().catch(e => { console.error('[execute-dag] fatal:', e.message); process.exit(1); });
 } else {
-  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState, applyStepResult, selectEffectiveAgent };
+  module.exports = { sanitizeHandoff, buildClaudeArgs, buildPrompt, writeState, updateState, applyStepResult, selectEffectiveAgent };
 }

@@ -20,6 +20,8 @@ const AUDIT_DOC_ALLOWLIST = [
   'docs/plans/archive/2026-05-12-zero-drift-compliance-section10.md', // archive plan — references audit files by old names
   'docs/plans/archive/2026-05-26-remediation-master-sequencing.md', // archive plan — historical references
   'docs/errors/sessions/2026-05-17T20-14-50-549Z-72282cc.md', // session log — historical snapshot
+  'docs/errors/sessions/2026-06-12T06-09-10-761Z-472c55c.md', // session log — historical snapshot; refs pre-archive plan paths
+  'docs/errors/errors_log.md', // error log — accumulates historical references to pre-archive paths
 ];
 
 function stripCodeBlocks(md) {
