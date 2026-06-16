@@ -88,9 +88,12 @@ function prune(ttlMs = DEFAULT_TTL_MS, journalFile = DEFAULT_JOURNAL) {
     return new Date(e.ts).getTime() >= cutoff;
   });
   if (kept.length === entries.length) return;
+  const tmp = journalFile + '.tmp.' + process.pid;
   try {
-    fs.writeFileSync(journalFile, kept.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf-8');
+    fs.writeFileSync(tmp, kept.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf-8');
+    fs.renameSync(tmp, journalFile);
   } catch (e) {
+    try { fs.unlinkSync(tmp); } catch {}
     process.stderr.write(`[dag-journal] prune failed: ${e.message}\n`);
   }
 }

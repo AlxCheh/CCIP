@@ -6,10 +6,11 @@ const os = require('node:os');
 const path = require('node:path');
 const { gitRoot } = require('../_lib/git-root');
 
-// Build forbidden literals by concatenation so this .js source never carries a
-// contiguous forbidden substring (the repo-wide path-canonical scan reads .js too).
+// PFX_ABS is derived from gitRoot() so the fix rule matches on any machine (F-06).
+// No concatenation trick needed — gitRoot() is evaluated at runtime, not a static string.
 const PFX_CCIP = 'CCIP' + '/';
-const PFX_ABS = 'W:' + '/Claude/' + 'CCIP/';
+const rootFwd = gitRoot().replace(/\\/g, '/');
+const PFX_ABS = rootFwd + '/';
 
 test('path-canonical fails on bad fixture', () => {
   const root = gitRoot();
@@ -49,7 +50,7 @@ test('path-canonical --fix rewrites deterministic prefixes to relative paths (#1
     assert.match(after, /see docs\/architecture\/x\.md for details/);
     // absolute repo prefix stripped → relative (must NOT mangle into a half-path)
     assert.match(after, /and apps\/web\/y\.ts too/);
-    assert.doesNotMatch(after, /Claude/, 'absolute repo prefix fully removed');
+    assert.ok(!after.includes(rootFwd), 'absolute repo prefix fully removed');
     // non-deterministic absolute path is preserved AND still reported
     assert.match(after, /home dir \/home\/bob\/secret/);
     assert.equal(res.status, 1, 'unfixable violation remains → non-zero exit');

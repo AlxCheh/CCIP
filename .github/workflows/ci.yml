@@ -185,5 +185,8 @@ jobs:
 
       - name: Verify TLA+ invariants
         run: |
+          set -o pipefail
           cd tools/formal
-          java -jar tla2tools.jar -config MC.cfg CCIPInvariants.tla
+          java -jar tla2tools.jar -config MC.cfg CCIPInvariants.tla 2>&1 | tee /tmp/tlc-out.txt
+          grep -q "No error has been found" /tmp/tlc-out.txt || { echo "TLC: success marker absent"; exit 1; }
+          grep "states generated" /tmp/tlc-out.txt

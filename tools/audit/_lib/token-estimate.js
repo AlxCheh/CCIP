@@ -10,6 +10,9 @@
  * (меньше байт на токен) → меньший делитель → больше токенов. Калибровка через env
  * CCIP_TOK_K_ASCII / CCIP_TOK_K_CYR или per-call opts.
  */
+// K_ASCII=4: Claude tokenizes ~4 bytes/token for ASCII (public heuristic; not API-validated).
+// K_CYR=3: Cyrillic UTF-8 encodes 2 bytes/char but spans 1+ tokens → smaller divisor.
+// These defaults are empirical; calibrate via env vars if real tokenizer counts are available.
 const K_ASCII = Number(process.env.CCIP_TOK_K_ASCII || 4);
 const K_CYR   = Number(process.env.CCIP_TOK_K_CYR   || 3);
 

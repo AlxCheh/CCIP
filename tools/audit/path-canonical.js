@@ -6,6 +6,13 @@ const { gitRoot } = require('./_lib/git-root');
 const { walk } = require('./_lib/walk');
 const { fail, ok } = require('./_lib/report');
 
+// Compute root early so FORBIDDEN and FIX_RULES are machine-independent (F-06).
+const root = process.env.CCIP_REPO_ROOT
+  ? path.resolve(process.env.CCIP_REPO_ROOT)
+  : gitRoot();
+const rootFwd = root.replace(/\\/g, '/');
+function escRx(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
 // Запрещённые префиксы. Литералы экранируются в regex.
 const FORBIDDEN = [
   { pat: /W:\/Claude\/CCIP\//g, why: 'absolute Windows path' },
@@ -15,11 +22,11 @@ const FORBIDDEN = [
 ];
 
 // Детерминированные авто-фиксы (#1, ADR-021): только обратимые prefix→relative rewrite.
-// Порядок важен: абсолютный repo-префикс (W:/Claude/<repo>/) снимается ПЕРВЫМ, иначе
+// Порядок важен: абсолютный repo-префикс снимается ПЕРВЫМ, иначе
 // вложенный CCIP/ внутри него исказил бы путь. Абсолютные C:\Users\ / /home/ НЕ чинятся
 // (нет детерминированной цели) — остаются detect-only.
 const FIX_RULES = [
-  { pat: /W:\/Claude\/CCIP\//g, to: '' },
+  { pat: new RegExp(escRx(rootFwd) + '/?', 'g'), to: '' },
   { pat: /\bCCIP\/(docs|apps|packages|\.claude|infra|tools)\//g, to: '$1/' },
 ];
 
@@ -40,7 +47,6 @@ const targets = targetIdx >= 0 ? [args[targetIdx + 1]] : null;
 const useAllowlist = targets === null; // allowlist applies only in full-repo scan mode
 const doFix = args.includes('--fix'); // advisory auto-remediation (#1); default = detect-only
 
-const root = gitRoot();
 const files = targets || walk(root, ['**/*.md', '**/*.json', '**/*.js', '**/*.ts']);
 
 let violations = 0;
