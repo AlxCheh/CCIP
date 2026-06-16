@@ -247,12 +247,15 @@ function parseEvidenceRows(evidenceSection) {
  */
 function anchorWindow(content, anchor) {
   if (!anchor) return null;
-  const wanted = anchor.replace(/^#+\s*/, '').trim();
+  // NFC-normalize both sides so Unicode variants of §, →, — etc. compare equal.
+  const nfc = s => s.normalize('NFC');
+  const wanted = nfc(anchor.replace(/^#+\s*/, '').trim());
+  const anchorNFC = nfc(anchor.trim());
   const lines = content.split(/\r?\n/);
   let headingIdx = -1, level = 0;
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
-    if (m && (m[2].trim() === wanted || lines[i].trim() === anchor.trim())) {
+    if (m && (nfc(m[2].trim()) === wanted || nfc(lines[i].trim()) === anchorNFC)) {
       headingIdx = i; level = m[1].length; break;
     }
   }

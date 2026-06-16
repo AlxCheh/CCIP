@@ -108,7 +108,7 @@ Bootstrap прошлой сессии может быть seed для конте
 | Ситуация | anchor | quote | Failure |
 |---|---|---|---|
 | Цитата внутри именованной секции | heading той секции verbatim (Grep → копируй целиком; НИКОГДА из памяти) | строка из тела, не сам heading | `quote_not_in_anchor_window` |
-| Цитата в YAML frontmatter (`---…---`) ИЛИ до первого heading любого уровня | первые 30 ASCII цитаты (self-anchor) | те же 30 символов | `anchor_not_found` |
+| Цитата в YAML frontmatter (`---…---`) ИЛИ до первого heading любого уровня | self-anchor: в поле `anchor` пишешь ДОСЛОВНО ТУ ЖЕ строку что и в `exact_substring` (≤30 символов) — верификатор найдёт её как literal и вернёт ±200B окно | те же символы что в anchor | `anchor_not_found` |
 | Heading записан с сокращением | verbatim из Grep, ни слова не менять | — | falls to Режим B → out of window |
 | Хочу процитировать содержимое секции | heading секции | короткая строка из тела (не heading) | `quote_too_long` (heading 90–120B) |
 | Pipe `\|` в тексте цитаты | — | эскейп `\|` | markdown parse break |
@@ -125,16 +125,18 @@ Bootstrap прошлой сессии может быть seed для конте
 1. `grep -n "фрагмент_цитаты" file` → запомни **номер строки N**.
 2. `grep -n "^#" file` → из результатов выбери heading с наибольшим номером строки **< N** (строго выше цитаты). Нет такого heading (цитата в YAML frontmatter или перед первым `#`) → self-anchor (Режим B). **Heading с номером строки > N — ЗАПРЕЩЁН как anchor.**
 3. Heading: убедись что anchor verbatim (`grep -c "полный heading" file` == 1) — anchor ДОЛЖЕН быть скопирован из grep-вывода, не записан по памяти.
+3b. **Heading с не-ASCII символами** (`§`, `→`, `—`, `«»`, emoji): верификатор сравнивает символы. Если шаг 3 вернул 0 матчей (Unicode-расхождение) — **переключись на Режим B**: в поле `anchor` пиши уникальный ASCII-литерал из строки N-1 (строка непосредственно перед цитатой), ≤30 символов. Проверь `grep -c "literal" file` == 1. Режим B даёт окно ±200 символов от anchor — достаточно для следующей строки.
 4. Длина: `≤80 символов И ≤160 байт`, один непрерывный фрагмент → при превышении обрежь до уникального токена внутри окна (не эллипсис).
 
 **Никогда не эмитить Evidence row без шагов 1–4.**
 
 ## Запреты (hook-enforced)
 
-- **Эмить РОВНО ОДИН финальный экземпляр каждого артефакта.** Запрещены: черновик+финал, >1 `### Evidence Log` таблицы, проза самокоррекции в ответе («удаляю rows», «пересчёт», «пересмотренный Артефакт N», «Bootstrap пересчитан»). Реши внутренне — эмить один раз. Хук парсит ПЕРВУЮ Evidence Log таблицу: черновик впереди = L3 drift + раздутый вывод (прямой токен-оверхед для родителя).
+- **Эмить РОВНО ОДИН финальный экземпляр каждого артефакта.** Запрещены: черновик+финал, >1 `## Evidence Log` таблицы, проза самокоррекции в ответе («удаляю rows», «пересчёт», «пересмотренный Артефакт N», «Bootstrap пересчитан», «Revised»). Реши внутренне — эмить один раз. Хук парсит ПЕРВУЮ `## Evidence Log` секцию и **никогда не читает дальше**: вторая таблица с пометкой «Revised» не исправляет нарушения первой — они фиксируются безвозвратно. Self-correction = только внутренняя (до emit'а), никогда текстовая.
 - Процитировать строку, которой нет в UTF-8 контенте source_file, или цитата >80B. Byte formula и anchor rules — **→ §0.6**.
 - Evidence row с пустым / `n/a` / нерезолвящимся `anchor` ЗАПРЕЩЁН (C-2). Режимы окна, правила выбора anchor и типичные ошибки — **→ §0.6**.
 - Anchor, записанный из памяти без grep-подтверждения — ЗАПРЕЩЁН. Heading НИЖЕ цитаты (строка heading > строка цитаты) как anchor — ЗАПРЕЩЁН. Оба случая дают `anchor_not_found` или `quote_not_in_anchor_window`. **→ §0.6 Pre-emit checklist шаги 2–3.**
+- **Heading с не-ASCII символами** (`§`, `→`, `—`, `«»`, emoji) как anchor без предварительного `grep -c "полный heading" file` == 1 — ЗАПРЕЩЁН. Если тест вернул 0 — Unicode-расхождение; переключись на Режим B с ближайшим уникальным ASCII-литералом (≤30 символов, проверь grep-count == 1). **→ §0.6 шаг 3b.**
 - `source_file` без префикса `repo:` / `git:<SHA>:` / `state-memory:` — INVALID, row отклоняется.
 - Bootstrap прошлой сессии, user prompt, chat history как источник Evidence — запрещены.
 - Заявить bootstrap-факт без соответствующей строки в Артефакте 3.
@@ -145,6 +147,7 @@ Bootstrap прошлой сессии может быть seed для конте
 - `T-X блокирует T-Y` / `next: T-X → T-Y` без дословной формулировки порядка в plan/state-memory.
 - Line-number якорь (`file.md:2619-2640`) как контракт. Только heading-anchored ссылки; line — hint, не контракт.
 - Bare commit SHA без subject line. Формат: `"feat(...): subject"` `[sha:abc1234]`.
+- Git commit subject (`feat(...)`, `fix(...)`, `chore(...)` и т.п.) как `exact_substring` с `repo:` source — ЗАПРЕЩЁН. Commit message не является content файла в working tree; substring-check вернёт `quote_not_in_anchor_window`. Для Evidence факта «задача закоммичена»: цитируй строку из PLAN-файла (checklist, `git commit -m "..."` template) — она IS в файле и верифицируется. Либо drop claim.
 - Pipe `|` в `exact_substring` без escape (ломает markdown table). Эскейп `\|`; хук un-escape'ит `\|` → `|` перед substring-check, поэтому в source-файле должен быть голый `|`, не `\|`.
 - Только `## Next-Session Bootstrap` (h2) и `## Evidence Log` (h2). Bare `## Bootstrap` / legacy-формы не распознаются. Canonical эмит — всегда без префикса; `### Артефакт N —` форма только hook-side defense-in-depth, агент её не использует. **Причина h2 для Evidence Log:** `extractSection` Bootstrap (h2) завершается на следующем `##`; если Evidence Log h3 — он попадает в Bootstrap и wordcount нарушает ≤300 (FIREWALL_WORDCOUNT).
 - Строка `Branch: <name>` в bootstrap, если присутствует, верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → FIREWALL_BRANCH_DRIFT. Либо emit'ить точное имя текущей ветки, либо опускать строку — стейл-claim'ы из предыдущей сессии запрещены.
