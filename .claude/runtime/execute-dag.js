@@ -502,6 +502,10 @@ async function main() {
         await updateState(s => {
           s.dag.find(d => d.step === step.step).status = 'failed';
           s.status = 'blocked';
+          // [F-04] ADR-025 — count spawn/timeout/non-zero-exit failures, not only missing-state-update
+          s.agent_failure_counts = s.agent_failure_counts || {};
+          s.agent_failure_counts[effectiveStep.agent] =
+            (s.agent_failure_counts[effectiveStep.agent] || 0) + 1;
         });
         return false;
       }

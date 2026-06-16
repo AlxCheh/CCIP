@@ -111,6 +111,25 @@ test('#7 applyStepResult: agent_outputs keyed by composite agent:step, not bare 
   assert.ok(!('ccip-architect' in state.agent_outputs), 'bare agent key must NOT exist in DAG mode');
 });
 
+// ── #F-04: spawn/timeout/non-zero-exit failures increment agent_failure_counts ──
+
+test('#F-04 selectEffectiveAgent respects counts incremented outside applyStepResult', () => {
+  // Simulate state after a spawn/timeout failure was recorded by the run-loop
+  // (the code path in execute-dag.js `if (!result.ok)` block, NOT missing-state-update).
+  const state = { agent_failure_counts: {} };
+  // Manually replicate what the !result.ok block does:
+  state.agent_failure_counts['ccip-backend-core'] =
+    (state.agent_failure_counts['ccip-backend-core'] || 0) + 1;
+  state.agent_failure_counts['ccip-backend-core'] =
+    (state.agent_failure_counts['ccip-backend-core'] || 0) + 1;
+  // After 2 failures (threshold=2) selectEffectiveAgent must switch to backup
+  const step = { step: 1, agent: 'ccip-backend-core' };
+  const eff = selectEffectiveAgent(state, step, { threshold: 2 });
+  assert.notStrictEqual(eff.agent, 'ccip-backend-core',
+    'after 2 spawn/timeout failures run-loop must route to backup');
+  assert.strictEqual(eff.fallback_for, 'ccip-backend-core');
+});
+
 test('#7 applyStepResult: same agent at two steps → distinct keys, no collision', () => {
   const state = {
     session_id: '2026-01-01-1200',
