@@ -10,7 +10,7 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-06-02 |
+| **Last Updated** | 2026-06-16 |
 | **Current Phase** | 8 — Web App |
 | **Phase Status** | ✓ complete |
 | **Active P1 Task** | — (M-08 завершён; следующий трек выбирает пользователь: M-10 / M-08 design-pass) |
@@ -40,10 +40,12 @@
 | M-07 | P2 | Sync API I | 7 | ○ pending | M-08 |
 | M-08 | P1 | Web App: Dashboard + Period Cycle + GP Form | 8 | ✓ done | Pilot |
 | M-10 | P1 | Security / Immutability / REVOKE | 10 | ○ pending | Pilot |
-| M-11 | P1 | Testing / SLA Recovery scan | 11 | ○ pending | Pilot |
+| M-11 | P1 | Testing / SLA Recovery scan | 11 | ◑ W1 done | Pilot |
 | M-12 | P1 | Prod Infra / K8s Worker | 12 | ○ pending | Pilot |
 | M-13 | P1 | Pilot | 13 | ○ pending | — |
 | M-M | P4 | Mobile App | post | ○ pending | M-13 |
+
+² M-11 W1 (2026-06-16): интеграционная инфраструктура `apps/api/test/integration/` — Jest 30 + runInBand, pg-контейнер T-22, truncate/factories/arbitraries, helpers, 5 сценарных блоков (A/B/C активны, D/E/F/G — skip-плейсхолдеры), ADR-002/ADR-007 инварианты, CI workflow. `pnpm test:integration`. W2-W4 — pending.
 
 ¹ M-05b: реализация завершена + **E2E acceptance ПРОЙДЕН 2026-05-29** (Scenario A + Redis-recovery, Task 10). 279 unit + audit 18/18. Bring-up + schema/code drift (B-01,B-03..B-06) закрыты в W8. **B-02** (migration-history drift) закрыт 2026-05-31 через `migrate resolve --applied`. Остатки — cron PR #9 + orphan-строки истории (косметика, не блокируют).
 
