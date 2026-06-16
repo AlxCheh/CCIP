@@ -217,6 +217,14 @@ export class PeriodService {
     }
   }
 
+  // ─── assertPeriodEditable ─────────────────────────────────────────────────────
+
+  private assertPeriodEditable(period: { status: string }): void {
+    if (period.status === 'closed' || period.status === 'force_closed') {
+      throw new ForbiddenException('PERIOD_ALREADY_CLOSED');
+    }
+  }
+
   // ─── getGpFormData ────────────────────────────────────────────────────────────
 
   async getGpFormData(token: string) {
@@ -333,6 +341,8 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
+      this.assertPeriodEditable(period); // ADR-007: closed/force_closed → 403
+
       if (!SC_FACT_ALLOWED_STATUSES.includes(period.status)) {
         throw new ConflictException('PERIOD_WRONG_STATUS');
       }
@@ -419,6 +429,8 @@ export class PeriodService {
         where: { id: periodId },
         include: { object: { select: { organizationId: true } } },
       });
+
+      this.assertPeriodEditable(period); // ADR-007: closed/force_closed → 403
 
       if (period.status !== 'verification') {
         throw new ConflictException('PERIOD_WRONG_STATUS');
