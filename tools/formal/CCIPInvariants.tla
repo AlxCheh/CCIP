@@ -45,16 +45,24 @@ SpawnAgent(a) ==
   /\ UNCHANGED <<completed, has_state_update, dispatched_security,
                  coagent_present, lock_holder, proc_state>>
 
-FinishAgent(a) ==
+\* Compliant agent finish: agent produced ## State Update block.
+FinishAgentWithUpdate(a) ==
   /\ a \in active
   /\ active' = active \ {a}
   /\ completed' = completed \cup {a}
   /\ agent_count' = agent_count - 1
-  /\ has_state_update' =
-       IF a \notin EXEMPT
-       THEN [has_state_update EXCEPT ![a] = TRUE]
-       ELSE has_state_update
+  /\ has_state_update' = [has_state_update EXCEPT ![a] = TRUE]
   /\ UNCHANGED <<dispatched_security, coagent_present, lock_holder, proc_state>>
+
+\* Non-compliant finish: agent completed WITHOUT a ## State Update block.
+\* Only EXEMPT agents may skip the block; non-exempt agents are blocked by contract enforcement.
+FinishAgentWithoutUpdate(a) ==
+  /\ a \in active
+  /\ a \in EXEMPT
+  /\ active' = active \ {a}
+  /\ completed' = completed \cup {a}
+  /\ agent_count' = agent_count - 1
+  /\ UNCHANGED <<has_state_update, dispatched_security, coagent_present, lock_holder, proc_state>>
 
 DispatchSecurityAction(a) ==
   /\ a \in SECURITY_ACTS
@@ -94,7 +102,8 @@ ReleaseLock(p) ==
 
 Next ==
   \/ \E a \in AGENTS : SpawnAgent(a)
-  \/ \E a \in AGENTS : FinishAgent(a)
+  \/ \E a \in AGENTS : FinishAgentWithUpdate(a)
+  \/ \E a \in AGENTS : FinishAgentWithoutUpdate(a)
   \/ \E a \in SECURITY_ACTS : DispatchSecurityAction(a)
   \/ \E p \in PROCESSES : TryLock(p)
   \/ \E p \in PROCESSES : AcquireLock(p)
