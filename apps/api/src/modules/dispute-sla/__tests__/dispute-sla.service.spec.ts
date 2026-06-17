@@ -32,16 +32,16 @@ describe('DisputeSlaService', () => {
       jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
       mockPrisma.slaEvent.createMany.mockResolvedValue({ count: 2 });
       mockPrisma.slaEvent.findMany.mockResolvedValue([
-        { id: 1, eventType: 'notify_director', scheduledAt: new Date(now.getTime() + 3 * 86400_000) },
-        { id: 2, eventType: 'force_close',     scheduledAt: new Date(now.getTime() + 5 * 86400_000) },
+        { id: 1, eventType: 'notify_director_day3', scheduledAt: new Date(now.getTime() + 3 * 86400_000) },
+        { id: 2, eventType: 'force_close_day5',     scheduledAt: new Date(now.getTime() + 5 * 86400_000) },
       ]);
 
       await service.scheduleEvents({ discrepancyId: 10, periodId: 5, boqItemId: 7, createdAt: now });
 
       expect(mockPrisma.slaEvent.createMany).toHaveBeenCalledWith({
         data: [
-          expect.objectContaining({ scenario: 'A', eventType: 'notify_director', periodId: 5, boqItemId: 7 }),
-          expect.objectContaining({ scenario: 'A', eventType: 'force_close',     periodId: 5, boqItemId: 7 }),
+          expect.objectContaining({ scenario: 'A', eventType: 'notify_director_day3', periodId: 5, boqItemId: 7 }),
+          expect.objectContaining({ scenario: 'A', eventType: 'force_close_day5',     periodId: 5, boqItemId: 7 }),
         ],
       });
       expect(mockQueue.add).toHaveBeenCalledTimes(2);

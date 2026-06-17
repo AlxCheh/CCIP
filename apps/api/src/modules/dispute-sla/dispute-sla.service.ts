@@ -29,8 +29,8 @@ export class DisputeSlaService {
 
     await this.prisma.slaEvent.createMany({
       data: [
-        { periodId, boqItemId, scenario: 'A', eventType: 'notify_director', scheduledAt: day3 },
-        { periodId, boqItemId, scenario: 'A', eventType: 'force_close',     scheduledAt: day5 },
+        { periodId, boqItemId, scenario: 'A', eventType: 'notify_director_day3', scheduledAt: day3 },
+        { periodId, boqItemId, scenario: 'A', eventType: 'force_close_day5',     scheduledAt: day5 },
       ],
     });
 
