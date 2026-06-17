@@ -101,6 +101,7 @@ describe('PeriodService', () => {
       },
       periodFact: {
         findFirst: jest.fn().mockResolvedValue(makePeriodFact()),
+        findMany: jest.fn().mockResolvedValue([]),
         upsert: jest.fn().mockResolvedValue(makePeriodFact()),
         update: jest.fn().mockResolvedValue(makePeriodFact()),
       },

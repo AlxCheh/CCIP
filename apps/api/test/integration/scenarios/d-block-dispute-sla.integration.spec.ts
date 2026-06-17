@@ -66,7 +66,7 @@ describe('D-block — DisputeSLA / systemic flag', () => {
     const period = await svc.openPeriod(obj.id, sc.id);
 
     await svc.submitGp(
-      period.gpSubmissionToken,
+      period.gpSubmissionToken!,
       'GP Test Organization',
       [{ boqItemId: boq.items[0].id, gpVolume: 100 }],
     );
@@ -89,7 +89,7 @@ describe('D-block — DisputeSLA / systemic flag', () => {
     const period = await svc.openPeriod(obj.id, sc.id);
 
     await svc.submitGp(
-      period.gpSubmissionToken,
+      period.gpSubmissionToken!,
       'GP Test Organization',
       [{ boqItemId: boq.items[0].id, gpVolume: 100 }],
     );

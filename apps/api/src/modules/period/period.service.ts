@@ -453,15 +453,14 @@ export class PeriodService {
         data: { status: 'closed', closedAt: new Date(), closedBy: actorId },
       });
 
-      // Create ReadinessSnapshot — placeholder until Analytics Engine (M-05c) is implemented
-      // TODO M-05c: заменить 0 на реальный calcReadiness() из AnalyticsService
       // TODO M-05c: добавить INSERT work_pace в эту же транзакцию (ADR-011)
       // TODO M-05b: после транзакции enqueue BullMQ job для REFRESH MATERIALIZED VIEW CONCURRENTLY
+      const readinessPct = await this.calcReadiness(periodId, tx);
       await tx.readinessSnapshot.create({
         data: {
           periodId,
           objectId: period.objectId,
-          objectReadinessPct: 0,
+          objectReadinessPct: readinessPct,
         },
       });
 
@@ -475,6 +474,37 @@ export class PeriodService {
 
       return updated;
     });
+  }
+
+  // ─── calcReadiness ───────────────────────────────────────────────────────────
+
+  private async calcReadiness(
+    periodId: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<number> {
+    const facts = await tx.periodFact.findMany({
+      where: { periodId },
+      select: {
+        acceptedVolume: true,
+        scVolume: true,
+        boqItem: { select: { planVolume: true, weightCoef: true } },
+      },
+    });
+
+    let readiness = 0;
+    for (const f of facts) {
+      const planVol = Number(f.boqItem.planVolume);
+      if (planVol <= 0 || f.boqItem.weightCoef == null) continue;
+      const factVol =
+        f.acceptedVolume != null
+          ? Number(f.acceptedVolume)
+          : f.scVolume != null
+          ? Number(f.scVolume)
+          : 0;
+      const pct = Math.min((factVol / planVol) * 100, 100);
+      readiness += pct * Number(f.boqItem.weightCoef);
+    }
+    return Math.round(readiness * 100) / 100;
   }
 
   // ─── findByObject ────────────────────────────────────────────────────────────
@@ -538,9 +568,9 @@ export class PeriodService {
     for (const p of periods) {
       await this.prisma.$transaction(async (tx) => {
         await tx.readinessSnapshot.deleteMany({ where: { periodId: p.id } });
-        // TODO M-05c: replace 0 with calcReadiness() from AnalyticsService
+        const readinessPct = await this.calcReadiness(p.id, tx);
         await tx.readinessSnapshot.create({
-          data: { periodId: p.id, objectId, objectReadinessPct: 0 },
+          data: { periodId: p.id, objectId, objectReadinessPct: readinessPct },
         });
       });
     }
