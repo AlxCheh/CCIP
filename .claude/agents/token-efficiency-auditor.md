@@ -55,7 +55,23 @@ invariants:
 ## Алгоритм (L1→L7)
 
 1. **L1 Trigger** — определи триггер; на T-02 сперва прочитай `agent_outputs[ccip-session-optimizer].artifacts`.
-2. **L2 Ingest** — прочитай `session-state.json`; разбей `agent_outputs[*]` + `observations[]` на сегменты. Если `agent_outputs`/`observations` пусты, это **inline-сессия** (вся работа сделана главным агентом без субагентов): token-attribution невозможен (токены главного агента хукам недоступны). Не выдавай немой skip — сообщи явно `inline-session` и приведи качественные сигналы из `trigger-state.json` (повторные reads, tool-call bursts, сработавшие триггеры). См. ADR-016 «Уточнение (2026-05-25)».
+2. **L2 Ingest (recorder-first)** — ПЕРВЫМ шагом вызови детерминированный recorder:
+   ```bash
+   node tools/audit/token-session-record.js --dry-run
+   ```
+   Используй `status` для ветвления. НЕ читай `session-state.json` для efficiency-анализа до этого шага. Поля `contract_debt`/`governance_alerts` — домен governance-reactor, не твой: игнорируй их.
+   - **`inline-session`** → token-attribution невозможен. Работаешь только с `signals` из вывода recorder'а: `dup_reads`, `tool_calls`, `triggers_fired`. Пропусти L3/L4. В L5 оцени только правила, применимые к inline-сигналам (см. ниже). На T-02 recorder записывает `sessions_inline` в rolling-30, строку в history не пишет.
+   - **`trivial-skip`** → пустая сессия. Emit короткий отчёт: `scope: trivial-skip, no findings`. Done.
+   - **`recorded`** → нормальный путь: читай `session-state.json`, сегменты из `agent_outputs`/`observations`, продолжай L3→L7.
+   - **`idempotent-skip`** → сессия уже записана. Emit `scope: idempotent-skip`. Done.
+
+   **Inline rule evaluation (для `inline-session`):**
+   | Сигнал | Правило | Порог | Severity |
+   |--------|---------|-------|----------|
+   | `dup_reads[*].count ≥ 3` | R-011 (redundant_io) | ≥3 чтений одного файла | medium |
+   | `dup_reads[*].count == 2` | R-011 | опциональное упоминание | low |
+   | `triggers_fired` содержит T-07 | R-011 proxy | tool_calls > 15/turn | medium |
+   Findings без `token_cost` невалидны — для inline используй качественную оценку: `"N reads × ~200 tokens/read = ~Xk tokens, recoverable"`. Обнови `hit_count` в active.yaml через `token-rules-count.js`.
 3. **L3 Classify** — пометь каждый сегмент: useful_detail / verbose_padding / repeated_info / useless_clarification / suboptimal_cot / inefficient_prompt / context_bloat / redundant_io / over_explanation.
 4. **L4 Metrics** — посчитай `T_total` (Σ `observations[].context_tokens`), `T_useful`, `IDC`, `R_dup`, `E_resp`, `ΔT_session` vs `rolling-30.json`. Estimated-метрики помечай явно.
 5. **L5 Rule eval** — прогон `active.yaml` (+ shadow-прогон `quarantine.yaml`) по сегментам; собери findings с `token_cost` и `severity`.
