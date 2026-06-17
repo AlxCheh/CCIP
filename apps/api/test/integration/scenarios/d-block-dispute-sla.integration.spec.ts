@@ -84,7 +84,42 @@ describe('D-block — DisputeSLA / systemic flag', () => {
   });
 
   // @algorithm: D-02
-  it.skip('D-02: type 2 — SC raises dispute, discrepancy created with type 2', () => {});
+  it('D-02: type 2 — SC raises dispute, discrepancy created with type 2', async () => {
+    const { sc, obj, boq } = await bootstrap();
+    const period = await svc.openPeriod(obj.id, sc.id);
+
+    await svc.submitGp(
+      period.gpSubmissionToken,
+      'GP Test Organization',
+      [{ boqItemId: boq.items[0].id, gpVolume: 100 }],
+    );
+    await svc.upsertPeriodFact(period.id, boq.items[0].id, 80, sc.id);
+
+    await prisma.photo.create({
+      data: {
+        periodId: period.id,
+        boqItemId: boq.items[0].id,
+        filePath: '/uploads/test-evidence.jpg',
+        uploadedBy: sc.id,
+      },
+    });
+
+    const discrepancy = await disputeSvc.createDispute(
+      period.id,
+      boq.items[0].id,
+      sc.id,
+      { disputeReason: 'Work buried under debris, access blocked' },
+    );
+
+    expect(discrepancy.type).toBe(2);
+    expect(discrepancy.status).toBe('open');
+
+    const fact = await prisma.periodFact.findFirst({
+      where: { periodId: period.id, boqItemId: boq.items[0].id },
+      select: { discrepancyType: true },
+    });
+    expect(fact!.discrepancyType).toBe(2);
+  });
   // @algorithm: D-03
   it.skip('D-03: SLA A day 3 — director auto-notified (requires BullMQ time-mock)', () => {});
   // @algorithm: D-04
