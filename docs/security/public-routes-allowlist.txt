@@ -1,0 +1,14 @@
+# Public routes — exempt from JwtAuthGuard (ADR-009)
+# RULE: every @Public() usage in any controller MUST have an entry here.
+# CI checks: if @Public() is added without updating this file → build fails (grep diff).
+#
+# Format: METHOD /path  (path params as :param)
+# Separate section for GP-token routes (secured via GpTokenGuard, not @Public() but exempt from JWT).
+
+## @Public() decorated endpoints
+POST /auth/login
+POST /auth/refresh
+
+## GP-token secured endpoints (GpTokenGuard replaces JwtAuthGuard)
+GET  /periods/gp/:token
+POST /periods/gp/submit/:token
