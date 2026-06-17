@@ -485,4 +485,68 @@ export class PeriodService {
       orderBy: { periodNumber: 'desc' },
     });
   }
+
+  // ─── adminCorrectFact ────────────────────────────────────────────────────────
+
+  async adminCorrectFact(
+    factId: number,
+    scVolume: number,
+    accepted: number,
+    adminId: number,
+    reason: string,
+  ): Promise<void> {
+    const fact = await this.prisma.periodFact.findUniqueOrThrow({
+      where: { id: factId },
+      select: {
+        periodId: true,
+        period: { select: { objectId: true, periodNumber: true } },
+      },
+    });
+
+    // fn_admin_correct_fact is SECURITY DEFINER — the only legal UPDATE path (ADR-007 / P-25)
+    await this.prisma.$executeRaw`SELECT fn_admin_correct_fact(
+      ${factId}::integer,
+      ${scVolume}::numeric,
+      ${accepted}::numeric,
+      ${adminId}::integer,
+      ${reason}::text
+    )`;
+
+    // Fire-and-forget: cascade recalc does not block HTTP response
+    this.recalcSnapshotCascade(fact.periodId, fact.period.objectId, fact.period.periodNumber).catch(
+      (err) => console.error('[adminCorrectFact] recalcSnapshotCascade failed', err),
+    );
+  }
+
+  // ─── recalcSnapshotCascade ───────────────────────────────────────────────────
+
+  async recalcSnapshotCascade(
+    _fromPeriodId: number,
+    objectId: number,
+    fromPeriodNumber: number,
+  ): Promise<void> {
+    const periods = await this.prisma.period.findMany({
+      where: {
+        objectId,
+        periodNumber: { gte: fromPeriodNumber },
+        status: { in: ['closed', 'force_closed'] },
+      },
+      select: { id: true },
+      orderBy: { periodNumber: 'asc' },
+    });
+
+    for (const p of periods) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.readinessSnapshot.deleteMany({ where: { periodId: p.id } });
+        // TODO M-05c: replace 0 with calcReadiness() from AnalyticsService
+        await tx.readinessSnapshot.create({
+          data: { periodId: p.id, objectId, objectReadinessPct: 0 },
+        });
+      });
+    }
+
+    await this.prisma.$executeRawUnsafe(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status',
+    );
+  }
 }

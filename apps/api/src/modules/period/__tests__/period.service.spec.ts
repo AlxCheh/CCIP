@@ -615,14 +615,14 @@ describe('PeriodService', () => {
       ).rejects.toThrow('PERIOD_WRONG_STATUS');
     });
 
-    it('throws ConflictException with PERIOD_WRONG_STATUS if period is closed', async () => {
+    it('throws ForbiddenException with PERIOD_ALREADY_CLOSED if period is closed', async () => {
       (prisma.period.findUniqueOrThrow as jest.Mock).mockResolvedValue(
         makePeriod({ status: 'closed' }),
       );
 
       await expect(
         service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID),
-      ).rejects.toThrow('PERIOD_WRONG_STATUS');
+      ).rejects.toThrow('PERIOD_ALREADY_CLOSED');
     });
 
     it('sets discrepancyType=null and discrepancyStatus=confirmed when gpVolume equals scVolume', async () => {
@@ -836,6 +836,40 @@ describe('PeriodService', () => {
         }),
       );
       expect(result).toHaveLength(2);
+    });
+  });
+
+  // ─── adminCorrectFact ────────────────────────────────────────────────────────
+
+  describe('adminCorrectFact', () => {
+    it('calls fn_admin_correct_fact with correct args and fires recalc async', async () => {
+      const mockExecuteRaw = jest.fn().mockResolvedValue(undefined);
+      const mockFindUnique = jest.fn().mockResolvedValue({
+        periodId: 10,
+        period: { objectId: 3, periodNumber: 2 },
+      });
+
+      const prismaMock = {
+        periodFact: { findUniqueOrThrow: mockFindUnique },
+        $executeRaw: mockExecuteRaw,
+      } as unknown as PrismaService;
+
+      // Spy on recalcSnapshotCascade — it should be fired but not awaited
+      const svc = new PeriodService(prismaMock, {} as AuditLogService);
+      const recalcSpy = jest
+        .spyOn(svc as any, 'recalcSnapshotCascade')
+        .mockResolvedValue(undefined);
+
+      await svc.adminCorrectFact(42, 150, 140, 1, 'Ошибка ввода');
+
+      expect(mockFindUnique).toHaveBeenCalledWith({
+        where: { id: 42 },
+        select: { periodId: true, period: { select: { objectId: true, periodNumber: true } } },
+      });
+      expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+      // recalcSnapshotCascade called async — allow microtask queue to flush
+      await Promise.resolve();
+      expect(recalcSpy).toHaveBeenCalledWith(10, 3, 2);
     });
   });
 });
