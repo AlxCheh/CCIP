@@ -128,8 +128,55 @@ describe('D-block — DisputeSLA / systemic flag', () => {
   it.skip('D-05: SLA B day 3 — director escalation (requires BullMQ time-mock)', () => {});
   // @algorithm: D-06
   it.skip('D-06: SLA B day 14 — SC volume applied (requires BullMQ time-mock)', () => {});
-  // @algorithm: D-07 — implemented in Task 3
-  // @algorithm: D-08 — implemented in Task 3
+  // @algorithm: D-07
+  it('D-07: type 3 — sliding window M=5 N=3, flag fires after 3rd type-2 in window', async () => {
+    const { sc, dir, obj, boq, org } = await bootstrap();
+
+    const periods: Array<{ id: number }> = [];
+    for (let i = 1; i <= 5; i++) {
+      periods.push(await makeClosedPeriod(prisma, obj, boq, sc, i));
+    }
+
+    for (const p of periods.slice(0, 3)) {
+      const fact = await prisma.periodFact.create({
+        data: { periodId: p.id, boqItemId: boq.items[0].id },
+      });
+      await prisma.discrepancy.create({
+        data: { periodFactId: fact.id, type: 2 },
+      });
+    }
+
+    await flagSvc.detectSystemicFlag(periods[4].id, boq.items[0].id, org.id);
+
+    const notifCount = await prisma.notification.count({
+      where: { userId: dir.id, type: 'systemic_dispute_flag' },
+    });
+    expect(notifCount).toBe(1);
+  });
+
+  // @algorithm: D-08
+  it('D-08: type 3 — only type-1 facts in window → no flag', async () => {
+    const { sc, dir, obj, boq, org } = await bootstrap();
+
+    const periods: Array<{ id: number }> = [];
+    for (let i = 1; i <= 5; i++) {
+      periods.push(await makeClosedPeriod(prisma, obj, boq, sc, i));
+    }
+
+    for (const p of periods.slice(0, 3)) {
+      await prisma.periodFact.create({
+        data: { periodId: p.id, boqItemId: boq.items[0].id, discrepancyType: 1 },
+      });
+    }
+
+    await flagSvc.detectSystemicFlag(periods[4].id, boq.items[0].id, org.id);
+
+    const notifCount = await prisma.notification.count({
+      where: { userId: dir.id, type: 'systemic_dispute_flag' },
+    });
+    expect(notifCount).toBe(0);
+  });
+
   // @algorithm: D-09
   it.skip('D-09: type 3 — director manual resolve (clearSystemicFlag not yet implemented)', () => {});
 });
