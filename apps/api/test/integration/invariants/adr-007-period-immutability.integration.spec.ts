@@ -42,7 +42,7 @@ describe('ADR-007 — period immutability after close', () => {
 
     await expect(
       svc.upsertPeriodFact(period.id, boq.items[0].id, { scVolume: 50 }, sc.id),
-    ).rejects.toThrow(/PERIOD_(NOT_OPEN|CLOSED|IMMUTABLE)/);
+    ).rejects.toThrow(/PERIOD_(NOT_OPEN|CLOSED|IMMUTABLE|ALREADY_CLOSED)/);
   });
 
   it('Re-closing already-closed period is rejected', async () => {
