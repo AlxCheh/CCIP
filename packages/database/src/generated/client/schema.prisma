@@ -311,6 +311,8 @@ model Period {
   reportGeneratedAt      DateTime? @map("report_generated_at") @db.Timestamptz()
   reportGenerationFailed Boolean   @default(false) @map("report_generation_failed")
   slaForceCloseAt        DateTime? @map("sla_force_close_at") @db.Timestamptz()
+  plannedPause           Boolean   @default(false) @map("planned_pause")
+  pauseReason            String?   @map("pause_reason") @db.VarChar(100)
 
   object            ConstructionObject      @relation(fields: [objectId], references: [id])
   boqVersion        BoqVersion              @relation(fields: [boqVersionId], references: [id])

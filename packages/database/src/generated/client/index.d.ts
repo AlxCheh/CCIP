@@ -16420,6 +16420,8 @@ export namespace Prisma {
     reportGeneratedAt: Date | null
     reportGenerationFailed: boolean | null
     slaForceCloseAt: Date | null
+    plannedPause: boolean | null
+    pauseReason: string | null
   }
 
   export type PeriodMaxAggregateOutputType = {
@@ -16445,6 +16447,8 @@ export namespace Prisma {
     reportGeneratedAt: Date | null
     reportGenerationFailed: boolean | null
     slaForceCloseAt: Date | null
+    plannedPause: boolean | null
+    pauseReason: string | null
   }
 
   export type PeriodCountAggregateOutputType = {
@@ -16470,6 +16474,8 @@ export namespace Prisma {
     reportGeneratedAt: number
     reportGenerationFailed: number
     slaForceCloseAt: number
+    plannedPause: number
+    pauseReason: number
     _all: number
   }
 
@@ -16517,6 +16523,8 @@ export namespace Prisma {
     reportGeneratedAt?: true
     reportGenerationFailed?: true
     slaForceCloseAt?: true
+    plannedPause?: true
+    pauseReason?: true
   }
 
   export type PeriodMaxAggregateInputType = {
@@ -16542,6 +16550,8 @@ export namespace Prisma {
     reportGeneratedAt?: true
     reportGenerationFailed?: true
     slaForceCloseAt?: true
+    plannedPause?: true
+    pauseReason?: true
   }
 
   export type PeriodCountAggregateInputType = {
@@ -16567,6 +16577,8 @@ export namespace Prisma {
     reportGeneratedAt?: true
     reportGenerationFailed?: true
     slaForceCloseAt?: true
+    plannedPause?: true
+    pauseReason?: true
     _all?: true
   }
 
@@ -16679,6 +16691,8 @@ export namespace Prisma {
     reportGeneratedAt: Date | null
     reportGenerationFailed: boolean
     slaForceCloseAt: Date | null
+    plannedPause: boolean
+    pauseReason: string | null
     _count: PeriodCountAggregateOutputType | null
     _avg: PeriodAvgAggregateOutputType | null
     _sum: PeriodSumAggregateOutputType | null
@@ -16723,6 +16737,8 @@ export namespace Prisma {
     reportGeneratedAt?: boolean
     reportGenerationFailed?: boolean
     slaForceCloseAt?: boolean
+    plannedPause?: boolean
+    pauseReason?: boolean
     object?: boolean | ConstructionObjectDefaultArgs<ExtArgs>
     boqVersion?: boolean | BoqVersionDefaultArgs<ExtArgs>
     openedByUser?: boolean | Period$openedByUserArgs<ExtArgs>
@@ -16762,6 +16778,8 @@ export namespace Prisma {
     reportGeneratedAt?: boolean
     reportGenerationFailed?: boolean
     slaForceCloseAt?: boolean
+    plannedPause?: boolean
+    pauseReason?: boolean
     object?: boolean | ConstructionObjectDefaultArgs<ExtArgs>
     boqVersion?: boolean | BoqVersionDefaultArgs<ExtArgs>
     openedByUser?: boolean | Period$openedByUserArgs<ExtArgs>
@@ -16792,6 +16810,8 @@ export namespace Prisma {
     reportGeneratedAt?: boolean
     reportGenerationFailed?: boolean
     slaForceCloseAt?: boolean
+    plannedPause?: boolean
+    pauseReason?: boolean
   }
 
   export type PeriodInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -16858,6 +16878,8 @@ export namespace Prisma {
       reportGeneratedAt: Date | null
       reportGenerationFailed: boolean
       slaForceCloseAt: Date | null
+      plannedPause: boolean
+      pauseReason: string | null
     }, ExtArgs["result"]["period"]>
     composites: {}
   }
@@ -17286,6 +17308,8 @@ export namespace Prisma {
     readonly reportGeneratedAt: FieldRef<"Period", 'DateTime'>
     readonly reportGenerationFailed: FieldRef<"Period", 'Boolean'>
     readonly slaForceCloseAt: FieldRef<"Period", 'DateTime'>
+    readonly plannedPause: FieldRef<"Period", 'Boolean'>
+    readonly pauseReason: FieldRef<"Period", 'String'>
   }
     
 
@@ -33663,7 +33687,9 @@ export namespace Prisma {
     reportUrl: 'reportUrl',
     reportGeneratedAt: 'reportGeneratedAt',
     reportGenerationFailed: 'reportGenerationFailed',
-    slaForceCloseAt: 'slaForceCloseAt'
+    slaForceCloseAt: 'slaForceCloseAt',
+    plannedPause: 'plannedPause',
+    pauseReason: 'pauseReason'
   };
 
   export type PeriodScalarFieldEnum = (typeof PeriodScalarFieldEnum)[keyof typeof PeriodScalarFieldEnum]
@@ -35122,6 +35148,8 @@ export namespace Prisma {
     reportGeneratedAt?: DateTimeNullableFilter<"Period"> | Date | string | null
     reportGenerationFailed?: BoolFilter<"Period"> | boolean
     slaForceCloseAt?: DateTimeNullableFilter<"Period"> | Date | string | null
+    plannedPause?: BoolFilter<"Period"> | boolean
+    pauseReason?: StringNullableFilter<"Period"> | string | null
     object?: XOR<ConstructionObjectRelationFilter, ConstructionObjectWhereInput>
     boqVersion?: XOR<BoqVersionRelationFilter, BoqVersionWhereInput>
     openedByUser?: XOR<UserNullableRelationFilter, UserWhereInput> | null
@@ -35160,6 +35188,8 @@ export namespace Prisma {
     reportGeneratedAt?: SortOrderInput | SortOrder
     reportGenerationFailed?: SortOrder
     slaForceCloseAt?: SortOrderInput | SortOrder
+    plannedPause?: SortOrder
+    pauseReason?: SortOrderInput | SortOrder
     object?: ConstructionObjectOrderByWithRelationInput
     boqVersion?: BoqVersionOrderByWithRelationInput
     openedByUser?: UserOrderByWithRelationInput
@@ -35202,6 +35232,8 @@ export namespace Prisma {
     reportGeneratedAt?: DateTimeNullableFilter<"Period"> | Date | string | null
     reportGenerationFailed?: BoolFilter<"Period"> | boolean
     slaForceCloseAt?: DateTimeNullableFilter<"Period"> | Date | string | null
+    plannedPause?: BoolFilter<"Period"> | boolean
+    pauseReason?: StringNullableFilter<"Period"> | string | null
     object?: XOR<ConstructionObjectRelationFilter, ConstructionObjectWhereInput>
     boqVersion?: XOR<BoqVersionRelationFilter, BoqVersionWhereInput>
     openedByUser?: XOR<UserNullableRelationFilter, UserWhereInput> | null
@@ -35240,6 +35272,8 @@ export namespace Prisma {
     reportGeneratedAt?: SortOrderInput | SortOrder
     reportGenerationFailed?: SortOrder
     slaForceCloseAt?: SortOrderInput | SortOrder
+    plannedPause?: SortOrder
+    pauseReason?: SortOrderInput | SortOrder
     _count?: PeriodCountOrderByAggregateInput
     _avg?: PeriodAvgOrderByAggregateInput
     _max?: PeriodMaxOrderByAggregateInput
@@ -35273,6 +35307,8 @@ export namespace Prisma {
     reportGeneratedAt?: DateTimeNullableWithAggregatesFilter<"Period"> | Date | string | null
     reportGenerationFailed?: BoolWithAggregatesFilter<"Period"> | boolean
     slaForceCloseAt?: DateTimeNullableWithAggregatesFilter<"Period"> | Date | string | null
+    plannedPause?: BoolWithAggregatesFilter<"Period"> | boolean
+    pauseReason?: StringNullableWithAggregatesFilter<"Period"> | string | null
   }
 
   export type PeriodFactWhereInput = {
@@ -37577,6 +37613,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -37615,6 +37653,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -37642,6 +37682,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -37680,6 +37722,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -37713,6 +37757,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
   }
 
   export type PeriodUpdateManyMutationInput = {
@@ -37732,6 +37778,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PeriodUncheckedUpdateManyInput = {
@@ -37757,6 +37805,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PeriodFactCreateInput = {
@@ -40141,6 +40191,8 @@ export namespace Prisma {
     reportGeneratedAt?: SortOrder
     reportGenerationFailed?: SortOrder
     slaForceCloseAt?: SortOrder
+    plannedPause?: SortOrder
+    pauseReason?: SortOrder
   }
 
   export type PeriodAvgOrderByAggregateInput = {
@@ -40176,6 +40228,8 @@ export namespace Prisma {
     reportGeneratedAt?: SortOrder
     reportGenerationFailed?: SortOrder
     slaForceCloseAt?: SortOrder
+    plannedPause?: SortOrder
+    pauseReason?: SortOrder
   }
 
   export type PeriodMinOrderByAggregateInput = {
@@ -40201,6 +40255,8 @@ export namespace Prisma {
     reportGeneratedAt?: SortOrder
     reportGenerationFailed?: SortOrder
     slaForceCloseAt?: SortOrder
+    plannedPause?: SortOrder
+    pauseReason?: SortOrder
   }
 
   export type PeriodSumOrderByAggregateInput = {
@@ -45454,6 +45510,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     siteVisitByUser?: UserCreateNestedOneWithoutSiteVisitPeriodsInput
@@ -45490,6 +45548,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -45527,6 +45587,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -45563,6 +45625,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -45600,6 +45664,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -45636,6 +45702,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -46316,6 +46384,8 @@ export namespace Prisma {
     reportGeneratedAt?: DateTimeNullableFilter<"Period"> | Date | string | null
     reportGenerationFailed?: BoolFilter<"Period"> | boolean
     slaForceCloseAt?: DateTimeNullableFilter<"Period"> | Date | string | null
+    plannedPause?: BoolFilter<"Period"> | boolean
+    pauseReason?: StringNullableFilter<"Period"> | string | null
   }
 
   export type PeriodUpsertWithWhereUniqueWithoutSiteVisitByUserInput = {
@@ -47126,6 +47196,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
     siteVisitByUser?: UserCreateNestedOneWithoutSiteVisitPeriodsInput
@@ -47162,6 +47234,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -48396,6 +48470,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
     siteVisitByUser?: UserCreateNestedOneWithoutSiteVisitPeriodsInput
@@ -48432,6 +48508,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -51200,6 +51278,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -51237,6 +51317,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
     readinessSnapshot?: ReadinessSnapshotUncheckedCreateNestedOneWithoutPeriodInput
@@ -51360,6 +51442,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -51397,6 +51481,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
     readinessSnapshot?: ReadinessSnapshotUncheckedUpdateOneWithoutPeriodNestedInput
@@ -51717,6 +51803,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -51754,6 +51842,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
     readinessSnapshot?: ReadinessSnapshotUncheckedCreateNestedOneWithoutPeriodInput
@@ -51912,6 +52002,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -51949,6 +52041,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
     readinessSnapshot?: ReadinessSnapshotUncheckedUpdateOneWithoutPeriodNestedInput
@@ -52103,6 +52197,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -52140,6 +52236,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     readinessSnapshot?: ReadinessSnapshotUncheckedCreateNestedOneWithoutPeriodInput
@@ -52230,6 +52328,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -52267,6 +52367,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     readinessSnapshot?: ReadinessSnapshotUncheckedUpdateOneWithoutPeriodNestedInput
@@ -52543,6 +52645,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -52580,6 +52684,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -52682,6 +52788,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -52719,6 +52827,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -52745,6 +52855,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -52782,6 +52894,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -52872,6 +52986,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -52909,6 +53025,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -53227,6 +53345,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -53264,6 +53384,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -53568,6 +53690,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -53605,6 +53729,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -53941,6 +54067,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -53978,6 +54106,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -54080,6 +54210,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -54117,6 +54249,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -54633,6 +54767,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     object: ConstructionObjectCreateNestedOneWithoutPeriodsInput
     boqVersion: BoqVersionCreateNestedOneWithoutPeriodsInput
     openedByUser?: UserCreateNestedOneWithoutOpenedPeriodsInput
@@ -54670,6 +54806,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
     periodFacts?: PeriodFactUncheckedCreateNestedManyWithoutPeriodInput
     photos?: PhotoUncheckedCreateNestedManyWithoutPeriodInput
     slaEvents?: SlaEventUncheckedCreateNestedManyWithoutPeriodInput
@@ -54712,6 +54850,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -54749,6 +54889,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -55405,6 +55547,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
   }
 
   export type PeriodCreateManySiteVisitByUserInput = {
@@ -55429,6 +55573,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
   }
 
   export type PeriodCreateManyClosedByUserInput = {
@@ -55453,6 +55599,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
   }
 
   export type DiscrepancyCreateManyResolvedByUserInput = {
@@ -55912,6 +56060,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     siteVisitByUser?: UserUpdateOneWithoutSiteVisitPeriodsNestedInput
@@ -55948,6 +56098,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -55980,6 +56132,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PeriodUpdateWithoutSiteVisitByUserInput = {
@@ -55999,6 +56153,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -56035,6 +56191,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -56067,6 +56225,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PeriodUpdateWithoutClosedByUserInput = {
@@ -56086,6 +56246,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
@@ -56122,6 +56284,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -56154,6 +56318,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DiscrepancyUpdateWithoutResolvedByUserInput = {
@@ -56659,6 +56825,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
   }
 
   export type ReadinessSnapshotCreateManyObjectInput = {
@@ -56871,6 +57039,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     boqVersion?: BoqVersionUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
     siteVisitByUser?: UserUpdateOneWithoutSiteVisitPeriodsNestedInput
@@ -56907,6 +57077,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -56939,6 +57111,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ReadinessSnapshotUpdateWithoutObjectInput = {
@@ -57121,6 +57295,8 @@ export namespace Prisma {
     reportGeneratedAt?: Date | string | null
     reportGenerationFailed?: boolean
     slaForceCloseAt?: Date | string | null
+    plannedPause?: boolean
+    pauseReason?: string | null
   }
 
   export type BoqItemUpdateWithoutBoqVersionInput = {
@@ -57234,6 +57410,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     object?: ConstructionObjectUpdateOneRequiredWithoutPeriodsNestedInput
     openedByUser?: UserUpdateOneWithoutOpenedPeriodsNestedInput
     siteVisitByUser?: UserUpdateOneWithoutSiteVisitPeriodsNestedInput
@@ -57270,6 +57448,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
     periodFacts?: PeriodFactUncheckedUpdateManyWithoutPeriodNestedInput
     photos?: PhotoUncheckedUpdateManyWithoutPeriodNestedInput
     slaEvents?: SlaEventUncheckedUpdateManyWithoutPeriodNestedInput
@@ -57302,6 +57482,8 @@ export namespace Prisma {
     reportGeneratedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     reportGenerationFailed?: BoolFieldUpdateOperationsInput | boolean
     slaForceCloseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    plannedPause?: BoolFieldUpdateOperationsInput | boolean
+    pauseReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type BoqItemCreateManyPredecessorItemInput = {
