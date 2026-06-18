@@ -355,6 +355,7 @@ export class PeriodService {
     boqItemId: number,
     scVolume: unknown,
     actorId: number,
+    opts?: { spikeResponse?: 'planned_concentration' | 'data_entry_error' },
   ) {
     return this.prisma.$transaction(async (tx) => {
       const period = await tx.period.findUniqueOrThrow({
@@ -405,6 +406,7 @@ export class PeriodService {
           discrepancyStatus,
           acceptedVolume:
             acceptedVolume !== null ? new Prisma.Decimal(acceptedVolume) : null,
+          spikeResponse: opts?.spikeResponse ?? null,
         },
         update: {
           scVolume: new Prisma.Decimal(scVolume as number),
@@ -412,6 +414,7 @@ export class PeriodService {
           discrepancyStatus,
           acceptedVolume:
             acceptedVolume !== null ? new Prisma.Decimal(acceptedVolume) : null,
+          spikeResponse: opts?.spikeResponse ?? null,
         },
       });
 
