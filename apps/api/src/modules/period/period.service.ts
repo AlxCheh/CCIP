@@ -15,6 +15,16 @@ const GP_TOKEN_EXPIRES_DAYS = 14;
 // Period statuses that allow SC fact entry
 const SC_FACT_ALLOWED_STATUSES = ['gp_submitted', 'verification'];
 
+// @algorithm: line 223-229 — допустимые причины плановой паузы
+const PAUSE_REASONS = [
+  'Праздничные дни',
+  'Ожидание поставки материалов',
+  'Технологический перерыв',
+  'Неблагоприятные погодные условия',
+  'Ожидание разрешительной документации',
+  'Иное',
+];
+
 @Injectable()
 export class PeriodService {
   constructor(
@@ -24,7 +34,16 @@ export class PeriodService {
 
   // ─── openPeriod ──────────────────────────────────────────────────────────────
 
-  async openPeriod(objectId: number, actorId: number) {
+  async openPeriod(
+    objectId: number,
+    actorId: number,
+    pauseOpts?: { plannedPause?: boolean; pauseReason?: string },
+  ) {
+    if (pauseOpts?.plannedPause) {
+      if (!pauseOpts.pauseReason || !PAUSE_REASONS.includes(pauseOpts.pauseReason)) {
+        throw new ConflictException('INVALID_PAUSE_REASON');
+      }
+    }
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
@@ -71,6 +90,8 @@ export class PeriodService {
             status: 'open',
             openedBy: actorId,
             openedAt: now,
+            plannedPause: pauseOpts?.plannedPause ?? false,
+            pauseReason: pauseOpts?.plannedPause ? pauseOpts.pauseReason : null,
             gpSubmissionToken: randomUUID(),
             gpTokenExpiresAt,
           },
