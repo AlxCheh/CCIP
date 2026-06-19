@@ -91,7 +91,45 @@ export class WorkPaceService {
       paceWeighted += Number(w.periodVolume) * weight;
       totalWeight += weight;
     });
-    const finalPace = totalWeight > 0 ? paceWeighted / totalWeight : 0;
+    let finalPace = totalWeight > 0 ? paceWeighted / totalWeight : 0;
+
+    // @algorithm: line 471-480 — детекция выброса на самом свежем периоде окна
+    if (windowClean.length > 0 && finalPace > 0) {
+      const latest = windowClean[0];
+      const latestVolume = Number(latest.periodVolume);
+      if (latestVolume > finalPace * cfg.spikeThreshold) {
+        const latestFact = await tx.periodFact.findFirst({
+          where: { periodId: latest.periodId, boqItemId },
+          select: { id: true, spikeResponse: true },
+        });
+        if (latestFact) {
+          await tx.periodFact.update({ where: { id: latestFact.id }, data: { isSpike: true } });
+        }
+        if (latestFact?.spikeResponse === 'data_entry_error') {
+          // период исключается из окна — пересчёт без него
+          const rest = windowClean.slice(1);
+          let w = 0;
+          let pw = 0;
+          rest.forEach((r, i) => {
+            const weight = Math.pow(cfg.decayFactor, i);
+            pw += Number(r.periodVolume) * weight;
+            w += weight;
+          });
+          finalPace = w > 0 ? pw / w : 0;
+        } else {
+          // 'planned_concentration' или нет ответа → вес периода понижается до 0.5
+          const rest = windowClean.slice(1);
+          let w = 0.5; // i=0 weight = decay^0 = 1, понижен до 0.5
+          let pw = latestVolume * 0.5;
+          rest.forEach((r, i) => {
+            const weight = Math.pow(cfg.decayFactor, i + 1);
+            pw += Number(r.periodVolume) * weight;
+            w += weight;
+          });
+          finalPace = w > 0 ? pw / w : 0;
+        }
+      }
+    }
 
     const isAllZero =
       windowClean.length > 0 && windowClean.every((w) => Number(w.periodVolume) === 0);

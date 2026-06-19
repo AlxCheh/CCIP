@@ -137,4 +137,36 @@ describe('WorkPaceService — E-04..E-09', () => {
     });
     expect(notifCount).toBe(1);
   });
+
+  // @algorithm: E-06
+  it('E-06: outlier "planned concentration" — latest period weight halved', async () => {
+    const { org, sc, obj, boq } = await bootstrap();
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'decay_factor', valueType: 'numeric', valueNumeric: 1 },
+    });
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'spike_threshold', valueType: 'numeric', valueNumeric: 2 },
+    });
+
+    // Baseline 4 периода со средним темпом 10, затем P5 = 30 (×3 baseline) — выброс
+    const periods = await seedPeriods(obj, boq, sc, boq.items[0].id, [
+      { delta: 10 }, { delta: 10 }, { delta: 10 }, { delta: 10 }, { delta: 30 },
+    ]);
+    await prisma.periodFact.updateMany({
+      where: { periodId: periods[4].id, boqItemId: boq.items[0].id },
+      data: { spikeResponse: 'planned_concentration' },
+    });
+
+    const result = await svc.calcItemPace(prisma, boq.items[0].id, obj.id, periods[4].id);
+
+    // без коррекции: (30+10+10+10+10)/5=14; с весом P5=0.5: (30*0.5+10+10+10+10)/(0.5+1+1+1+1)=55/4.5≈12.22
+    expect(result.paceWeighted).toBeCloseTo(55 / 4.5, 2);
+    expect(result.paceWeighted).toBeLessThan(14);
+
+    const fact = await prisma.periodFact.findFirst({
+      where: { periodId: periods[4].id, boqItemId: boq.items[0].id },
+      select: { isSpike: true },
+    });
+    expect(fact!.isSpike).toBe(true);
+  });
 });
