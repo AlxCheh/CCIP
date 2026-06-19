@@ -100,9 +100,10 @@ describe('B-block — ZeroReport correctness', () => {
     await makeBoQ(prisma, obj, { count: 3 });
     // create zero-report but do NOT approve
     const { PeriodService } = await import('../../../src/modules/period/period.service');
+    const { WorkPaceService } = await import('../../../src/modules/analytics/work-pace.service');
     const { Test: T } = await import('@nestjs/testing');
     const mod = await T.createTestingModule({
-      providers: [PeriodService, { provide: PrismaService, useValue: prisma }, AuditLogService],
+      providers: [PeriodService, { provide: PrismaService, useValue: prisma }, AuditLogService, WorkPaceService],
     }).compile();
     const ps = mod.get(PeriodService);
     await expect(ps.openPeriod(obj.id, sc.id)).rejects.toThrow('ZERO_REPORT_NOT_APPROVED');

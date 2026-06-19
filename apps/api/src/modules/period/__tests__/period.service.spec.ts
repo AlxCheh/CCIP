@@ -7,6 +7,7 @@ import { Test } from '@nestjs/testing';
 import { PeriodService } from '../period.service';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { AuditLogService } from '../../../common/audit/audit-log.service';
+import { WorkPaceService } from '../../analytics/work-pace.service';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -110,6 +111,13 @@ describe('PeriodService', () => {
       },
       readinessSnapshot: {
         create: jest.fn().mockResolvedValue({ id: 1 }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      boqItem: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      workPace: {
+        upsert: jest.fn().mockResolvedValue({}),
       },
       $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest
@@ -121,11 +129,20 @@ describe('PeriodService', () => {
       log: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<AuditLogService>;
 
+    const workPaceMock = {
+      calcObjectForecast: jest.fn().mockResolvedValue({
+        weightedForecastDate: null,
+        criticalPathForecastDate: null,
+        gapFlag: false,
+      }),
+    } as unknown as jest.Mocked<WorkPaceService>;
+
     const module = await Test.createTestingModule({
       providers: [
         PeriodService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditLogService, useValue: auditLog },
+        { provide: WorkPaceService, useValue: workPaceMock },
       ],
     }).compile();
 
@@ -856,7 +873,7 @@ describe('PeriodService', () => {
       } as unknown as PrismaService;
 
       // Spy on recalcSnapshotCascade — it should be fired but not awaited
-      const svc = new PeriodService(prismaMock, {} as AuditLogService);
+      const svc = new PeriodService(prismaMock, {} as AuditLogService, {} as WorkPaceService);
       const recalcSpy = jest
         .spyOn(svc as any, 'recalcSnapshotCascade')
         .mockResolvedValue(undefined);
