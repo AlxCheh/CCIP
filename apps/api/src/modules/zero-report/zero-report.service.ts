@@ -4,7 +4,9 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { Prisma } from '@ccip/database';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { AuditLogService } from '../../common/audit/audit-log.service';
 import { CreateZeroReportDto } from './dto/create-zero-report.dto';
 import { UpsertZeroReportItemDto } from './dto/upsert-zero-report-item.dto';
 
@@ -13,11 +15,20 @@ const SUBMIT_ALLOWED_STATUSES = ['draft'];
 const APPROVE_ALLOWED_STATUSES = ['pending_approval'];
 const ITEM_EDIT_ALLOWED_STATUSES = ['draft'];
 
+// @algorithm: docs/algorithm_v1_3.md Блок B, B3 — порог веса для перекрёстной верификации
+const DEFAULT_WEIGHT_THRESHOLD = 0.1;
+
 @Injectable()
 export class ZeroReportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
-  private async checkObjectAccess(userId: number, objectId: number) {
+  private async checkObjectAccess(
+    userId: number,
+    objectId: number,
+  ): Promise<string> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: { organizationId: true },
@@ -29,6 +40,18 @@ export class ZeroReportService {
     if (!obj || obj.organizationId !== user.organizationId) {
       throw new NotFoundException('OBJECT_NOT_FOUND');
     }
+    return user.organizationId;
+  }
+
+  private async getWeightThreshold(
+    tx: Prisma.TransactionClient,
+    organizationId: string,
+  ): Promise<number> {
+    const row = await tx.systemConfig.findUnique({
+      where: { organizationId_key: { organizationId, key: 'weight_threshold' } },
+      select: { valueNumeric: true },
+    });
+    return row?.valueNumeric != null ? Number(row.valueNumeric) : DEFAULT_WEIGHT_THRESHOLD;
   }
 
   async create(userId: number, objectId: number, dto: CreateZeroReportDto) {
@@ -97,7 +120,7 @@ export class ZeroReportService {
     objectId: number,
     dto: UpsertZeroReportItemDto,
   ) {
-    await this.checkObjectAccess(userId, objectId);
+    const organizationId = await this.checkObjectAccess(userId, objectId);
 
     const report = await this.prisma.zeroReport.findFirst({
       where: { objectId },
@@ -123,6 +146,14 @@ export class ZeroReportService {
     if (boqItem.boqVersionId !== report.boqVersionId) {
       throw new UnprocessableEntityException('BOQ_ITEM_VERSION_MISMATCH');
     }
+
+    // @algorithm: docs/algorithm_v1_3.md Блок B, CorrectZeroReport — LOG ZeroReportCorrection
+    const existingItem = await this.prisma.zeroReportItem.findUnique({
+      where: {
+        zeroReportId_boqItemId: { zeroReportId: report.id, boqItemId: dto.boqItemId },
+      },
+      select: { id: true, factVolume: true },
+    });
 
     // Determine crossVerified: all three doc values must be present
     const crossVerified =
@@ -161,6 +192,18 @@ export class ZeroReportService {
         notes: dto.notes ?? null,
       },
     });
+
+    if (existingItem) {
+      await this.auditLog.log({
+        tableName: 'zero_report_items',
+        recordId: BigInt(item.id),
+        action: 'zero_report_item_corrected',
+        oldData: { factVolume: Number(existingItem.factVolume) },
+        newData: { factVolume: Number(item.factVolume) },
+        performedBy: userId,
+        organizationId,
+      });
+    }
 
     return this.formatItem(item);
   }
@@ -202,12 +245,12 @@ export class ZeroReportService {
   }
 
   async approve(userId: number, objectId: number) {
-    await this.checkObjectAccess(userId, objectId);
+    const organizationId = await this.checkObjectAccess(userId, objectId);
 
     return this.prisma.$transaction(async (tx) => {
       const report = await tx.zeroReport.findFirst({
         where: { objectId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, boqVersionId: true },
         orderBy: { id: 'desc' },
       });
 
@@ -225,6 +268,33 @@ export class ZeroReportService {
       });
       if (existingApproved) {
         throw new ConflictException('ZERO_REPORT_ALREADY_APPROVED');
+      }
+
+      // @algorithm: docs/algorithm_v1_3.md Блок B, B3 — перекрёстная верификация
+      // для позиций с weight_coef >= weight_threshold ИЛИ isCritical: все три
+      // документа обязательны (crossVerified) до утверждения директором.
+      const boqItems = await tx.boqItem.findMany({
+        where: { boqVersionId: report.boqVersionId },
+        select: { id: true, weightCoef: true, isCritical: true },
+      });
+      const items = await tx.zeroReportItem.findMany({
+        where: { zeroReportId: report.id },
+        select: { boqItemId: true, crossVerified: true },
+      });
+      const itemByBoqItemId = new Map(items.map((i) => [i.boqItemId, i]));
+      const weightThreshold = await this.getWeightThreshold(tx, organizationId);
+
+      for (const boqItem of boqItems) {
+        const item = itemByBoqItemId.get(boqItem.id);
+        if (!item) {
+          throw new UnprocessableEntityException('ZERO_REPORT_NOT_ALL_ITEMS');
+        }
+        const isHeavy =
+          boqItem.isCritical ||
+          (boqItem.weightCoef != null && Number(boqItem.weightCoef) >= weightThreshold);
+        if (isHeavy && !item.crossVerified) {
+          throw new UnprocessableEntityException('ZERO_REPORT_CROSS_VERIFICATION_REQUIRED');
+        }
       }
 
       const updated = await tx.zeroReport.update({

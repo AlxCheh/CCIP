@@ -6,6 +6,7 @@ import {
 import { Test } from '@nestjs/testing';
 import { ZeroReportService } from '../zero-report.service';
 import { PrismaService } from '../../../common/prisma/prisma.service';
+import { AuditLogService } from '../../../common/audit/audit-log.service';
 import { CreateZeroReportDto } from '../dto/create-zero-report.dto';
 import { UpsertZeroReportItemDto } from '../dto/upsert-zero-report-item.dto';
 
@@ -88,6 +89,9 @@ describe('ZeroReportService', () => {
         findUnique: jest
           .fn()
           .mockResolvedValue({ id: BOQ_ITEM_ID, boqVersionId: BOQ_VERSION_ID }),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: BOQ_ITEM_ID, weightCoef: null, isCritical: false }]),
       },
       zeroReport: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -97,18 +101,27 @@ describe('ZeroReportService', () => {
       },
       zeroReportItem: {
         upsert: jest.fn().mockResolvedValue(makeItem()),
+        findUnique: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([makeItem()]),
         count: jest.fn().mockResolvedValue(1),
+      },
+      systemConfig: {
+        findUnique: jest.fn().mockResolvedValue(null),
       },
       $transaction: jest
         .fn()
         .mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
     } as unknown as jest.Mocked<PrismaService>;
 
+    const auditLog = {
+      log: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<AuditLogService>;
+
     const module = await Test.createTestingModule({
       providers: [
         ZeroReportService,
         { provide: PrismaService, useValue: prisma },
+        { provide: AuditLogService, useValue: auditLog },
       ],
     }).compile();
 
