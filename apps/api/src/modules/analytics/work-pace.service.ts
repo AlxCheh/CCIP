@@ -96,6 +96,24 @@ export class WorkPaceService {
     const isAllZero =
       windowClean.length > 0 && windowClean.every((w) => Number(w.periodVolume) === 0);
 
+    if (isAllZero) {
+      const directors = await tx.user.findMany({
+        where: { organizationId: object.organizationId, role: 'director' },
+        select: { id: true },
+      });
+      if (directors.length > 0) {
+        await tx.notification.createMany({
+          data: directors.map((d) => ({
+            userId: d.id,
+            type: 'zero_pace_forecast',
+            referenceTable: 'boq_items',
+            referenceId: BigInt(boqItemId),
+            message: `Нулевой темп по позиции ${boqItemId} — простой, прогноз невозможен`,
+          })),
+        });
+      }
+    }
+
     if (finalPace <= 0) {
       return { paceWeighted: 0, forecastEnd: null, isAllZero };
     }

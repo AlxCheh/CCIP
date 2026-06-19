@@ -95,4 +95,46 @@ describe('WorkPaceService — E-04..E-09', () => {
     // decay_factor=1 → простое среднее по 4 НЕ-паузным периодам = (10+10+10+10)/4 = 10
     expect(result.paceWeighted).toBeCloseTo(10, 5);
   });
+
+  // @algorithm: E-05
+  it('E-05: zero-volume unplanned period included in window with decay weight', async () => {
+    const { org, sc, obj, boq } = await bootstrap();
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'decay_factor', valueType: 'numeric', valueNumeric: 1 },
+    });
+
+    const periods = await seedPeriods(obj, boq, sc, boq.items[0].id, [
+      { delta: 10 },
+      { delta: 10 },
+      { delta: 10 },
+      { delta: 0 }, // P4 — внеплановый простой (НЕ пауза)
+    ]);
+
+    const result = await svc.calcItemPace(prisma, boq.items[0].id, obj.id, periods[3].id);
+
+    // P4 включён в окно (не excluded), среднее по 4 = (10+10+10+0)/4 = 7.5
+    expect(result.paceWeighted).toBeCloseTo(7.5, 5);
+    expect(result.isAllZero).toBe(false);
+  });
+
+  // @algorithm: E-09
+  it('E-09: all-zero window → paceWeighted=0, forecastEnd=null, director warned', async () => {
+    const { org, sc, obj, boq } = await bootstrap();
+    const dir = await makeUser(prisma, org, 'director');
+
+    const periods = await seedPeriods(obj, boq, sc, boq.items[0].id, [
+      { delta: 0 }, { delta: 0 }, { delta: 0 }, { delta: 0 }, { delta: 0 },
+    ]);
+
+    const result = await svc.calcItemPace(prisma, boq.items[0].id, obj.id, periods[4].id);
+
+    expect(result.paceWeighted).toBe(0);
+    expect(result.forecastEnd).toBeNull();
+    expect(result.isAllZero).toBe(true);
+
+    const notifCount = await prisma.notification.count({
+      where: { userId: dir.id, type: 'zero_pace_forecast' },
+    });
+    expect(notifCount).toBe(1);
+  });
 });
