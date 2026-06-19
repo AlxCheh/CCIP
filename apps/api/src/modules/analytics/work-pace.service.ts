@@ -169,4 +169,60 @@ export class WorkPaceService {
 
     return { paceWeighted: finalPace, forecastEnd, isAllZero };
   }
+
+  // @algorithm: E5 — два прогноза на уровне объекта + флаг разрыва
+  async calcObjectForecast(
+    tx: Tx,
+    objectId: number,
+    asOfPeriodId: number,
+  ): Promise<{
+    weightedForecastDate: Date | null;
+    criticalPathForecastDate: Date | null;
+    gapFlag: boolean;
+  }> {
+    const object = await tx.constructionObject.findUniqueOrThrow({
+      where: { id: objectId },
+      select: { organizationId: true },
+    });
+    const cfg = await this.getConfig(tx, object.organizationId);
+
+    const period = await tx.period.findUniqueOrThrow({
+      where: { id: asOfPeriodId },
+      select: { boqVersionId: true },
+    });
+    const items = await tx.boqItem.findMany({
+      where: { boqVersionId: period.boqVersionId, status: 'active', weightCoef: { not: null } },
+      select: { id: true, weightCoef: true },
+    });
+
+    let weightedSum = 0;
+    let weightedTotal = 0;
+    let criticalMax: Date | null = null;
+
+    for (const item of items) {
+      const pace = await this.calcItemPace(tx, item.id, objectId, asOfPeriodId);
+      if (!pace.forecastEnd) continue;
+
+      const weight = Number(item.weightCoef);
+      weightedSum += pace.forecastEnd.getTime() * weight;
+      weightedTotal += weight;
+
+      if (weight >= cfg.weightThreshold) {
+        if (!criticalMax || pace.forecastEnd.getTime() > criticalMax.getTime()) {
+          criticalMax = pace.forecastEnd;
+        }
+      }
+    }
+
+    const weightedForecastDate = weightedTotal > 0 ? new Date(weightedSum / weightedTotal) : null;
+    const criticalPathForecastDate = criticalMax;
+
+    let gapFlag = false;
+    if (weightedForecastDate && criticalPathForecastDate) {
+      const diffDays = Math.abs(criticalPathForecastDate.getTime() - weightedForecastDate.getTime()) / 86_400_000;
+      gapFlag = diffDays / PERIOD_LENGTH_DAYS >= cfg.forecastGapPeriods;
+    }
+
+    return { weightedForecastDate, criticalPathForecastDate, gapFlag };
+  }
 }

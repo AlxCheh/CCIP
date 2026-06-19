@@ -30,30 +30,46 @@ describe('WorkPaceService — E-04..E-09', () => {
     return { org, sc, obj, boq };
   }
 
+  async function bootstrap2Items(weight0: number, weight1: number) {
+    const org = await makeOrg(prisma);
+    const sc = await makeUser(prisma, org, 'stroycontrol');
+    const obj = await makeObject(prisma, org);
+    const boq = await makeBoQ(prisma, obj, { count: 2 });
+    await prisma.boqItem.update({ where: { id: boq.items[0].id }, data: { weightCoef: weight0 } });
+    await prisma.boqItem.update({ where: { id: boq.items[1].id }, data: { weightCoef: weight1 } });
+    return { org, sc, obj, boq };
+  }
+
   async function seedPeriods(
     obj: { id: number },
     boq: { versionId: number },
     sc: { id: number },
     boqItemId: number,
     volumes: Array<{ delta: number; plannedPause?: boolean }>,
+    existingPeriods?: { id: number }[],
   ): Promise<{ id: number }[]> {
     const periods: { id: number }[] = [];
     let cumulative = 0;
     for (let i = 0; i < volumes.length; i++) {
-      const period = await prisma.period.create({
-        data: {
-          objectId: obj.id,
-          boqVersionId: boq.versionId,
-          periodNumber: i + 1,
-          status: 'closed',
-          openedBy: sc.id,
-          closedBy: sc.id,
-          closedAt: new Date(),
-          plannedPause: volumes[i].plannedPause ?? false,
-          gpSubmissionToken: randomUUID(),
-          gpTokenExpiresAt: new Date(Date.now() + 86_400_000),
-        },
-      });
+      // Период принадлежит объекту целиком (не отдельной позиции BoQ) — при
+      // расчёте нескольких позиций на одном объекте периоды переиспользуются
+      // (@@unique([objectId, periodNumber]) не допускает дублей).
+      const period = existingPeriods
+        ? existingPeriods[i]
+        : await prisma.period.create({
+            data: {
+              objectId: obj.id,
+              boqVersionId: boq.versionId,
+              periodNumber: i + 1,
+              status: 'closed',
+              openedBy: sc.id,
+              closedBy: sc.id,
+              closedAt: new Date(),
+              plannedPause: volumes[i].plannedPause ?? false,
+              gpSubmissionToken: randomUUID(),
+              gpTokenExpiresAt: new Date(Date.now() + 86_400_000),
+            },
+          });
       cumulative += volumes[i].delta;
       await prisma.periodFact.create({
         data: { periodId: period.id, boqItemId, acceptedVolume: cumulative },
@@ -168,5 +184,48 @@ describe('WorkPaceService — E-04..E-09', () => {
       select: { isSpike: true },
     });
     expect(fact!.isSpike).toBe(true);
+  });
+
+  // @algorithm: E-07
+  it('E-07: critical path forecast = MAX over items with weight >= threshold', async () => {
+    const { org, sc, obj, boq } = await bootstrap2Items(0.25, 0.75); // facade=0.25 (critical), other=0.75
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'decay_factor', valueType: 'numeric', valueNumeric: 1 },
+    });
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'weight_threshold', valueType: 'numeric', valueNumeric: 0.1 },
+    });
+
+    // Facade (item 0): медленный темп → дальний прогноз. Other (item 1): быстрый темп → близкий прогноз.
+    const facadePeriods = await seedPeriods(obj, boq, sc, boq.items[0].id, [{ delta: 1 }, { delta: 1 }]);
+    await seedPeriods(obj, boq, sc, boq.items[1].id, [{ delta: 50 }, { delta: 50 }], facadePeriods);
+
+    const result = await svc.calcObjectForecast(prisma, obj.id, facadePeriods[1].id);
+
+    const facadePace = await svc.calcItemPace(prisma, boq.items[0].id, obj.id, facadePeriods[1].id);
+    // forecastEnd считается через Date.now() в двух раздельных вызовах — допуск на дрейф между ними.
+    expect(
+      Math.abs(result.criticalPathForecastDate!.getTime() - facadePace.forecastEnd!.getTime()),
+    ).toBeLessThan(1000);
+  });
+
+  // @algorithm: E-08
+  it('E-08: gap flag fires when |critical - weighted| >= forecast_gap_alert periods', async () => {
+    const { org, sc, obj, boq } = await bootstrap2Items(0.5, 0.5);
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'decay_factor', valueType: 'numeric', valueNumeric: 1 },
+    });
+    await prisma.systemConfig.create({
+      data: { organizationId: org.id, key: 'forecast_gap_alert', valueType: 'numeric', valueNumeric: 2 },
+    });
+
+    // Item 0: очень медленный (большой остаток, маленький темп) → далёкий прогноз.
+    // Item 1: почти завершён, быстрый темп → близкий прогноз. Разница >> 2 периодов (60 дней).
+    const p0 = await seedPeriods(obj, boq, sc, boq.items[0].id, [{ delta: 1 }, { delta: 1 }]);
+    await seedPeriods(obj, boq, sc, boq.items[1].id, [{ delta: 90 }, { delta: 9 }], p0);
+
+    const result = await svc.calcObjectForecast(prisma, obj.id, p0[1].id);
+
+    expect(result.gapFlag).toBe(true);
   });
 });
