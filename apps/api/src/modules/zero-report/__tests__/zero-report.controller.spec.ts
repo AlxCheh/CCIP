@@ -62,7 +62,7 @@ describe('ZeroReportController', () => {
       upsertItem: jest.fn().mockResolvedValue(mockItem),
       submit: jest
         .fn()
-        .mockResolvedValue({ ...mockReport, status: 'submitted' }),
+        .mockResolvedValue({ ...mockReport, status: 'pending_approval' }),
       approve: jest
         .fn()
         .mockResolvedValue({ ...mockReport, status: 'approved' }),
@@ -173,7 +173,7 @@ describe('ZeroReportController', () => {
     });
 
     it('returns submitted report from service', async () => {
-      const expected = { ...mockReport, status: 'submitted' };
+      const expected = { ...mockReport, status: 'pending_approval' };
       zeroReportService.submit.mockResolvedValue(expected as any);
 
       const result = await controller.submit(OBJECT_ID, mockScReq);

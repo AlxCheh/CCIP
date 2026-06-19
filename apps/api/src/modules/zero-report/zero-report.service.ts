@@ -10,7 +10,7 @@ import { UpsertZeroReportItemDto } from './dto/upsert-zero-report-item.dto';
 
 // Valid status transitions for Zero Report state machine
 const SUBMIT_ALLOWED_STATUSES = ['draft'];
-const APPROVE_ALLOWED_STATUSES = ['submitted'];
+const APPROVE_ALLOWED_STATUSES = ['pending_approval'];
 const ITEM_EDIT_ALLOWED_STATUSES = ['draft'];
 
 @Injectable()
@@ -192,7 +192,7 @@ export class ZeroReportService {
     const updated = await this.prisma.zeroReport.update({
       where: { id: report.id },
       data: {
-        status: 'submitted',
+        status: 'pending_approval',
         submittedAt: new Date(),
         submittedBy: userId,
       },
