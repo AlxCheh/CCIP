@@ -22,20 +22,28 @@ export class DisputeSlaService {
     periodId: number;
     boqItemId: number;
     createdAt: Date;
+    scenario?: 'A' | 'B';
   }): Promise<void> {
-    const { periodId, boqItemId, createdAt } = params;
-    const day3 = new Date(createdAt.getTime() + 3 * 86_400_000);
-    const day5 = new Date(createdAt.getTime() + 5 * 86_400_000);
+    const { periodId, boqItemId, createdAt, scenario = 'A' } = params;
+    const addDays = (n: number) => new Date(createdAt.getTime() + n * 86_400_000);
 
-    await this.prisma.slaEvent.createMany({
-      data: [
-        { periodId, boqItemId, scenario: 'A', eventType: 'notify_director_day3', scheduledAt: day3 },
-        { periodId, boqItemId, scenario: 'A', eventType: 'force_close_day5',     scheduledAt: day5 },
-      ],
-    });
+    const data =
+      scenario === 'A'
+        ? [
+            { periodId, boqItemId, scenario: 'A', eventType: 'notify_director_day3', scheduledAt: addDays(3) },
+            { periodId, boqItemId, scenario: 'A', eventType: 'force_close_day5',     scheduledAt: addDays(5) },
+          ]
+        : [
+            // Scenario B: GP responded, SC rejected it — active dispute (algorithm_v1_3.md §Block D)
+            { periodId, boqItemId, scenario: 'B', eventType: 'notify_director_day3',    scheduledAt: addDays(3) },
+            { periodId, boqItemId, scenario: 'B', eventType: 'director_deadline_day7',  scheduledAt: addDays(7) },
+            { periodId, boqItemId, scenario: 'B', eventType: 'sc_figure_applied_day14', scheduledAt: addDays(14) },
+          ];
+
+    await this.prisma.slaEvent.createMany({ data });
 
     const events = await this.prisma.slaEvent.findMany({
-      where: { periodId, boqItemId, scenario: 'A', executedAt: null, isCancelled: false },
+      where: { periodId, boqItemId, scenario, executedAt: null, isCancelled: false },
       orderBy: { id: 'asc' },
     });
 

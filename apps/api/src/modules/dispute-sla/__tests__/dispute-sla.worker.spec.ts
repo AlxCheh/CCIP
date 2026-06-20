@@ -127,4 +127,93 @@ describe('DisputeSlaWorker', () => {
       });
     });
   });
+
+  describe('Scenario B — notify_director (active dispute)', () => {
+    it('day3 notify with scenario=B sends sla_day3_active_dispute, not the scenario-A message', async () => {
+      mockPrisma.slaEvent.findUnique.mockResolvedValue({
+        id: 8, executedAt: null, isCancelled: false, scenario: 'B',
+        eventType: 'notify_director_day3', periodId: 1, boqItemId: 3,
+      });
+      mockPrisma.period.findUniqueOrThrow.mockResolvedValue({
+        id: 1, object: { organizationId: 'org-uuid' },
+      });
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 10 }]);
+
+      await worker.process(makeJob(8));
+
+      expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ userId: 10, type: 'sla_day3_active_dispute' }),
+        ]),
+      });
+    });
+  });
+
+  describe('Scenario B — director_deadline_day7', () => {
+    it('sends a reminder when the discrepancy is still open and undecided', async () => {
+      mockPrisma.slaEvent.findUnique.mockResolvedValue({
+        id: 9, executedAt: null, isCancelled: false, scenario: 'B',
+        eventType: 'director_deadline_day7', periodId: 1, boqItemId: 3,
+      });
+      mockPrisma.discrepancy.findFirst.mockResolvedValue({
+        id: 21, periodFactId: 51, status: 'open', directorDecision: null,
+        periodFact: { scVolume: 30 },
+      });
+      mockPrisma.period.findUniqueOrThrow.mockResolvedValue({
+        id: 1, object: { organizationId: 'org-uuid' },
+      });
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 11 }]);
+
+      await worker.process(makeJob(9));
+
+      expect(mockPrisma.notification.createMany).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({ userId: 11, type: 'sla_day7_director_reminder' }),
+        ]),
+      });
+    });
+
+    it('skips the reminder when the director already decided', async () => {
+      mockPrisma.slaEvent.findUnique.mockResolvedValue({
+        id: 12, executedAt: null, isCancelled: false, scenario: 'B',
+        eventType: 'director_deadline_day7', periodId: 1, boqItemId: 3,
+      });
+      mockPrisma.discrepancy.findFirst.mockResolvedValue({
+        id: 22, periodFactId: 52, status: 'open', directorDecision: 'sc_measure',
+        periodFact: { scVolume: 30 },
+      });
+
+      await worker.process(makeJob(12));
+
+      expect(mockPrisma.notification.createMany).not.toHaveBeenCalled();
+      expect(mockPrisma.slaEvent.update).toHaveBeenCalledWith({
+        where: { id: 12 },
+        data: { executedAt: expect.any(Date) },
+      });
+    });
+  });
+
+  describe('Scenario B — sc_figure_applied_day14', () => {
+    it('applies the SC figure, same as force_close_day5', async () => {
+      mockPrisma.slaEvent.findUnique.mockResolvedValue({
+        id: 13, executedAt: null, isCancelled: false, scenario: 'B',
+        eventType: 'sc_figure_applied_day14', periodId: 1, boqItemId: 3,
+      });
+      mockPrisma.discrepancy.findFirst.mockResolvedValue({
+        id: 23, periodFactId: 53, status: 'open',
+        periodFact: { scVolume: 77 },
+      });
+
+      await worker.process(makeJob(13));
+
+      expect(mockPrisma.discrepancy.update).toHaveBeenCalledWith({
+        where: { id: 23 },
+        data: { status: 'forced_sc_figure', resolvedAt: expect.any(Date) },
+      });
+      expect(mockPrisma.periodFact.update).toHaveBeenCalledWith({
+        where: { id: 53 },
+        data: { discrepancyStatus: 'forced_sc_figure', acceptedVolume: 77 },
+      });
+    });
+  });
 });
