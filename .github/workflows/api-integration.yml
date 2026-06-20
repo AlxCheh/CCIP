@@ -16,20 +16,6 @@ on:
 jobs:
   api-integration:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: ghcr.io/${{ github.repository }}/ccip-postgres:latest
-        env:
-          POSTGRES_USER: ccip_owner
-          POSTGRES_PASSWORD: ccip_dev_pass
-          POSTGRES_DB: ccip_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
 
     env:
       DATABASE_URL_TEST: postgresql://ccip_owner:ccip_dev_pass@localhost:5432/ccip_test
@@ -38,6 +24,32 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # No image is published to ghcr — `ccip-postgres` (pg_partman + pg_cron)
+      # is built locally, same as the `db-integration` job in ci.yml.
+      - name: Build ccip-postgres image
+        run: docker build -t ccip-postgres-test ./infra/docker/postgres
+
+      - name: Start postgres container
+        run: |
+          docker run -d --name pg \
+            -e POSTGRES_DB=ccip_test \
+            -e POSTGRES_USER=ccip_owner \
+            -e POSTGRES_PASSWORD=ccip_dev_pass \
+            -p 5432:5432 \
+            --health-cmd="pg_isready -U ccip_owner -d ccip_test" \
+            --health-interval=5s --health-timeout=5s --health-retries=20 \
+            ccip-postgres-test
+
+      - name: Wait for postgres healthy
+        run: |
+          for i in $(seq 1 30); do
+            s=$(docker inspect --format='{{.State.Health.Status}}' pg)
+            [ "$s" = "healthy" ] && exit 0
+            sleep 2
+          done
+          docker logs pg
+          exit 1
 
       - uses: pnpm/action-setup@v4
         with:
@@ -60,6 +72,10 @@ jobs:
 
       - name: Run integration tests
         run: pnpm --filter @ccip/api test:integration
+
+      - name: Postgres logs (on failure)
+        if: failure()
+        run: docker logs pg
 
       - name: Upload coverage matrix
         if: always()
