@@ -110,7 +110,7 @@ export class DisputeService {
   }
 
   // SC explicitly rejects the GP's documentation → Scenario B SLA clock starts from gcResponseAt
-  async rejectGpResponse(discrepancyId: number, actorId: number) {
+  async rejectGpResponse(discrepancyId: number) {
     const discrepancy = await this.prisma.discrepancy.findUniqueOrThrow({
       where: { id: discrepancyId },
       include: { periodFact: true },
