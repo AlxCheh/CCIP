@@ -108,14 +108,16 @@ function fireMaybe(st, fired, trigger, reason) {
   fired.push({ trigger, reason });
 }
 
-let raw = '';
-process.stdin.setEncoding('utf-8');
-process.stdin.on('data', c => { raw += c; });
-process.stdin.on('end', () => {
-  try { run(raw); }
-  catch (e) { process.stderr.write(`[audit-trigger-hook] FAIL: ${e.message}\n`); }
-  process.exit(0);
-});
+if (require.main === module) {
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', c => { raw += c; });
+  process.stdin.on('end', () => {
+    try { run(raw); }
+    catch (e) { process.stderr.write(`[audit-trigger-hook] FAIL: ${e.message}\n`); }
+    process.exit(0);
+  });
+}
 
 function run(raw) {
   let payload;
