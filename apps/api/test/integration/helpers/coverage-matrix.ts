@@ -10,7 +10,7 @@ export interface WriteCoverageMatrixArgs {
 
 interface Annotation { id: string; file: string; line: number; }
 
-export async function writeCoverageMatrix(args: WriteCoverageMatrixArgs): Promise<void> {
+export function writeCoverageMatrix(args: WriteCoverageMatrixArgs): void {
   const ids = parseAlgorithmIds(args.algorithmDoc);          // ['A-01', …, 'I-03']
   const found = scanAnnotations(args.integrationDir);        // [{ id: 'A-01', file, line }]
 
