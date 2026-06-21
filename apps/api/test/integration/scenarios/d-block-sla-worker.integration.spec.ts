@@ -94,7 +94,7 @@ describe('D-block — SLA Worker handlers (direct invocation, no BullMQ)', () =>
 
   // @algorithm: D-04
   it('D-04: force_close handler — closes discrepancy, sets forced_sc_figure', async () => {
-    const { sc, dir: _dir, obj, boq } = await bootstrap();
+    const { sc, obj, boq } = await bootstrap();
 
     const period = await periodSvc.openPeriod(obj.id, sc.id);
     await periodSvc.submitGp(
