@@ -178,5 +178,40 @@ describe('D-block — DisputeSLA / systemic flag', () => {
   });
 
   // @algorithm: D-09
-  it.skip('D-09: type 3 — director manual resolve (clearSystemicFlag not yet implemented)', () => {});
+  it('D-09: clearSystemicFlag — marks systemic flag notifications as read', async () => {
+    const { sc, dir, obj, boq, org } = await bootstrap();
+
+    const periods: Array<{ id: number }> = [];
+    for (let i = 1; i <= 5; i++) {
+      periods.push(await makeClosedPeriod(prisma, obj, boq, sc, i));
+    }
+
+    for (const p of periods.slice(0, 3)) {
+      const fact = await prisma.periodFact.create({
+        data: { periodId: p.id, boqItemId: boq.items[0].id },
+      });
+      await prisma.discrepancy.create({
+        data: { periodFactId: fact.id, type: 2 },
+      });
+    }
+
+    await flagSvc.detectSystemicFlag(periods[4].id, boq.items[0].id, org.id);
+
+    const unreadBefore = await prisma.notification.count({
+      where: { userId: dir.id, type: 'systemic_dispute_flag', readAt: null },
+    });
+    expect(unreadBefore).toBe(1);
+
+    await flagSvc.clearSystemicFlag(boq.items[0].id, org.id);
+
+    const unreadAfter = await prisma.notification.count({
+      where: { userId: dir.id, type: 'systemic_dispute_flag', readAt: null },
+    });
+    expect(unreadAfter).toBe(0);
+
+    const readCount = await prisma.notification.count({
+      where: { userId: dir.id, type: 'systemic_dispute_flag', readAt: { not: null } },
+    });
+    expect(readCount).toBe(1);
+  });
 });

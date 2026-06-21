@@ -10,11 +10,11 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-06-16 |
-| **Current Phase** | 8 — Web App |
-| **Phase Status** | ✓ complete |
-| **Active P1 Task** | — (M-08 завершён; следующий трек выбирает пользователь: M-10 / M-08 design-pass) |
-| **Next Milestone** | M-10 Security / Immutability / REVOKE (разблокирован) |
+| **Last Updated** | 2026-06-17 |
+| **Current Phase** | 11 — Testing |
+| **Phase Status** | ◑ W2 done |
+| **Active P1 Task** | M-11 W3 (D-03..D-06 SLA timing + D-09 clearFlag + E-04..E-09 advanced analytics) |
+| **Next Milestone** | M-12 Prod Infra / K8s Worker |
 | **Active Blockers** | 0 — нет |
 | **Open Feedbacks** | 0 |
 | **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/2026-05-07-red-team.md`) |
@@ -39,13 +39,15 @@
 | M-06 | P3 | Baseline F/G + GC Change H | 6 | ○ pending | M-08 |
 | M-07 | P2 | Sync API I | 7 | ○ pending | M-08 |
 | M-08 | P1 | Web App: Dashboard + Period Cycle + GP Form | 8 | ✓ done | Pilot |
-| M-10 | P1 | Security / Immutability / REVOKE | 10 | ○ pending | Pilot |
-| M-11 | P1 | Testing / SLA Recovery scan | 11 | ◑ W1 done | Pilot |
+| M-10 | P1 | Security / Immutability / REVOKE | 10 | ✓ done | — |
+| M-11 | P1 | Testing / SLA Recovery scan | 11 | ◑ W2 done | Pilot |
 | M-12 | P1 | Prod Infra / K8s Worker | 12 | ○ pending | Pilot |
 | M-13 | P1 | Pilot | 13 | ○ pending | — |
 | M-M | P4 | Mobile App | post | ○ pending | M-13 |
 
-² M-11 W1 (2026-06-16): интеграционная инфраструктура `apps/api/test/integration/` — Jest 30 + runInBand, pg-контейнер T-22, truncate/factories/arbitraries, helpers, 5 сценарных блоков (A/B/C активны, D/E/F/G — skip-плейсхолдеры), ADR-002/ADR-007 инварианты, CI workflow. `pnpm test:integration`. W2-W4 — pending.
+³ M-11 W2 (2026-06-17): D-block (D-01/D-02/D-07/D-08) + E-block (E-01/E-02/E-03). Реализован `calcReadiness()` в PeriodService (заменяет TODO M-05c). 7 новых зелёных тестов. D-03..D-06 (SLA timing/BullMQ), D-09 (clearFlag), E-04..E-09 (advanced analytics) — W3.
+
+² M-11 W1 (2026-06-16): интеграционная инфраструктура `apps/api/test/integration/` — Jest 30 + runInBand, pg-контейнер T-22, truncate/factories/arbitraries, helpers, 5 сценарных блоков (A/B/C активны, D/E/F/G — skip-плейсхолдеры), ADR-002/ADR-007 инварианты, CI workflow. `pnpm test:integration`.
 
 ¹ M-05b: реализация завершена + **E2E acceptance ПРОЙДЕН 2026-05-29** (Scenario A + Redis-recovery, Task 10). 279 unit + audit 18/18. Bring-up + schema/code drift (B-01,B-03..B-06) закрыты в W8. **B-02** (migration-history drift) закрыт 2026-05-31 через `migrate resolve --applied`. Остатки — cron PR #9 + orphan-строки истории (косметика, не блокируют).
 

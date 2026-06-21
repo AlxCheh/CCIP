@@ -30,12 +30,25 @@ quarantine:
   - id: R-016
     status: quarantine
     requires_transcript_access: false
-    sessions_in_quarantine: 15
+    sessions_in_quarantine: 37
     hit_count: 1
     precision: 1
   - id: R-017
     status: quarantine
     requires_transcript_access: false
-    sessions_in_quarantine: 15
+    sessions_in_quarantine: 37
     hit_count: 2
     precision: 1
+  - id: R-019
+    status: propose_active
+    category: state_contract
+    severity: CRITICAL
+    requires_transcript_access: false
+    match: { type: heuristic, signal: "Observation.missing_state_update == true" }
+    detect: "Agent returned output without ## State Update block"
+    rationale: "Post-hook fallback masks actual findings and handoff from next agent; critical for routing integrity"
+    fix: "Pre-agent-gate: escalate to planner if contract_debt > 2 with explicit governance alert"
+    hit_count: 1
+    precision: 1.0
+    sessions_in_quarantine: 0
+    introduced: 2026-06-17

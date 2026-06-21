@@ -194,3 +194,14 @@ rules:
     requires_transcript_access: false
     hit_count: 0
     precision: null
+
+  - id: R-019
+    category: state_contract
+    severity: critical
+    match: { type: heuristic, signal: "Observation.missing_state_update == true", in_segments: [agent_output] }
+    detect: "Субагент вернул вывод без обязательного блока ## State Update."
+    rationale: "Post-hook fallback маскирует реальные findings и handoff; деградирует routing quality для следующего агента."
+    fix: "Pre-agent-gate: при contract_debt > 2 эскалировать в governance_alert; агент обязан эмитить ## State Update."
+    requires_transcript_access: false
+    hit_count: 0
+    precision: null

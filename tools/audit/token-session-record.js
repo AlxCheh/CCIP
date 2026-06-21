@@ -179,13 +179,15 @@ function main() {
   const prevSkipped = Number(prevRolling.sessions_skipped) || 0;
   const prevInline  = Number(prevRolling.sessions_inline) || 0;
 
-  // Классификация (ADR-016 amendment 2026-05-25):
-  //  - agents===0 + реальная inline-активность → inline-session: вне token-attribution,
-  //    но с качественными сигналами из trigger-state; строку в history НЕ пишем
-  //    (нет точного T_total — токены главного агента хукам недоступны);
-  //  - agents===0 без активности ИЛИ agents>0 && T_total<MIN_TOKENS → trivial-skip;
+  // Классификация (ADR-016 amendment 2026-05-25, fix 2026-06-17):
+  //  - (agents===0 ИЛИ T_total===0) + реальная inline-активность → inline-session.
+  //    T_total===0 при agents>0 означает: единственный субагент — сам аудитор с
+  //    fallback-summary (context_tokens не записались из-за missing_state_update);
+  //    сессия de facto была inline. Trigger-state — единственный источник сигналов.
+  //  - нет активности (signals===null) ИЛИ T_total<MIN_TOKENS (без inline-активности) → trivial-skip;
   //  - иначе → recorded.
-  const signals = det.agents === 0 ? inlineSignals(tstate) : null;
+  const isEffectivelyInline = det.agents === 0 || det.T_total === 0;
+  const signals = isEffectivelyInline ? inlineSignals(tstate) : null;
   if (signals) {
     const rolling = recomputeRolling(rows, prevSkipped, prevInline + 1);
     if (!args.dryRun) atomicWrite(ROLLING, JSON.stringify(rolling, null, 2) + '\n');

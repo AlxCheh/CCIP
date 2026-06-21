@@ -27,9 +27,9 @@ export class DisputeSlaWorker implements OnModuleInit {
 
     if (!event || event.executedAt || event.isCancelled) return;
 
-    if (event.eventType === 'notify_director') {
+    if (event.eventType === 'notify_director_day3') {
       await this.handleNotify(event);
-    } else if (event.eventType === 'force_close') {
+    } else if (event.eventType === 'force_close_day5') {
       await this.handleForceClose(event);
     }
 
@@ -82,13 +82,13 @@ export class DisputeSlaWorker implements OnModuleInit {
     if (discrepancy) {
       await this.prisma.discrepancy.update({
         where: { id: discrepancy.id },
-        data: { status: 'force_closed', resolvedAt: new Date() },
+        data: { status: 'forced_sc_figure', resolvedAt: new Date() },
       });
 
       await this.prisma.periodFact.update({
         where: { id: discrepancy.periodFactId },
         data: {
-          discrepancyStatus: 'force_closed',
+          discrepancyStatus: 'forced_sc_figure',
           acceptedVolume: discrepancy.periodFact.scVolume,
         },
       });
