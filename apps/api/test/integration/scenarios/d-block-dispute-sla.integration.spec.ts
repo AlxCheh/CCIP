@@ -120,14 +120,8 @@ describe('D-block — DisputeSLA / systemic flag', () => {
     });
     expect(fact!.discrepancyType).toBe(2);
   });
-  // @algorithm: D-03
-  it.skip('D-03: SLA A day 3 — director auto-notified (requires BullMQ time-mock)', () => {});
-  // @algorithm: D-04
-  it.skip('D-04: SLA A day 5 — forced close (requires BullMQ time-mock)', () => {});
-  // @algorithm: D-05
-  it.skip('D-05: SLA B day 3 — director escalation (requires BullMQ time-mock)', () => {});
-  // @algorithm: D-06
-  it.skip('D-06: SLA B day 14 — SC volume applied (requires BullMQ time-mock)', () => {});
+  // @algorithm: D-03/D-04 — see d-block-sla-worker.integration.spec.ts (direct worker.process() invocation)
+  // @algorithm: D-05/D-06 — see d-block-sla-worker.integration.spec.ts (Scenario B)
   // @algorithm: D-07
   it('D-07: type 3 — sliding window M=5 N=3, flag fires after 3rd type-2 in window', async () => {
     const { sc, dir, obj, boq, org } = await bootstrap();

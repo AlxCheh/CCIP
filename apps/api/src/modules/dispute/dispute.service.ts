@@ -79,4 +79,55 @@ export class DisputeService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // algorithm_v1_3.md §Block D, Scenario B: "IF gc_response RECEIVED"
+  async submitGpResponse(discrepancyId: number, gpPosition: string) {
+    if (!gpPosition?.trim()) {
+      throw new BadRequestException('GP_POSITION_REQUIRED');
+    }
+
+    const discrepancy = await this.prisma.discrepancy.findUniqueOrThrow({
+      where: { id: discrepancyId },
+      include: { periodFact: true },
+    });
+    if (discrepancy.status !== 'open') {
+      throw new ConflictException('DISCREPANCY_WRONG_STATUS');
+    }
+
+    const updated = await this.prisma.discrepancy.update({
+      where: { id: discrepancyId },
+      data: { gpPosition: gpPosition.trim(), gcResponseAt: new Date() },
+    });
+
+    // GP responded — Scenario A's "GP silence" timers (day3 notify / day5
+    // force-close) no longer apply; Scenario B takes over only if SC rejects.
+    await this.disputeSla.cancelEvents(
+      discrepancy.periodFact.periodId,
+      discrepancy.periodFact.boqItemId,
+    );
+
+    return updated;
+  }
+
+  // SC explicitly rejects the GP's documentation → Scenario B SLA clock starts from gcResponseAt
+  async rejectGpResponse(discrepancyId: number, actorId: number) {
+    const discrepancy = await this.prisma.discrepancy.findUniqueOrThrow({
+      where: { id: discrepancyId },
+      include: { periodFact: true },
+    });
+    if (discrepancy.status !== 'open') {
+      throw new ConflictException('DISCREPANCY_WRONG_STATUS');
+    }
+    if (!discrepancy.gcResponseAt) {
+      throw new ConflictException('GP_RESPONSE_NOT_SUBMITTED');
+    }
+
+    await this.disputeSla.scheduleEvents({
+      discrepancyId,
+      periodId: discrepancy.periodFact.periodId,
+      boqItemId: discrepancy.periodFact.boqItemId,
+      createdAt: discrepancy.gcResponseAt,
+      scenario: 'B',
+    });
+  }
 }

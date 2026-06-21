@@ -94,7 +94,7 @@ describe('D-block — SLA Worker handlers (direct invocation, no BullMQ)', () =>
 
   // @algorithm: D-04
   it('D-04: force_close handler — closes discrepancy, sets forced_sc_figure', async () => {
-    const { sc, dir: _dir, obj, boq } = await bootstrap();
+    const { sc, obj, boq } = await bootstrap();
 
     const period = await periodSvc.openPeriod(obj.id, sc.id);
     await periodSvc.submitGp(
@@ -138,6 +138,90 @@ describe('D-block — SLA Worker handlers (direct invocation, no BullMQ)', () =>
     });
     expect(updatedDiscrepancy.status).toBe('forced_sc_figure');
     expect(updatedDiscrepancy.resolvedAt).not.toBeNull();
+
+    const fact = await prisma.periodFact.findFirst({
+      where: { periodId: period.id, boqItemId: boq.items[0].id },
+      select: { discrepancyStatus: true, acceptedVolume: true, scVolume: true },
+    });
+    expect(fact!.discrepancyStatus).toBe('forced_sc_figure');
+    expect(Number(fact!.acceptedVolume)).toBe(Number(fact!.scVolume));
+
+    const updated = await prisma.slaEvent.findUniqueOrThrow({ where: { id: slaEvent.id } });
+    expect(updated.executedAt).not.toBeNull();
+  });
+
+  // @algorithm: D-05
+  it('D-05: Scenario B day 3 — notify_director handler sends the active-dispute message', async () => {
+    const { sc, dir, obj, boq } = await bootstrap();
+    const period = await periodSvc.openPeriod(obj.id, sc.id);
+
+    const slaEvent = await prisma.slaEvent.create({
+      data: {
+        periodId: period.id,
+        boqItemId: boq.items[0].id,
+        scenario: 'B',
+        eventType: 'notify_director_day3',
+        scheduledAt: new Date(),
+      },
+    });
+
+    await worker.process({ data: { slaEventId: slaEvent.id } } as any);
+
+    const notification = await prisma.notification.findFirst({
+      where: { userId: dir.id, type: 'sla_day3_active_dispute' },
+    });
+    expect(notification).not.toBeNull();
+    expect(notification!.message).toContain('Сценарий B');
+
+    const updated = await prisma.slaEvent.findUniqueOrThrow({ where: { id: slaEvent.id } });
+    expect(updated.executedAt).not.toBeNull();
+  });
+
+  // @algorithm: D-06
+  it('D-06: Scenario B day 14 — sc_figure_applied handler applies SC volume, same as force_close', async () => {
+    const { sc, obj, boq } = await bootstrap();
+
+    const period = await periodSvc.openPeriod(obj.id, sc.id);
+    await periodSvc.submitGp(
+      period.gpSubmissionToken!,
+      'GP Test Org',
+      [{ boqItemId: boq.items[0].id, gpVolume: 100 }],
+    );
+    await periodSvc.upsertPeriodFact(period.id, boq.items[0].id, 80, sc.id);
+
+    await prisma.photo.create({
+      data: {
+        periodId: period.id,
+        boqItemId: boq.items[0].id,
+        filePath: '/uploads/d06-evidence.jpg',
+        uploadedBy: sc.id,
+      },
+    });
+
+    const discrepancy = await disputeSvc.createDispute(
+      period.id,
+      boq.items[0].id,
+      sc.id,
+      { disputeReason: 'GP docs disputed' },
+    );
+    expect(discrepancy.status).toBe('open');
+
+    const slaEvent = await prisma.slaEvent.create({
+      data: {
+        periodId: period.id,
+        boqItemId: boq.items[0].id,
+        scenario: 'B',
+        eventType: 'sc_figure_applied_day14',
+        scheduledAt: new Date(),
+      },
+    });
+
+    await worker.process({ data: { slaEventId: slaEvent.id } } as any);
+
+    const updatedDiscrepancy = await prisma.discrepancy.findUniqueOrThrow({
+      where: { id: discrepancy.id },
+    });
+    expect(updatedDiscrepancy.status).toBe('forced_sc_figure');
 
     const fact = await prisma.periodFact.findFirst({
       where: { periodId: period.id, boqItemId: boq.items[0].id },
