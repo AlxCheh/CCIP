@@ -1,11 +1,13 @@
 // apps/api/test/integration/invariants/adr-007-period-immutability.integration.spec.ts
 import { Test, type TestingModule } from '@nestjs/testing';
 import { PrismaClient, Prisma } from '@ccip/database';
+import { Client } from 'pg';
 import { PrismaService } from '../../../src/common/prisma/prisma.service';
 import { AuditLogService } from '../../../src/common/audit/audit-log.service';
 import { PeriodService } from '../../../src/modules/period/period.service';
 import { makeOrg, makeUser, makeObject, makeBoQ, makeApprovedZeroReport, makeClosedPeriod } from '../fixtures/factories';
 import { truncateAll } from '../setup/truncate';
+import { TEST_DB_URL } from '../setup/env';
 
 describe('ADR-007 — period immutability after close', () => {
   let prisma: PrismaClient;
@@ -41,7 +43,7 @@ describe('ADR-007 — period immutability after close', () => {
     const period = await makeClosedPeriod(prisma, obj, boq, sc, 1);
 
     await expect(
-      svc.upsertPeriodFact(period.id, boq.items[0].id, { scVolume: 50 }, sc.id),
+      svc.upsertPeriodFact(period.id, boq.items[0].id, 50, sc.id),
     ).rejects.toThrow(/PERIOD_(NOT_OPEN|CLOSED|IMMUTABLE|ALREADY_CLOSED)/);
   });
 
@@ -75,11 +77,27 @@ describe('ADR-007 — period immutability after close', () => {
       },
     });
 
-    // Direct UPDATE must be rejected by PostgreSQL (error 42501 permission denied)
-    await expect(
-      prisma.$executeRaw`UPDATE period_facts SET sc_volume = 200 WHERE id = ${fact.id}`,
-    ).rejects.toMatchObject({
-      message: expect.stringMatching(/permission denied/i),
-    });
+    // `prisma` above connects as ccip_owner (full grants — see env.ts), which
+    // would never hit the P-25 REVOKE. Connect as ccip_app, the role the
+    // REVOKE actually targets, to exercise it for real.
+    const appPassword = 'ccip_app_test_only_pwd';
+    await prisma.$executeRawUnsafe(
+      `ALTER ROLE ccip_app PASSWORD '${appPassword}'`,
+    );
+    const appUrl = new URL(TEST_DB_URL);
+    appUrl.username = 'ccip_app';
+    appUrl.password = appPassword;
+    const appClient = new Client({ connectionString: appUrl.toString() });
+    await appClient.connect();
+    try {
+      // Direct UPDATE must be rejected by PostgreSQL (error 42501 permission denied)
+      await expect(
+        appClient.query('UPDATE period_facts SET sc_volume = 200 WHERE id = $1', [fact.id]),
+      ).rejects.toMatchObject({
+        message: expect.stringMatching(/permission denied/i),
+      });
+    } finally {
+      await appClient.end();
+    }
   });
 });
