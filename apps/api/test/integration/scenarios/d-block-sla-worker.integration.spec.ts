@@ -4,6 +4,7 @@ import { PrismaClient } from '@ccip/database';
 import { PrismaService } from '../../../src/common/prisma/prisma.service';
 import { AuditLogService } from '../../../src/common/audit/audit-log.service';
 import { PeriodService } from '../../../src/modules/period/period.service';
+import { WorkPaceService } from '../../../src/modules/analytics/work-pace.service';
 import { DisputeService } from '../../../src/modules/dispute/dispute.service';
 import { DisputeSlaService } from '../../../src/modules/dispute-sla/dispute-sla.service';
 import { DisputeSlaWorker } from '../../../src/modules/dispute-sla/dispute-sla.worker';
@@ -25,6 +26,7 @@ describe('D-block — SLA Worker handlers (direct invocation, no BullMQ)', () =>
         PeriodService,
         { provide: PrismaService, useValue: prisma },
         AuditLogService,
+        WorkPaceService,
       ],
     }).compile();
     periodSvc = periodMod.get(PeriodService);

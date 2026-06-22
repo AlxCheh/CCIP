@@ -4,6 +4,7 @@ import { PrismaClient, Prisma } from '@ccip/database';
 import { Client } from 'pg';
 import { PrismaService } from '../../../src/common/prisma/prisma.service';
 import { AuditLogService } from '../../../src/common/audit/audit-log.service';
+import { WorkPaceService } from '../../../src/modules/analytics/work-pace.service';
 import { PeriodService } from '../../../src/modules/period/period.service';
 import { makeOrg, makeUser, makeObject, makeBoQ, makeApprovedZeroReport, makeClosedPeriod } from '../fixtures/factories';
 import { truncateAll } from '../setup/truncate';
@@ -20,6 +21,7 @@ describe('ADR-007 — period immutability after close', () => {
         PeriodService,
         { provide: PrismaService, useValue: prisma },
         AuditLogService,
+        WorkPaceService,
       ],
     }).compile();
     svc = mod.get(PeriodService);

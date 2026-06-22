@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@ccip/database';
 import { PrismaService } from '../../../src/common/prisma/prisma.service';
 import { AuditLogService } from '../../../src/common/audit/audit-log.service';
+import { WorkPaceService } from '../../../src/modules/analytics/work-pace.service';
 import { PeriodService } from '../../../src/modules/period/period.service';
 import { makeOrg, makeUser, makeObject, makeBoQ, makeApprovedZeroReport } from '../fixtures/factories';
 import { truncateAll } from '../setup/truncate';
@@ -18,6 +19,7 @@ describe('C-block — PeriodEngine correctness (subset; C-05/06/08 → W2)', () 
         PeriodService,
         { provide: PrismaService, useValue: prisma },
         AuditLogService,
+        WorkPaceService,
       ],
     }).compile();
     svc = mod.get(PeriodService);

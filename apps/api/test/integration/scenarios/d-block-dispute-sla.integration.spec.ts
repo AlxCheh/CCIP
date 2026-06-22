@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { PrismaClient } from '@ccip/database';
 import { PrismaService } from '../../../src/common/prisma/prisma.service';
 import { AuditLogService } from '../../../src/common/audit/audit-log.service';
+import { WorkPaceService } from '../../../src/modules/analytics/work-pace.service';
 import { PeriodService } from '../../../src/modules/period/period.service';
 import { DisputeService } from '../../../src/modules/dispute/dispute.service';
 import { DisputeSlaService } from '../../../src/modules/dispute-sla/dispute-sla.service';
@@ -24,6 +25,7 @@ describe('D-block — DisputeSLA / systemic flag', () => {
         PeriodService,
         { provide: PrismaService, useValue: prisma },
         AuditLogService,
+        WorkPaceService,
       ],
     }).compile();
     svc = mod.get(PeriodService);

@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { Prisma } from '@ccip/database';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
+import { WorkPaceService } from '../analytics/work-pace.service';
 
 // Days until GP submission token expires (default: 14 days from SystemConfig or constant)
 const GP_TOKEN_EXPIRES_DAYS = 14;
@@ -15,16 +16,36 @@ const GP_TOKEN_EXPIRES_DAYS = 14;
 // Period statuses that allow SC fact entry
 const SC_FACT_ALLOWED_STATUSES = ['gp_submitted', 'verification'];
 
+// @algorithm: line 223-229 — допустимые причины плановой паузы
+const PAUSE_REASONS = [
+  'Праздничные дни',
+  'Ожидание поставки материалов',
+  'Технологический перерыв',
+  'Неблагоприятные погодные условия',
+  'Ожидание разрешительной документации',
+  'Иное',
+];
+
 @Injectable()
 export class PeriodService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
+    private readonly workPace: WorkPaceService,
   ) {}
 
   // ─── openPeriod ──────────────────────────────────────────────────────────────
 
-  async openPeriod(objectId: number, actorId: number) {
+  async openPeriod(
+    objectId: number,
+    actorId: number,
+    pauseOpts?: { plannedPause?: boolean; pauseReason?: string },
+  ) {
+    if (pauseOpts?.plannedPause) {
+      if (!pauseOpts.pauseReason || !PAUSE_REASONS.includes(pauseOpts.pauseReason)) {
+        throw new ConflictException('INVALID_PAUSE_REASON');
+      }
+    }
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
@@ -71,6 +92,8 @@ export class PeriodService {
             status: 'open',
             openedBy: actorId,
             openedAt: now,
+            plannedPause: pauseOpts?.plannedPause ?? false,
+            pauseReason: pauseOpts?.plannedPause ? pauseOpts.pauseReason : null,
             gpSubmissionToken: randomUUID(),
             gpTokenExpiresAt,
           },
@@ -345,7 +368,10 @@ export class PeriodService {
     boqItemId: number,
     scVolume: unknown,
     actorId: number,
-    opts?: { workAccessible?: boolean },
+    opts?: {
+      spikeResponse?: 'planned_concentration' | 'data_entry_error';
+      workAccessible?: boolean;
+    },
   ) {
     return this.prisma.$transaction(async (tx) => {
       const period = await tx.period.findUniqueOrThrow({
@@ -413,6 +439,7 @@ export class PeriodService {
           discrepancyStatus,
           acceptedVolume:
             acceptedVolume !== null ? new Prisma.Decimal(acceptedVolume) : null,
+          spikeResponse: opts?.spikeResponse ?? null,
         },
         update: {
           scVolume: new Prisma.Decimal(scVolume as number),
@@ -420,6 +447,7 @@ export class PeriodService {
           discrepancyStatus,
           acceptedVolume:
             acceptedVolume !== null ? new Prisma.Decimal(acceptedVolume) : null,
+          spikeResponse: opts?.spikeResponse ?? null,
         },
       });
 
@@ -484,14 +512,18 @@ export class PeriodService {
         data: { status: 'closed', closedAt: new Date(), closedBy: actorId },
       });
 
-      // TODO M-05c: добавить INSERT work_pace в эту же транзакцию (ADR-011)
       // TODO M-05b: после транзакции enqueue BullMQ job для REFRESH MATERIALIZED VIEW CONCURRENTLY
       const readinessPct = await this.calcReadiness(periodId, tx);
+      await this.recordWorkPaceDeltas(tx, periodId, period.objectId);
+      const forecast = await this.workPace.calcObjectForecast(tx, period.objectId, periodId);
       await tx.readinessSnapshot.create({
         data: {
           periodId,
           objectId: period.objectId,
           objectReadinessPct: readinessPct,
+          weightedForecastDate: forecast.weightedForecastDate,
+          criticalPathForecastDate: forecast.criticalPathForecastDate,
+          gapFlag: forecast.gapFlag,
         },
       });
 
@@ -505,6 +537,74 @@ export class PeriodService {
 
       return updated;
     });
+  }
+
+  // ─── recordWorkPaceDeltas ──────────────────────────────────────────────────────
+  // @algorithm: пишет WorkPace.periodVolume как дельту кумулятивного объёма к предыдущему закрытому периоду
+
+  private async recordWorkPaceDeltas(
+    tx: Prisma.TransactionClient,
+    periodId: number,
+    objectId: number,
+  ): Promise<void> {
+    const period = await tx.period.findUniqueOrThrow({
+      where: { id: periodId },
+      select: { periodNumber: true, boqVersionId: true, plannedPause: true },
+    });
+
+    const items = await tx.boqItem.findMany({
+      where: { boqVersionId: period.boqVersionId },
+      select: { id: true },
+    });
+
+    for (const item of items) {
+      const fact = await tx.periodFact.findFirst({
+        where: { periodId, boqItemId: item.id },
+        select: { acceptedVolume: true, scVolume: true },
+      });
+      const cumulative =
+        fact?.acceptedVolume != null
+          ? Number(fact.acceptedVolume)
+          : fact?.scVolume != null
+          ? Number(fact.scVolume)
+          : 0;
+
+      const prevPeriod = await tx.period.findFirst({
+        where: { objectId, periodNumber: { lt: period.periodNumber }, status: { in: ['closed', 'force_closed'] } },
+        orderBy: { periodNumber: 'desc' },
+        select: { id: true },
+      });
+      let prevCumulative = 0;
+      if (prevPeriod) {
+        const prevFact = await tx.periodFact.findFirst({
+          where: { periodId: prevPeriod.id, boqItemId: item.id },
+          select: { acceptedVolume: true, scVolume: true },
+        });
+        prevCumulative =
+          prevFact?.acceptedVolume != null
+            ? Number(prevFact.acceptedVolume)
+            : prevFact?.scVolume != null
+            ? Number(prevFact.scVolume)
+            : 0;
+      }
+
+      const delta = cumulative - prevCumulative;
+      await tx.workPace.upsert({
+        where: { periodId_boqItemId: { periodId, boqItemId: item.id } },
+        create: {
+          periodId,
+          boqItemId: item.id,
+          periodVolume: delta,
+          weightedPace: delta,
+          isExcluded: period.plannedPause,
+        },
+        update: {
+          periodVolume: delta,
+          weightedPace: delta,
+          isExcluded: period.plannedPause,
+        },
+      });
+    }
   }
 
   // ─── calcReadiness ───────────────────────────────────────────────────────────
@@ -600,8 +700,17 @@ export class PeriodService {
       await this.prisma.$transaction(async (tx) => {
         await tx.readinessSnapshot.deleteMany({ where: { periodId: p.id } });
         const readinessPct = await this.calcReadiness(p.id, tx);
+        await this.recordWorkPaceDeltas(tx, p.id, objectId);
+        const forecast = await this.workPace.calcObjectForecast(tx, objectId, p.id);
         await tx.readinessSnapshot.create({
-          data: { periodId: p.id, objectId, objectReadinessPct: readinessPct },
+          data: {
+            periodId: p.id,
+            objectId,
+            objectReadinessPct: readinessPct,
+            weightedForecastDate: forecast.weightedForecastDate,
+            criticalPathForecastDate: forecast.criticalPathForecastDate,
+            gapFlag: forecast.gapFlag,
+          },
         });
       });
     }
