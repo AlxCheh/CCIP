@@ -20,10 +20,12 @@ jobs:
           git clone "https://github.com/${{ github.repository }}.git" "${{ steps.dir.outputs.path }}"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: ${{ steps.dir.outputs.path }}/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'

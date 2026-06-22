@@ -8,9 +8,9 @@ const mockPrisma = {
   period:      { findUniqueOrThrow: jest.fn() },
   periodFact:  { findFirst: jest.fn(), update: jest.fn() },
   photo:       { findFirst: jest.fn() },
-  discrepancy: { create: jest.fn(), findMany: jest.fn() },
+  discrepancy: { create: jest.fn(), findMany: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
 };
-const mockDisputeSlaService = { scheduleEvents: jest.fn() };
+const mockDisputeSlaService = { scheduleEvents: jest.fn(), cancelEvents: jest.fn() };
 
 const openPeriod = (overrides = {}) => ({
   id: 1, status: 'verification', object: { organizationId: 'org-1' }, ...overrides,
@@ -115,6 +115,63 @@ describe('DisputeService', () => {
         expect.objectContaining({ where: { periodFact: { periodId: 5 } } }),
       );
       expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('submitGpResponse', () => {
+    it('throws BadRequestException when gpPosition is empty', async () => {
+      await expect(service.submitGpResponse(30, '   ')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws ConflictException when discrepancy is not open', async () => {
+      mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
+        id: 30, status: 'forced_sc_figure', periodFact: { periodId: 1, boqItemId: 7 },
+      });
+      await expect(service.submitGpResponse(30, 'docs attached')).rejects.toThrow(ConflictException);
+    });
+
+    it('stamps gpPosition + gcResponseAt and cancels pending Scenario-A timers', async () => {
+      mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
+        id: 30, status: 'open', periodFact: { periodId: 1, boqItemId: 7 },
+      });
+      mockPrisma.discrepancy.update.mockResolvedValue({ id: 30, gpPosition: 'docs attached' });
+
+      await service.submitGpResponse(30, 'docs attached');
+
+      expect(mockPrisma.discrepancy.update).toHaveBeenCalledWith({
+        where: { id: 30 },
+        data: { gpPosition: 'docs attached', gcResponseAt: expect.any(Date) },
+      });
+      expect(mockDisputeSlaService.cancelEvents).toHaveBeenCalledWith(1, 7);
+    });
+  });
+
+  describe('rejectGpResponse', () => {
+    it('throws ConflictException when discrepancy is not open', async () => {
+      mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
+        id: 30, status: 'forced_sc_figure', gcResponseAt: new Date(), periodFact: { periodId: 1, boqItemId: 7 },
+      });
+      await expect(service.rejectGpResponse(30, 1)).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException when GP has not responded yet', async () => {
+      mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
+        id: 30, status: 'open', gcResponseAt: null, periodFact: { periodId: 1, boqItemId: 7 },
+      });
+      await expect(service.rejectGpResponse(30, 1)).rejects.toThrow(ConflictException);
+    });
+
+    it('schedules Scenario-B SLA events anchored on gcResponseAt', async () => {
+      const gcResponseAt = new Date('2026-06-10T00:00:00Z');
+      mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
+        id: 30, status: 'open', gcResponseAt, periodFact: { periodId: 1, boqItemId: 7 },
+      });
+
+      await service.rejectGpResponse(30, 1);
+
+      expect(mockDisputeSlaService.scheduleEvents).toHaveBeenCalledWith({
+        discrepancyId: 30, periodId: 1, boqItemId: 7, createdAt: gcResponseAt, scenario: 'B',
+      });
     });
   });
 });

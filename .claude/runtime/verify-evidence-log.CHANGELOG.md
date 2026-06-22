@@ -14,6 +14,7 @@
 | Wave 4 | `Branch: <name>` в bootstrap верифицируется против `git rev-parse --abbrev-ref HEAD`. Mismatch → `FIREWALL_BRANCH_DRIFT`. | `bootstrapFirewall` |
 | Wave 5 | `[sha:NNNNNNN]` (4–40 hex) верифицируется через `git cat-file -e`. Несуществующий объект → `FIREWALL_SHA_NOT_FOUND`. | `bootstrapFirewall` |
 | Wave 7 | Evidence row с `source_file: repo:docs/errors/sessions/...` запрещён (`source_is_session_artifact`) — anti-telephone-game (hook-генерируемые артефакты не первичный источник). | `verifyRowSource` |
+| Wave 8 (2026-06-12) | Лимит длины цитаты расщеплён на две оси: специфичность в СИМВОЛАХ (`[...quote].length` ≤ `OPT_MAX_QUOTE_CHARS`=80) + анти-блоат потолок в БАЙТАХ (≤ `OPT_MAX_QUOTE_BYTES`=160). Wave 2 fix #3 (pure bytes) штрафовал русскоязычный корпус вдвое (80B=40 кир.симв.); char-ось справедлива к multibyte. Новый reason-suffix `quote_too_long(Nc)` для char-overflow (vs `(NB)` для byte-ceiling). | `verifyRowSource` |
 
 ## Hardening wave (2026-05-25/26) — findings C-1..C-5, M-1..M-10
 

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ccip.local/schemas/governance-manifest.json",
+  "title": "CCIP Governance Manifest",
+  "type": "object",
+  "required": ["invariants"],
+  "properties": {
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim", "doc_anchor", "enforcement", "kind", "status"],
+        "properties": {
+          "id":          { "type": "string", "pattern": "^INV-[A-Z0-9-]+$" },
+          "claim":       { "type": "string" },
+          "doc_anchor":  { "type": "string" },
+          "enforcement": { "type": "string", "pattern": "^[a-zA-Z0-9][\\w.-]*#[\\w-]+$" },
+          "kind":        { "type": "string", "enum": ["block", "signal", "advisory"] },
+          "telemetry":   { "type": "string" },
+          "status":      { "type": "string", "enum": ["enforced", "observed", "advisory", "planned", "shadow"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

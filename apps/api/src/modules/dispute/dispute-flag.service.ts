@@ -64,6 +64,25 @@ export class DisputeFlagService {
     });
   }
 
+  async clearSystemicFlag(boqItemId: number, organizationId: string): Promise<void> {
+    const directors = await this.prisma.user.findMany({
+      where: { organizationId, role: 'director' },
+      select: { id: true },
+    });
+
+    if (directors.length === 0) return;
+
+    await this.prisma.notification.updateMany({
+      where: {
+        userId: { in: directors.map((d) => d.id) },
+        type: 'systemic_dispute_flag',
+        referenceId: BigInt(boqItemId),
+        readAt: null,
+      },
+      data: { readAt: new Date() },
+    });
+  }
+
   private async getRecentPeriodIds(periodId: number, mWindow: number): Promise<number[]> {
     const period = await this.prisma.period.findUniqueOrThrow({
       where: { id: periodId },

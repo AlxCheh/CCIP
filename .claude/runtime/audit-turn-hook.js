@@ -52,6 +52,15 @@ function readJSON(p) {
   catch { return null; }
 }
 
+// SPOF-3: validate trigger-state schema; fall back to defaultState on corrupt/incomplete state
+const TRIGGER_REQUIRED = ['session_id', 'total_calls', 'turn_index', 'tool_calls_this_turn'];
+function validateTriggerState(st, sid) {
+  const missing = TRIGGER_REQUIRED.filter(k => !(k in st));
+  if (missing.length === 0) return st;
+  process.stderr.write(`[audit-turn-hook] trigger-state missing fields: ${missing.join(', ')} — using defaultState\n`);
+  return defaultState(sid);
+}
+
 function writeState(state) {
   const tmp = TSTATE + '.tmp.' + process.pid;
   const fd = fs.openSync(tmp, 'w');
@@ -95,7 +104,7 @@ process.stdin.on('end', () => {
 function run(rawInput) {
   const promptText = extractPromptText(rawInput || '');
   const sid = currentSessionId();
-  let st = readJSON(TSTATE) || defaultState(sid);
+  let st = validateTriggerState(readJSON(TSTATE) || defaultState(sid), sid);
   if (!st.session_key) st.session_key = genSessionKey();   // SessionStart owns resets
 
   st.turn_index = (st.turn_index || 0) + 1;
@@ -134,3 +143,5 @@ function run(rawInput) {
     }));
   }
 }
+
+if (require.main !== module) module.exports = { validateTriggerState, defaultState };

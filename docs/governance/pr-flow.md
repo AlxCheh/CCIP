@@ -187,4 +187,4 @@ Subject — императив в нижнем регистре, без точк
 - `docs/governance/branch-protection.md` — что именно защищено и как переприменить rules.
 - `CHANGELOG.md` — Keep-a-Changelog формат; commits с `closes F-NNN` требуют entry.
 - `.github/workflows/ci.yml` — что прогоняется на CI и в каком порядке.
-- `docs/audits/quarterly-runbook.md` — что делать раз в квартал поверх непрерывного PR-flow.
+- `docs/audits/2026-05-15-quarterly-runbook.md` — что делать раз в квартал поверх непрерывного PR-flow.

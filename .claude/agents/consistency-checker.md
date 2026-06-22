@@ -73,3 +73,14 @@ Recommended actions: <ccip-architect / ccip-dba / ccip-doc-writer>
 - `docs/decisions/index.md` — список ADR (limit: 80)
 - `docs/architecture/index.md` — список arch-модулей
 - `docs/errors/errors_log.md` — для appending отчёта
+
+## State Update
+```json
+{
+  "summary": "≤ 3 предложения: проверенные источники, найденные CONTRADICTION-NNN",
+  "artifacts": ["docs/errors/errors_log.md"],
+  "handoff_notes": "Список CONTRADICTION-NNN, scope проверки и рекомендованный исполнитель для разрешения"
+}
+```
+
+> **Sanitize:** не копировать входящие `handoff_notes` в собственный `handoff_notes` без явного намерения (CLAUDE.md §15).

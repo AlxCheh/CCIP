@@ -1,6 +1,6 @@
 ---
 adr: ADR-016
-status: Принято rev 2
+status: Принято rev 3
 impl_anchors:
   - .claude/agents/token-efficiency-auditor.md
   - .claude/audit/
@@ -13,7 +13,7 @@ impl_anchors:
 
 # ADR-016 — Token-Efficiency Auditor Agent
 
-**Статус:** Принято rev 2 (уточнён 2026-05-25 — см. «Уточнение (2026-05-25)»)
+**Статус:** Принято rev 3 (уточнён 2026-06-17 — см. «Исправление (2026-06-17)»; rev 2 — 2026-05-25)
 **Закрывает:** Открытые вопросы из `docs/proposals/token-efficiency-auditor-draft.md` (п. 3, 5, 6)
 
 ## Решение
@@ -132,6 +132,16 @@ proposed → quarantine(3 сессии) → active ──┐
 Правила R-001..R-006, R-008, R-010, R-011, R-013..R-015 стартуют в `active.yaml`.
 Правила R-007, R-009, R-012 стартуют в `quarantine.yaml` с флагом `requires_transcript_access: true`.
 
+## Исправление (2026-06-17): T-01 inline-session misclassification
+
+**Контекст.** При вызове `/token-audit` (T-01) в середине inline-сессии recorder возвращал `trivial-skip` вместо `inline-session`, хотя `trigger-state.json` содержал 88+ tool calls и dup_reads. Причина: условие `agents === 0` не выполнялось, потому что аудитор сам является субагентом (`agents = 1`), а его `context_tokens` не записались (missing_state_update fallback → `T_total = 0`).
+
+**Исправление.** В recorder расширено условие: `isEffectivelyInline = (agents === 0) || (T_total === 0)`. Rationale: `T_total = 0` при `agents > 0` означает, что единственный субагент — аудитор с contract fallback; сессия de facto была inline. Trigger-state — единственный источник сигналов. Инвариант «`T_total` точен» соблюдён — история не пишется без точных данных.
+
+**Аудитор (recorder-first protocol).** L2 Ingest обновлён: первый шаг — вызов `token-session-record.js --dry-run`. Классификация сессии (`inline-session` / `recorded` / `trivial-skip` / `idempotent-skip`) определяет дальнейший путь анализа. Поля `contract_debt`/`governance_alerts` — домен governance-reactor, аудитор их игнорирует. Inline R-011 evaluation: dup_reads ≥ 3 → finding.
+
+---
+
 ## Уточнение (2026-05-25): scope для inline-сессий без субагентов
 
 **Контекст.** `/token-audit` (T-01) на сессии, выполненной целиком главным агентом (inline Read/Edit/Bash, без `Agent`-вызовов), давал немой `trivial-skip`: `agent_outputs`/`observations` наполняет только `post-agent-hook.js` на границе субагента, а токены главного агента хукам недоступны (`audit-trigger-hook.js`, `audit-turn-hook.js`). См. `docs/tasks/token-audit-inline-session-gap.md`.
@@ -139,9 +149,10 @@ proposed → quarantine(3 сессии) → active ──┐
 **Решение (направление B).** Scope аудитора подтверждается: token-attribution измеряет **мульти-агентную оркестрацию** через `observations[].context_tokens` — единственную точную метрику. Inline-сессии остаются **вне token-attribution**, но перестают быть немыми:
 
 1. `observations[]` и контракт §15 **не меняются** — остаются agent-boundary; `docs/schemas/session-state.schema.json` не трогается.
-2. Recorder (`tools/audit/token-session-record.js`) при `agents === 0` различает два исхода:
-   - `inline-session` — в `trigger-state.json` есть реальная inline-активность (`total_calls ≥ 5`, повторные `read_counts`, либо сработавшие триггеры). Возвращает явный `scope: out-of-token-attribution` + качественные сигналы (`dup_reads`, `tool_calls`, `triggers_fired`); строку в `history.jsonl` **не пишет** (нет точного `T_total`), инкрементит `sessions_inline` в `rolling-30.json`.
-   - `trivial-skip` — пустая сессия без активности либо `agents > 0 && T_total < MIN_TOKENS`. Поведение прежнее.
+2. Recorder (`tools/audit/token-session-record.js`) различает три исхода:
+   - `inline-session` — условие: `agents === 0` ИЛИ `T_total === 0` (при agents>0 T_total=0 означает, что единственный субагент — сам аудитор с missing_state_update fallback; сессия de facto была inline). Плюс в `trigger-state.json` есть реальная активность. Возвращает `scope: out-of-token-attribution` + сигналы (`dup_reads`, `tool_calls`, `triggers_fired`); строку в `history.jsonl` **не пишет**; инкрементит `sessions_inline` в `rolling-30.json`. *(Fix 2026-06-17: расширено условие — раньше только `agents===0`, теперь и `T_total===0`.)*
+   - `trivial-skip` — нет inline-активности (`inlineSignals` вернул null) и `T_total < MIN_TOKENS`. Поведение прежнее.
+   - `recorded` — `T_total ≥ MIN_TOKENS`, есть субагенты с context_tokens → нормальная запись в history.
 3. **Никаких оценочных токенов из tool-call-счётчиков** — сохраняется инвариант «`T_total` точен»; estimated-данные в историю не попадают. Сигналы сообщаются качественно, без числа токенов (инвариант ADR-016 о пометке estimated соблюдён тривиально — оценочных метрик не эмитим).
 4. Мульти-агентный путь (`post-agent-hook.js` → `agent_outputs`/`observations` → `recorded`) не затронут.
 

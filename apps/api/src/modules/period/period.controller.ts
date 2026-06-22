@@ -31,6 +31,21 @@ export class PeriodController {
     );
   }
 
+  @Get(':id/detail')
+  @Roles('director', 'stroycontrol', 'admin')
+  getDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: AuthRequest,
+  ) {
+    return this.periodService.getDetail(id, parseInt(req.user.id, 10));
+  }
+
+  // Public endpoint — authenticated by GP token embedded in URL
+  @Get('gp/:token')
+  getGpForm(@Param('token') token: string) {
+    return this.periodService.getGpFormData(token);
+  }
+
   @Get(':id')
   @Roles('director', 'stroycontrol', 'admin')
   findById(@Param('id', ParseIntPipe) id: number, @Request() req: AuthRequest) {

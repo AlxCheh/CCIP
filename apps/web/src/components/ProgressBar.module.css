@@ -1,0 +1,5 @@
+.wrap { display: flex; align-items: center; gap: 9px; }
+.track { flex: 1; height: 5px; background: var(--rule); min-width: 60px; }
+.fill  { height: 5px; background: var(--accent); transition: width .3s; }
+.pct   { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--brown); width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+.empty { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--rule); }

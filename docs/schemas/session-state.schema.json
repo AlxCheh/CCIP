@@ -3,7 +3,7 @@
   "$id": "https://ccip.local/schemas/session-state.json",
   "title": "CCIP Session State",
   "type": "object",
-  "required": ["session_id", "task", "intents", "risk", "confidence", "routing", "status"],
+  "required": ["session_id", "task", "intents", "risk", "confidence", "routing", "status", "started_at"],
   "properties": {
     "session_id": {
       "type": "string",
@@ -30,7 +30,8 @@
           "scope":      { "type": "string" },
           "status":     { "type": "string", "enum": ["pending", "running", "done", "failed"] },
           "depends_on": { "type": "array", "items": { "type": "integer", "minimum": 1 } },
-          "retries":    { "type": "integer", "minimum": 0 }
+          "retries":    { "type": "integer", "minimum": 0 },
+          "fallback_for": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
         },
         "additionalProperties": false
       }
@@ -38,6 +39,7 @@
     "current_step": { "type": "integer", "minimum": 0 },
     "agent_outputs": {
       "type": "object",
+      "description": "Per-step agent outputs. DAG mode: keys are composite '${agent}:${step}' (ADR-026); inline mode: keys are bare agent names. additionalProperties allows both formats.",
       "additionalProperties": {
         "type": "object",
         "required": ["summary", "artifacts", "handoff_notes"],
@@ -51,6 +53,69 @@
     },
     "status":     { "type": "string", "enum": ["init", "planning", "executing", "done", "blocked"] },
     "started_at": { "type": "string" },
+    "resume_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Сколько раз --resume был применён к этой сессии; circuit breaker при ≥ MAX_RESUMES"
+    },
+    "contract_debt": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Счётчик пропусков ## State Update за сессию (ADR-017 Level 1 эскалация)"
+    },
+    "contract_debt_agents": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Агенты с missing_state_update=true, перенесённые из observations при flush (D-05)"
+    },
+    "inflight_spawns": {
+      "type": "array",
+      "description": "In-flight agent spawns approved by pre-agent-gate but not yet completed (E-2 parallel-burst budget). TTL-filtered at count time; reconciled by post-agent-hook; cleared at SessionStart.",
+      "items": {
+        "type": "object",
+        "required": ["agent", "at"],
+        "properties": {
+          "agent": { "type": "string" },
+          "at":    { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "agent_failure_counts": {
+      "type": "object",
+      "description": "Per-agent count of contract violations (missing ## State Update, non-exempt). Threshold >= 2 triggers auto-switch in DAG mode (ADR-025).",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "governance_alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind":      { "type": "string" },
+          "at":        { "type": "string" },
+          "session":   { "type": "string" },
+          "debt":      { "type": "integer", "minimum": 0 },
+          "agent":     { "type": "string" },
+          "ssc":       { "type": "number", "minimum": 0, "maximum": 1 },
+          "threshold": { "type": "number", "minimum": 0 },
+          "ratio":     { "type": "number", "minimum": 0, "maximum": 1 },
+          "agents":    { "type": "integer", "minimum": 0 },
+          "steps":     { "type": "array", "items": { "type": "integer", "minimum": 1 } },
+          "target":    { "type": "string", "description": "override target agent (E-1 override_applied/rejected)" },
+          "reason":    { "type": "string", "description": "override justification (E-1)" },
+          "bypassed":  { "type": "array", "items": { "type": "string" }, "description": "waived violations (E-1 override_applied)" },
+          "remaining": { "type": "array", "items": { "type": "string" }, "description": "non-waivable violations (E-1 override_rejected)" },
+          "surfaced":  { "type": "boolean", "description": "alert already injected into orchestrator context by governance-reactor (G-1 anti-spam)" },
+          "gate":      { "type": "string", "description": "gate that failed open (E-6 gate_failed_open)" },
+          "phase":     { "type": "string", "description": "where the gate threw: parse | evaluate (E-6)" },
+          "message":   { "type": "string", "description": "error message captured at fail-open (E-6)" },
+          "degraded":  { "type": "array", "items": { "type": "string" }, "description": "agent names exceeding agent_failure_count threshold (ADR-025, agent_failure_degraded)" },
+          "auto_corrected": { "type": "boolean", "description": "true when AUTO_CORRECTIONS fired for this alert in self-governed mode (ADR-027, CCIP_SELF_GOVERN=1)" }
+        },
+        "additionalProperties": false
+      }
+    },
     "observations": {
       "type": "array",
       "items": {
@@ -63,7 +128,8 @@
           "dag_step":       { "type": ["integer", "null"] },
           "outcome":        { "type": "string", "enum": ["success", "rerouted", "partial", "failed"] },
           "context_tokens": { "type": "integer", "minimum": 0 },
-          "reason":         { "type": "string" }
+          "reason":         { "type": "string" },
+          "missing_state_update": { "type": "boolean" }
         },
         "additionalProperties": false
       }

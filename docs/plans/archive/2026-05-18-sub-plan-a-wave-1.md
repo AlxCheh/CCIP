@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript 5.7, Jest 30, ts-jest 29, NestJS 11 testing module, Prisma 5.22, fast-check 3.x, PostgreSQL 16, pnpm 4.
 
-**Spec source:** `docs/superpowers/specs/2026-05-18-business-correctness-gate-design.md`
+**Spec source:** `docs/plans/archive/2026-05-18-business-correctness-gate-design.md`
 
 ---
 
@@ -1645,7 +1645,7 @@ git commit -m "docs(testing): integration-suite onboarding readme"
   - Coverage matrix auto-gen в `docs/testing/coverage-matrix.md`.
   - CI workflow `api-integration.yml` — PR + nightly.
   - Onboarding doc: `docs/testing/integration-suite-readme.md`.
-  - Источник дизайна: `docs/superpowers/specs/2026-05-18-business-correctness-gate-design.md`.
+  - Источник дизайна: `docs/plans/archive/2026-05-18-business-correctness-gate-design.md`.
 ```
 
 - [ ] **Step 22.2: Commit**
@@ -1667,7 +1667,7 @@ git commit -m "docs(changelog): Sub-plan A W1 complete — integration suite + 1
 В таблицу `## 5. Completed Modules`:
 
 ```markdown
-| Sub-plan A W1 | §11 Business Correctness — Wave 1 (17 algorithm tests + 2 ADR invariant suites) | 2026-05-XX | docs/superpowers/plans/2026-05-18-sub-plan-a-wave-1.md |
+| Sub-plan A W1 | §11 Business Correctness — Wave 1 (17 algorithm tests + 2 ADR invariant suites) | 2026-06-16 | docs/plans/archive/2026-05-18-sub-plan-a-wave-1.md |
 ```
 
 Заменить `2026-05-XX` на актуальную дату завершения W1.
@@ -1769,7 +1769,7 @@ Gaps: none.
 
 ## Execution Handoff
 
-**Plan complete and saved to `docs/superpowers/plans/2026-05-18-sub-plan-a-wave-1.md`. Two execution options:**
+**Plan complete and saved to `docs/plans/archive/2026-05-18-sub-plan-a-wave-1.md`. Two execution options:**
 
 **1. Subagent-Driven (recommended)** — dispatch fresh subagent per task, review between tasks, fast iteration. Per task: `ccip-qa` lead, `ccip-backend-core` co-agent for service-signature questions, `ccip-devops` co-agent for CI task (T20).
 

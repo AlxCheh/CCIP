@@ -18993,6 +18993,7 @@ export namespace Prisma {
     directorDecision: string | null
     resolvedAt: Date | null
     resolvedBy: number | null
+    gcResponseAt: Date | null
     createdAt: Date | null
   }
 
@@ -19006,6 +19007,7 @@ export namespace Prisma {
     directorDecision: string | null
     resolvedAt: Date | null
     resolvedBy: number | null
+    gcResponseAt: Date | null
     createdAt: Date | null
   }
 
@@ -19019,6 +19021,7 @@ export namespace Prisma {
     directorDecision: number
     resolvedAt: number
     resolvedBy: number
+    gcResponseAt: number
     createdAt: number
     _all: number
   }
@@ -19048,6 +19051,7 @@ export namespace Prisma {
     directorDecision?: true
     resolvedAt?: true
     resolvedBy?: true
+    gcResponseAt?: true
     createdAt?: true
   }
 
@@ -19061,6 +19065,7 @@ export namespace Prisma {
     directorDecision?: true
     resolvedAt?: true
     resolvedBy?: true
+    gcResponseAt?: true
     createdAt?: true
   }
 
@@ -19074,6 +19079,7 @@ export namespace Prisma {
     directorDecision?: true
     resolvedAt?: true
     resolvedBy?: true
+    gcResponseAt?: true
     createdAt?: true
     _all?: true
   }
@@ -19174,6 +19180,7 @@ export namespace Prisma {
     directorDecision: string | null
     resolvedAt: Date | null
     resolvedBy: number | null
+    gcResponseAt: Date | null
     createdAt: Date
     _count: DiscrepancyCountAggregateOutputType | null
     _avg: DiscrepancyAvgAggregateOutputType | null
@@ -19206,6 +19213,7 @@ export namespace Prisma {
     directorDecision?: boolean
     resolvedAt?: boolean
     resolvedBy?: boolean
+    gcResponseAt?: boolean
     createdAt?: boolean
     periodFact?: boolean | PeriodFactDefaultArgs<ExtArgs>
     resolvedByUser?: boolean | Discrepancy$resolvedByUserArgs<ExtArgs>
@@ -19221,6 +19229,7 @@ export namespace Prisma {
     directorDecision?: boolean
     resolvedAt?: boolean
     resolvedBy?: boolean
+    gcResponseAt?: boolean
     createdAt?: boolean
     periodFact?: boolean | PeriodFactDefaultArgs<ExtArgs>
     resolvedByUser?: boolean | Discrepancy$resolvedByUserArgs<ExtArgs>
@@ -19236,6 +19245,7 @@ export namespace Prisma {
     directorDecision?: boolean
     resolvedAt?: boolean
     resolvedBy?: boolean
+    gcResponseAt?: boolean
     createdAt?: boolean
   }
 
@@ -19264,6 +19274,7 @@ export namespace Prisma {
       directorDecision: string | null
       resolvedAt: Date | null
       resolvedBy: number | null
+      gcResponseAt: Date | null
       createdAt: Date
     }, ExtArgs["result"]["discrepancy"]>
     composites: {}
@@ -19669,6 +19680,7 @@ export namespace Prisma {
     readonly directorDecision: FieldRef<"Discrepancy", 'String'>
     readonly resolvedAt: FieldRef<"Discrepancy", 'DateTime'>
     readonly resolvedBy: FieldRef<"Discrepancy", 'Int'>
+    readonly gcResponseAt: FieldRef<"Discrepancy", 'DateTime'>
     readonly createdAt: FieldRef<"Discrepancy", 'DateTime'>
   }
     
@@ -33699,6 +33711,7 @@ export namespace Prisma {
     directorDecision: 'directorDecision',
     resolvedAt: 'resolvedAt',
     resolvedBy: 'resolvedBy',
+    gcResponseAt: 'gcResponseAt',
     createdAt: 'createdAt'
   };
 
@@ -35397,6 +35410,7 @@ export namespace Prisma {
     directorDecision?: StringNullableFilter<"Discrepancy"> | string | null
     resolvedAt?: DateTimeNullableFilter<"Discrepancy"> | Date | string | null
     resolvedBy?: IntNullableFilter<"Discrepancy"> | number | null
+    gcResponseAt?: DateTimeNullableFilter<"Discrepancy"> | Date | string | null
     createdAt?: DateTimeFilter<"Discrepancy"> | Date | string
     periodFact?: XOR<PeriodFactRelationFilter, PeriodFactWhereInput>
     resolvedByUser?: XOR<UserNullableRelationFilter, UserWhereInput> | null
@@ -35412,6 +35426,7 @@ export namespace Prisma {
     directorDecision?: SortOrderInput | SortOrder
     resolvedAt?: SortOrderInput | SortOrder
     resolvedBy?: SortOrderInput | SortOrder
+    gcResponseAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     periodFact?: PeriodFactOrderByWithRelationInput
     resolvedByUser?: UserOrderByWithRelationInput
@@ -35430,6 +35445,7 @@ export namespace Prisma {
     directorDecision?: StringNullableFilter<"Discrepancy"> | string | null
     resolvedAt?: DateTimeNullableFilter<"Discrepancy"> | Date | string | null
     resolvedBy?: IntNullableFilter<"Discrepancy"> | number | null
+    gcResponseAt?: DateTimeNullableFilter<"Discrepancy"> | Date | string | null
     createdAt?: DateTimeFilter<"Discrepancy"> | Date | string
     periodFact?: XOR<PeriodFactRelationFilter, PeriodFactWhereInput>
     resolvedByUser?: XOR<UserNullableRelationFilter, UserWhereInput> | null
@@ -35445,6 +35461,7 @@ export namespace Prisma {
     directorDecision?: SortOrderInput | SortOrder
     resolvedAt?: SortOrderInput | SortOrder
     resolvedBy?: SortOrderInput | SortOrder
+    gcResponseAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DiscrepancyCountOrderByAggregateInput
     _avg?: DiscrepancyAvgOrderByAggregateInput
@@ -35466,6 +35483,7 @@ export namespace Prisma {
     directorDecision?: StringNullableWithAggregatesFilter<"Discrepancy"> | string | null
     resolvedAt?: DateTimeNullableWithAggregatesFilter<"Discrepancy"> | Date | string | null
     resolvedBy?: IntNullableWithAggregatesFilter<"Discrepancy"> | number | null
+    gcResponseAt?: DateTimeNullableWithAggregatesFilter<"Discrepancy"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Discrepancy"> | Date | string
   }
 
@@ -37884,6 +37902,7 @@ export namespace Prisma {
     scPosition?: string | null
     directorDecision?: string | null
     resolvedAt?: Date | string | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
     periodFact: PeriodFactCreateNestedOneWithoutDiscrepanciesInput
     resolvedByUser?: UserCreateNestedOneWithoutResolvedDiscrepanciesInput
@@ -37899,6 +37918,7 @@ export namespace Prisma {
     directorDecision?: string | null
     resolvedAt?: Date | string | null
     resolvedBy?: number | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -37909,6 +37929,7 @@ export namespace Prisma {
     scPosition?: NullableStringFieldUpdateOperationsInput | string | null
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     periodFact?: PeriodFactUpdateOneRequiredWithoutDiscrepanciesNestedInput
     resolvedByUser?: UserUpdateOneWithoutResolvedDiscrepanciesNestedInput
@@ -37924,6 +37945,7 @@ export namespace Prisma {
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     resolvedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -37937,6 +37959,7 @@ export namespace Prisma {
     directorDecision?: string | null
     resolvedAt?: Date | string | null
     resolvedBy?: number | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -37947,6 +37970,7 @@ export namespace Prisma {
     scPosition?: NullableStringFieldUpdateOperationsInput | string | null
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -37960,6 +37984,7 @@ export namespace Prisma {
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     resolvedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -40328,6 +40353,7 @@ export namespace Prisma {
     directorDecision?: SortOrder
     resolvedAt?: SortOrder
     resolvedBy?: SortOrder
+    gcResponseAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -40348,6 +40374,7 @@ export namespace Prisma {
     directorDecision?: SortOrder
     resolvedAt?: SortOrder
     resolvedBy?: SortOrder
+    gcResponseAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -40361,6 +40388,7 @@ export namespace Prisma {
     directorDecision?: SortOrder
     resolvedAt?: SortOrder
     resolvedBy?: SortOrder
+    gcResponseAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -45663,6 +45691,7 @@ export namespace Prisma {
     scPosition?: string | null
     directorDecision?: string | null
     resolvedAt?: Date | string | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
     periodFact: PeriodFactCreateNestedOneWithoutDiscrepanciesInput
   }
@@ -45676,6 +45705,7 @@ export namespace Prisma {
     scPosition?: string | null
     directorDecision?: string | null
     resolvedAt?: Date | string | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -46379,6 +46409,7 @@ export namespace Prisma {
     directorDecision?: StringNullableFilter<"Discrepancy"> | string | null
     resolvedAt?: DateTimeNullableFilter<"Discrepancy"> | Date | string | null
     resolvedBy?: IntNullableFilter<"Discrepancy"> | number | null
+    gcResponseAt?: DateTimeNullableFilter<"Discrepancy"> | Date | string | null
     createdAt?: DateTimeFilter<"Discrepancy"> | Date | string
   }
 
@@ -51306,6 +51337,7 @@ export namespace Prisma {
     scPosition?: string | null
     directorDecision?: string | null
     resolvedAt?: Date | string | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
     resolvedByUser?: UserCreateNestedOneWithoutResolvedDiscrepanciesInput
   }
@@ -51319,6 +51351,7 @@ export namespace Prisma {
     directorDecision?: string | null
     resolvedAt?: Date | string | null
     resolvedBy?: number | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -55464,6 +55497,7 @@ export namespace Prisma {
     scPosition?: string | null
     directorDecision?: string | null
     resolvedAt?: Date | string | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -56163,6 +56197,7 @@ export namespace Prisma {
     scPosition?: NullableStringFieldUpdateOperationsInput | string | null
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     periodFact?: PeriodFactUpdateOneRequiredWithoutDiscrepanciesNestedInput
   }
@@ -56176,6 +56211,7 @@ export namespace Prisma {
     scPosition?: NullableStringFieldUpdateOperationsInput | string | null
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -56188,6 +56224,7 @@ export namespace Prisma {
     scPosition?: NullableStringFieldUpdateOperationsInput | string | null
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -58028,6 +58065,7 @@ export namespace Prisma {
     directorDecision?: string | null
     resolvedAt?: Date | string | null
     resolvedBy?: number | null
+    gcResponseAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -58038,6 +58076,7 @@ export namespace Prisma {
     scPosition?: NullableStringFieldUpdateOperationsInput | string | null
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     resolvedByUser?: UserUpdateOneWithoutResolvedDiscrepanciesNestedInput
   }
@@ -58051,6 +58090,7 @@ export namespace Prisma {
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     resolvedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -58063,6 +58103,7 @@ export namespace Prisma {
     directorDecision?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     resolvedBy?: NullableIntFieldUpdateOperationsInput | number | null
+    gcResponseAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

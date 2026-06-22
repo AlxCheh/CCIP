@@ -1,0 +1,83 @@
+{
+  "ccip-backend-core": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "PeriodEngine — state machine; не мутировать period после lock",
+      "BullMQ workers идемпотентны; Transactional Outbox обязателен для внешних эффектов"
+    ],
+    "forbidden": ["прямой UPDATE на immutable period"]
+  },
+  "ccip-architect": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "ADR — append-only; правка accepted-ADR требует bump статуса или нового ADR",
+      "Новые модули проектируются по ADR до реализации"
+    ],
+    "forbidden": ["правка accepted-ADR без создания нового ADR или bump revision"]
+  },
+  "ccip-dba": {
+    "domain_anchors": ["packages/database/prisma/schema.prisma", "docs/decisions/index.md"],
+    "invariants": [
+      "Миграции необратимы; DROP только после подтверждённой idle-нагрузки",
+      "audit_log партиционируется pg_partman; прямые INSERT запрещены",
+      "RLS политики обязательны на всех tenant-scoped таблицах"
+    ],
+    "forbidden": ["DROP TABLE без migration review", "INSERT в audit_log напрямую"]
+  },
+  "ccip-frontend": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "ARIA-семантика обязательна; тесты по role/accessible-name, не CSS-классам",
+      "Offline-first логика — только в ccip-mobile, не в web layer"
+    ],
+    "forbidden": ["toHaveClass('active') в тестах — использовать aria-current"]
+  },
+  "ccip-devops": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "SLA Worker: replicas:1, стратегия Recreate (не Rolling)",
+      "Redis с AOF persistence; PgBouncer в session mode"
+    ],
+    "forbidden": ["Rolling update для SLA Worker", "Redis без AOF"]
+  },
+  "ccip-qa": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "Contract-тесты против реального DB, не mock; mock-DB — зафиксированный антипаттерн",
+      "Тесты по observable behavior (ARIA/семантика), не по деталям реализации"
+    ],
+    "forbidden": ["мокирование БД в integration-тестах"]
+  },
+  "ccip-mobile": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "WatermelonDB для offline хранилища; sync-конфликты разрешаются по server-wins",
+      "Фотофиксация требует обязательных геотегов"
+    ],
+    "forbidden": ["прямой fetch без offline-queue при потере сети"]
+  },
+  "ccip-backend-aux": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "Auth — JWT; GpTokenGuard обязателен на всех GP-endpoints",
+      "AuditLogService — append-only; DELETE и UPDATE запрещены"
+    ],
+    "forbidden": ["DELETE из audit_log", "GP-endpoint без GpTokenGuard"]
+  },
+  "ccip-security": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "RLS политики на все tenant-scoped таблицы — обязательны",
+      "RBAC матрица: только добавление permissions в PR, не удаление"
+    ],
+    "forbidden": ["удаление RLS политики без security review", "снятие permissions без ADR"]
+  },
+  "ccip-doc-writer": {
+    "domain_anchors": ["docs/decisions/index.md"],
+    "invariants": [
+      "CLAUDE.md — только оркестрационные правила, не бизнес-логика",
+      "docs/decisions/index.md — append-only реестр ADR"
+    ],
+    "forbidden": ["редактирование accepted ADR без bump статуса"]
+  }
+}

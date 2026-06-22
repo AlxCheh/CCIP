@@ -21,6 +21,11 @@ Session Start
 [FLUSH] Stop hook автоматически → flush-state.js → переносит observations в feedback-loop.md
 ```
 
+> **Конкурентность (HA-2, ADR-019):** все мутации `session-state.json` сериализуются
+> межпроцессным локом через `state-io.updateStateLocked` (`state-lock.js`). Read-modify-write
+> атомарен между процессами (8 hook-writer'ов) — нет lost-update. При таймауте acquire —
+> наблюдаемый fail-open (`state_lock_failed_open`, surface через governance-reactor).
+
 ---
 
 ## Схема полей

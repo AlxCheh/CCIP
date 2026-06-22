@@ -14,6 +14,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { updateStateLocked } = require('./state-io'); // HA-2: locked SSTATE writes
 
 const ROOT   = path.resolve(__dirname, '../..');
 const TSTATE = path.join(ROOT, '.claude/audit/trigger-state.json');
@@ -72,5 +73,50 @@ process.stdin.on('end', () => {
   } catch (e) {
     process.stderr.write(`[audit-session-reset] FAIL: ${e.message}\n`);
   }
+
+  // Auto-init session-state.json: set session_id if currently empty (audit C-05).
+  // Idempotent — preserves existing session_id to avoid mid-session reset.
+  try {
+    updateStateLocked(SSTATE, (sState) => {
+      if (sState.session_id) return; // already initialised — don't reset mid-session (idempotent)
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const sessionId =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}` +
+        `-${pad(now.getHours())}${pad(now.getMinutes())}`;
+      sState.session_id = sessionId;
+      sState.started_at = now.toISOString();
+      sState.status = 'planning';
+      // Reset session-scoped fields at session start (D-10: stale state from crashed session)
+      sState.observations = [];
+      sState.agent_outputs = {};
+      sState.dag = [];
+      sState.current_step = 0;
+      sState.inflight_spawns = []; // E-2: clear stale in-flight markers from a crashed session
+    });
+  } catch (e) {
+    process.stderr.write(`[audit-session-reset] session-state init fail: ${e.message}\n`);
+  }
+
+  // Prune governance_alerts to last 10 entries (D-09: unbounded growth). HA-2: under lock.
+  const MAX_ALERTS = 10;
+  try {
+    updateStateLocked(SSTATE, (sState2) => {
+      if (Array.isArray(sState2.governance_alerts) && sState2.governance_alerts.length > MAX_ALERTS) {
+        sState2.governance_alerts = sState2.governance_alerts.slice(-MAX_ALERTS);
+      }
+    });
+  } catch (e) {
+    process.stderr.write(`[audit-session-reset] alerts-prune fail: ${e.message}\n`);
+  }
+
+  // Increment quarantine rule counters for non-transcript-blocked rules (D-17)
+  try {
+    const { incrementQuarantineCounters } = require('./quarantine-increment');
+    incrementQuarantineCounters();
+  } catch (e) {
+    process.stderr.write(`[audit-session-reset] quarantine-increment: ${e.message}\n`);
+  }
+
   process.exit(0);
 });

@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/audit-session-reset.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-session-reset.js"
           }
         ]
       }
@@ -16,7 +16,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/optimizer-gate.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/optimizer-gate.js"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && CCIP_GATE_ENFORCE=1 node .claude/runtime/pre-agent-gate.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && CCIP_READGATE_ENFORCE=1 node .claude/runtime/read-gate.js"
           }
         ]
       },
@@ -25,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/audit-write-sanitize.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-write-sanitize.js"
           }
         ]
       }
@@ -36,11 +49,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/post-agent-hook.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/post-agent-hook.js"
           },
           {
             "type": "command",
-            "command": "node .claude/runtime/verify-evidence-log.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/verify-evidence-log.js"
           }
         ]
       },
@@ -49,7 +62,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/audit-write-sanitize.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-write-sanitize.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/agent-file-watcher.js"
           }
         ]
       },
@@ -58,7 +80,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/audit-trigger-hook.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-trigger-hook.js"
+          },
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/tool-telemetry.js"
           }
         ]
       }
@@ -68,7 +94,31 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/audit-turn-hook.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/contract-debt-injector.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/governance-reactor.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/audit-turn-hook.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/agent-changed-notify.js"
           }
         ]
       }
@@ -78,7 +128,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/runtime/flush-state.js"
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/aggregate-telemetry.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/failure-detectors.js"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && node .claude/runtime/flush-state.js"
           }
         ]
       }

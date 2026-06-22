@@ -1,14 +1,11 @@
-import React from 'react';
 import { useRefreshDashboard } from '../hooks/useRefreshDashboard';
 
-export function RefreshButton() {
+type Props = { className?: string };
+
+export function RefreshButton({ className }: Props) {
   const { mutate, isPending } = useRefreshDashboard();
   return (
-    <button
-      onClick={() => mutate()}
-      disabled={isPending}
-      style={{ padding: '4px 12px', fontSize: 13, cursor: isPending ? 'not-allowed' : 'pointer', opacity: isPending ? 0.7 : 1 }}
-    >
+    <button className={className} onClick={() => mutate()} disabled={isPending}>
       {isPending ? 'Обновление...' : 'Обновить данные'}
     </button>
   );

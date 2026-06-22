@@ -19,13 +19,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -80,13 +80,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: audit
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build ccip-postgres image
         run: docker build -t ccip-postgres-test ./infra/docker/postgres
@@ -144,8 +144,8 @@ jobs:
           docker logs pg
           exit 1
 
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -169,3 +169,24 @@ jobs:
       - name: Postgres logs (on failure)
         if: failure()
         run: docker logs pg
+
+  formal:
+    name: TLA+ Formal Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Verify TLA+ invariants
+        run: |
+          set -o pipefail
+          cd tools/formal
+          java -jar tla2tools.jar -config MC.cfg CCIPInvariants.tla 2>&1 | tee /tmp/tlc-out.txt
+          grep -q "No error has been found" /tmp/tlc-out.txt || { echo "TLC: success marker absent"; exit 1; }
+          grep "states generated" /tmp/tlc-out.txt

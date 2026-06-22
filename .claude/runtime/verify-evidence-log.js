@@ -31,7 +31,14 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
 const crypto = require('crypto');
-const yaml = require('js-yaml');
+
+// Lazy load js-yaml with graceful fallback (audit C-11)
+let yaml;
+try {
+  yaml = require('js-yaml');
+} catch {
+  process.stderr.write('[verify-evidence-log] WARNING: js-yaml not installed — YAML manifest parsing unavailable. Run: npm install\n');
+}
 
 // @skill: portable — repo-root resolution pattern
 const ROOT = path.resolve(__dirname, '../..');
@@ -51,6 +58,12 @@ const BOOTSTRAP_WORD_LIMIT = 300;
 const PREFLIGHT_TOKEN_LIMIT = 3000;
 // @skill: config:min-quote-bytes — нижняя граница специфичности цитаты
 const MIN_QUOTE_BYTES = parseInt(process.env.OPT_MIN_QUOTE_BYTES || '12', 10);
+// @skill: config:max-quote — верхняя граница цитаты в ДВУХ измерениях:
+//   специфичность меряется СИМВОЛАМИ (справедливо к multibyte-скриптам — корпус CCIP
+//   русскоязычный, byte-счёт штрафовал кириллицу вдвое), анти-блоат — БАЙТАМИ (потолок
+//   режет emoji/binary). 80 симв = старый ASCII-бюджет без регрессии; 160B = 80 кир.симв.
+const MAX_QUOTE_CHARS = parseInt(process.env.OPT_MAX_QUOTE_CHARS || '80', 10);
+const MAX_QUOTE_BYTES = parseInt(process.env.OPT_MAX_QUOTE_BYTES || '160', 10);
 const LOW_SIGNAL_QUOTES = new Set(['done', 'pending', 'blocked', 'deferred', 'none', 'n/a', 'todo', 'wip', 'ok', 'yes', 'no']);
 const PREFLIGHT_CALL_LIMIT = 6;
 // @skill: config:source-prefix-vocabulary — each prefix needs a registered resolver (see verifyRowSource)
@@ -155,6 +168,10 @@ function extractSection(text, header) {
  */
 function parseManifest(yamlText) {
   if (!yamlText) return null;
+  if (!yaml) {
+    process.stderr.write('[verify-evidence-log] WARNING: skipping YAML parse — js-yaml unavailable\n');
+    return null;
+  }
   let doc;
   try { doc = yaml.load(yamlText); }
   catch { return null; }
@@ -230,12 +247,15 @@ function parseEvidenceRows(evidenceSection) {
  */
 function anchorWindow(content, anchor) {
   if (!anchor) return null;
-  const wanted = anchor.replace(/^#+\s*/, '').trim();
+  // NFC-normalize both sides so Unicode variants of §, →, — etc. compare equal.
+  const nfc = s => s.normalize('NFC');
+  const wanted = nfc(anchor.replace(/^#+\s*/, '').trim());
+  const anchorNFC = nfc(anchor.trim());
   const lines = content.split(/\r?\n/);
   let headingIdx = -1, level = 0;
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(/^(#{1,6})\s+(.*)$/);
-    if (m && (m[2].trim() === wanted || lines[i].trim() === anchor.trim())) {
+    if (m && (nfc(m[2].trim()) === wanted || nfc(lines[i].trim()) === anchorNFC)) {
       headingIdx = i; level = m[1].length; break;
     }
   }
@@ -279,10 +299,13 @@ function verifyRowSource(row) {
     return { ok: false, reason: 'source_is_session_artifact' };
   }
   if (!row.quote) return { ok: false, reason: 'quote_empty' };
-  // Spec line 179: ≤ 80 bytes (UTF-8). Code units (.length) would under-count
-  // multi-byte chars and let Cyrillic-heavy quotes slip past (Wave 2 fix #3).
+  // Specificity bound in CHARACTERS (code points — fair to Cyrillic/multibyte), anti-bloat
+  // ceiling in BYTES. Wave 2 fix #3 had moved to pure bytes to stop .length under-counting;
+  // that overcorrected and penalised the Russian corpus 2× — char+byte splits the concern.
+  const quoteChars = [...row.quote].length;
   const quoteBytes = Buffer.byteLength(row.quote, 'utf-8');
-  if (quoteBytes > 80) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
+  if (quoteChars > MAX_QUOTE_CHARS) return { ok: false, reason: `quote_too_long(${quoteChars}c)` };
+  if (quoteBytes > MAX_QUOTE_BYTES) return { ok: false, reason: `quote_too_long(${quoteBytes}B)` };
   if (quoteBytes < MIN_QUOTE_BYTES) return { ok: false, reason: `quote_too_short(${quoteBytes}B)` };
   if (LOW_SIGNAL_QUOTES.has(row.quote.trim().toLowerCase())) return { ok: false, reason: 'quote_low_signal' };
 

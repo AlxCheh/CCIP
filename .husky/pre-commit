@@ -3,3 +3,6 @@ pnpm audit-suite || {
   echo "[pre-commit] audit-suite failed. Fix or use --no-verify (НЕ рекомендуется)."
   exit 1
 }
+
+# ADR immutability pre-commit gate (HA-8)
+node tools/audit/adr-immutability.js --staged || exit 1

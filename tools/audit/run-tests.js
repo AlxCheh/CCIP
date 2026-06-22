@@ -15,6 +15,12 @@ const files = fs.readdirSync(dir)
   .map(f => path.join(dir, f));
 
 let failed = 0;
+// M-1: `concurrency: false` is LOAD-BEARING, not a perf knob. Several hook tests share
+// singleton fixtures (.claude/runtime/session-state.json, trigger-state.json, audit/rules/*)
+// via backup/restore; running files in parallel makes them clobber each other → non-
+// deterministic green. Do NOT flip this to true without first isolating every test that
+// writes a shared runtime file to a tmp path (CCIP_STATE_FILE et al.). Guarded by
+// run-tests-guard.test.js. See cert 2026-06-10 §IX (M-1).
 run({ files, concurrency: false })
   .on('test:fail', () => { failed++; })
   .compose(spec)

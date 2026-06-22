@@ -27,7 +27,7 @@ const SSTATE = path.join(ROOT, '.claude/runtime/session-state.json');
 
 const AUDITOR        = 'token-efficiency-auditor';
 const T06_THRESHOLD  = 3;   // тот же (path,offset) прочитан ≥ 3 раз
-const T07_THRESHOLD  = 15;  // tool-calls в одном turn > 15
+const T07_BURST_FLOOR = 15; // T-07 fires when tool_calls_this_turn > T07_BURST_FLOOR (i.e., 16+)
 const T10_FAILURES   = 2;   // ≥ 2 сбоя агентов
 const FAILURE_WINDOW = 5;   // ...за последние 5 вызовов Agent
 const COOLDOWN_CALLS = 30;  // не повторять один триггер чаще, чем раз в N tool-calls
@@ -57,6 +57,15 @@ function defaultState(sid) {
 function readJSON(p) {
   try { return JSON.parse(fs.readFileSync(p, 'utf-8')); }
   catch { return null; }
+}
+
+// SPOF-3: validate trigger-state schema; fall back to defaultState on corrupt/incomplete state
+const TRIGGER_REQUIRED = ['session_id', 'total_calls', 'turn_index', 'tool_calls_this_turn'];
+function validateTriggerState(st, sid) {
+  const missing = TRIGGER_REQUIRED.filter(k => !(k in st));
+  if (missing.length === 0) return st;
+  process.stderr.write(`[audit-trigger-hook] trigger-state missing fields: ${missing.join(', ')} — using defaultState\n`);
+  return defaultState(sid);
 }
 
 function writeState(state) {
@@ -99,14 +108,16 @@ function fireMaybe(st, fired, trigger, reason) {
   fired.push({ trigger, reason });
 }
 
-let raw = '';
-process.stdin.setEncoding('utf-8');
-process.stdin.on('data', c => { raw += c; });
-process.stdin.on('end', () => {
-  try { run(raw); }
-  catch (e) { process.stderr.write(`[audit-trigger-hook] FAIL: ${e.message}\n`); }
-  process.exit(0);
-});
+if (require.main === module) {
+  let raw = '';
+  process.stdin.setEncoding('utf-8');
+  process.stdin.on('data', c => { raw += c; });
+  process.stdin.on('end', () => {
+    try { run(raw); }
+    catch (e) { process.stderr.write(`[audit-trigger-hook] FAIL: ${e.message}\n`); }
+    process.exit(0);
+  });
+}
 
 function run(raw) {
   let payload;
@@ -116,7 +127,7 @@ function run(raw) {
   if (!tool) return;
 
   const sid = currentSessionId();
-  let st = readJSON(TSTATE) || defaultState(sid);
+  let st = validateTriggerState(readJSON(TSTATE) || defaultState(sid), sid);
   // Session resets are owned by the SessionStart hook (audit-session-reset.js),
   // which also stamps session_key. Don't reset here — that would wipe session_key
   // mid-session. Preserve an existing key; only mint one if somehow absent.
@@ -164,7 +175,7 @@ function run(raw) {
   }
 
   // T-07 — burst tool-calls в одном turn
-  if (st.tool_calls_this_turn > T07_THRESHOLD) {
+  if (st.tool_calls_this_turn > T07_BURST_FLOOR) {
     fireMaybe(st, fired, 'T-07', `${st.tool_calls_this_turn} tool-calls в turn`);
   }
 
@@ -193,3 +204,5 @@ function run(raw) {
     }));
   }
 }
+
+if (require.main !== module) module.exports = { validateTriggerState, defaultState };

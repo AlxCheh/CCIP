@@ -43,6 +43,14 @@ infra/docker/data/
 # Session optimizer runtime artifacts (PostToolUse hook output, regenerated per session)
 docs/errors/sessions/
 .claude/runtime/optimizer.lock
+.claude/runtime/events.jsonl
+.claude/runtime/events.jsonl.1
+.claude/runtime/governance-audit.jsonl
+.claude/runtime/governance-audit.jsonl.1
+# Cross-process state lock + atomic-write residue (ADR-019)
+.claude/runtime/session-state.json.lock
+.claude/runtime/session-state.json.bak
+.claude/runtime/session-state.json.tmp.*
 
 # Per-machine Claude Code permissions (allow-list Bash commands etc.)
 .claude/settings.local.json
@@ -54,3 +62,12 @@ docs/errors/sessions/
 .claude/audit/evidence/
 .claude/audit/metrics/rolling-30.json
 .claude/audit/rules/rules-delta.json
+
+.superpowers/
+
+# TLA+ toolchain — auto-generated TLC scratch file and state snapshots
+tools/formal/MC.tla
+tools/formal/states/
+
+# Token-efficiency-auditor metrics delta (per-session noise, not cross-machine learning)
+.claude/audit/metrics/rules-delta.json

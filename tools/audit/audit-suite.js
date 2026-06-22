@@ -14,6 +14,7 @@ const PHASES = {
     'dead-refs.js',
     'agent-name-presence.js',
     'state-contract-section.js',
+    'phantom-section-refs.js',
   ],
   '§10.2 Schema integrity': [
     'agent-frontmatter.js',
@@ -35,6 +36,11 @@ const PHASES = {
     'orphan-dirs.js',
     'delivery-paths.js',
     'memory-fs-sync.js',
+    'fallback-profiles.js',
+  ],
+  '§10.8 Semantic integrity': [
+    'trigger-integrity.js',
+    'rgs.js',
   ],
 };
 

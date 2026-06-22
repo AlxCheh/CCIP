@@ -124,6 +124,143 @@ export class PeriodService {
     return period;
   }
 
+  // ─── getDetail ──────────────────────────────────────────────────────────────
+
+  async getDetail(periodId: number, actorId: number) {
+    const actor = await this.prisma.user.findUniqueOrThrow({
+      where: { id: actorId },
+      select: { organizationId: true },
+    });
+
+    const period = await this.prisma.period.findFirst({
+      where: {
+        id: periodId,
+        object: { organizationId: actor.organizationId },
+      },
+      include: {
+        boqVersion: {
+          include: {
+            boqItems: {
+              select: { id: true, workCode: true, name: true, unit: true, planVolume: true },
+              orderBy: { id: 'asc' },
+            },
+          },
+        },
+        periodFacts: {
+          select: {
+            boqItemId: true,
+            gpVolume: true,
+            scVolume: true,
+            discrepancyType: true,
+            discrepancyStatus: true,
+            acceptedVolume: true,
+          },
+        },
+      },
+    });
+
+    if (!period) throw new NotFoundException('PERIOD_NOT_FOUND');
+
+    const factMap = new Map(period.periodFacts.map((f) => [f.boqItemId, f]));
+
+    const positions = period.boqVersion.boqItems.map((item) => {
+      const f = factMap.get(item.id);
+      return {
+        boqItemId: item.id,
+        workCode: item.workCode,
+        name: item.name,
+        unit: item.unit ?? '',
+        planVolume: Number(item.planVolume),
+        gpVolume: f?.gpVolume != null ? Number(f.gpVolume) : null,
+        scVolume: f?.scVolume != null ? Number(f.scVolume) : null,
+        discrepancyType: f?.discrepancyType ?? null,
+        discrepancyStatus: f?.discrepancyStatus ?? null,
+        acceptedVolume: f?.acceptedVolume != null ? Number(f.acceptedVolume) : null,
+      };
+    });
+
+    const openDiscrepancyCount = await this.prisma.discrepancy.count({
+      where: { periodFact: { periodId }, status: 'open' },
+    });
+
+    return {
+      id: period.id,
+      periodNumber: period.periodNumber,
+      status: period.status as 'open' | 'gp_submitted' | 'verification' | 'closed',
+      openedAt: period.openedAt.toISOString(),
+      closedAt: period.closedAt?.toISOString() ?? null,
+      objectId: period.objectId,
+      boqVersionId: period.boqVersionId,
+      positions,
+      openDiscrepancyCount,
+    };
+  }
+
+  // ─── GP token guard ────────────────────────────────────────────────────────────
+
+  /**
+   * Validates a GP submission token: existence, expiry, and not-yet-submitted.
+   * A missing `gpTokenExpiresAt` is treated as expired so the form and the submit
+   * path behave consistently. Narrows `gpTokenExpiresAt` to a non-null `Date`.
+   */
+  private assertGpTokenValid<
+    T extends { gpTokenExpiresAt: Date | null; gpSubmittedAt: Date | null },
+  >(period: T | null): asserts period is T & { gpTokenExpiresAt: Date } {
+    if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
+
+    if (!period.gpTokenExpiresAt || period.gpTokenExpiresAt < new Date()) {
+      throw new ForbiddenException('GP_TOKEN_EXPIRED');
+    }
+
+    if (period.gpSubmittedAt !== null) {
+      throw new ForbiddenException('GP_ALREADY_SUBMITTED');
+    }
+  }
+
+  // ─── assertPeriodEditable ─────────────────────────────────────────────────────
+
+  private assertPeriodEditable(period: { status: string }): void {
+    if (period.status === 'closed' || period.status === 'force_closed') {
+      throw new ForbiddenException('PERIOD_ALREADY_CLOSED');
+    }
+  }
+
+  // ─── getGpFormData ────────────────────────────────────────────────────────────
+
+  async getGpFormData(token: string) {
+    const period = await this.prisma.period.findFirst({
+      where: { gpSubmissionToken: token },
+      select: {
+        periodNumber: true,
+        gpTokenExpiresAt: true,
+        gpSubmittedAt: true,
+        object: { select: { name: true } },
+        boqVersion: {
+          select: {
+            boqItems: {
+              select: { id: true, name: true, unit: true, planVolume: true },
+              orderBy: { id: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    this.assertGpTokenValid(period);
+
+    return {
+      periodNumber: period.periodNumber,
+      objectName: period.object.name,
+      gpTokenExpiresAt: period.gpTokenExpiresAt.toISOString(),
+      items: period.boqVersion.boqItems.map((item) => ({
+        boqItemId: item.id,
+        name: item.name,
+        unit: item.unit ?? '',
+        planVolume: Number(item.planVolume),
+      })),
+    };
+  }
+
   // ─── submitGp ────────────────────────────────────────────────────────────────
 
   async submitGp(
@@ -141,18 +278,21 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
-      if (!period) throw new NotFoundException('GP_TOKEN_NOT_FOUND');
-
-      if (period.gpTokenExpiresAt && period.gpTokenExpiresAt < new Date()) {
-        throw new ForbiddenException('GP_TOKEN_EXPIRED');
-      }
-
-      if (period.gpSubmittedAt !== null) {
-        throw new ForbiddenException('GP_ALREADY_SUBMITTED');
-      }
+      this.assertGpTokenValid(period);
 
       if (period.status !== 'open') {
         throw new ConflictException('PERIOD_WRONG_STATUS');
+      }
+
+      // @algorithm: docs/algorithm_v1_3.md Блок C, C2 — шаблон LOCKed
+      // (LOCK template_structure): ГП не может модифицировать защищённые
+      // колонки (например, plan_volume) через импорт.
+      const allowedKeys = new Set(['boqItemId', 'gpVolume', 'gpNote']);
+      for (const item of items) {
+        const extraKeys = Object.keys(item).filter((k) => !allowedKeys.has(k));
+        if (extraKeys.length > 0) {
+          throw new ConflictException('PROTECTED_FIELD');
+        }
       }
 
       // Upsert PeriodFact for each submitted item
@@ -205,6 +345,7 @@ export class PeriodService {
     boqItemId: number,
     scVolume: unknown,
     actorId: number,
+    opts?: { workAccessible?: boolean },
   ) {
     return this.prisma.$transaction(async (tx) => {
       const period = await tx.period.findUniqueOrThrow({
@@ -212,8 +353,27 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
-      if (!SC_FACT_ALLOWED_STATUSES.includes(period.status)) {
+      this.assertPeriodEditable(period); // ADR-007: closed/force_closed → 403
+
+      // @algorithm: docs/algorithm_v1_3.md Блок C, C2 — "ГП не предоставил
+      // шаблон — ввод стройконтролем": дедлайн (gpTokenExpiresAt) истёк без
+      // submitGp → SC всё равно может ввести данные.
+      const noTemplateInput =
+        period.status === 'open' &&
+        period.gpTokenExpiresAt != null &&
+        period.gpTokenExpiresAt < new Date();
+
+      if (!noTemplateInput && !SC_FACT_ALLOWED_STATUSES.includes(period.status)) {
         throw new ConflictException('PERIOD_WRONG_STATUS');
+      }
+
+      // @algorithm: docs/algorithm_v1_3.md Блок C, C3 — work_accessible=FALSE
+      // (Тип 2) требует обязательного фото-подтверждения.
+      if (opts?.workAccessible === false) {
+        const photo = await tx.photo.findFirst({ where: { periodId, boqItemId } });
+        if (!photo) {
+          throw new ConflictException('TYPE2_PHOTO_REQUIRED');
+        }
       }
 
       // Find existing fact to retrieve gpVolume for delta computation
@@ -274,7 +434,9 @@ export class PeriodService {
       await this.auditLog.log({
         tableName: 'period_facts',
         recordId: BigInt(updatedFact.id),
-        action: 'period_fact_upserted',
+        action: noTemplateInput
+          ? 'period_fact_input_without_template'
+          : 'period_fact_upserted',
         newData: {
           periodId,
           boqItemId,
@@ -299,6 +461,8 @@ export class PeriodService {
         include: { object: { select: { organizationId: true } } },
       });
 
+      this.assertPeriodEditable(period); // ADR-007: closed/force_closed → 403
+
       if (period.status !== 'verification') {
         throw new ConflictException('PERIOD_WRONG_STATUS');
       }
@@ -320,15 +484,14 @@ export class PeriodService {
         data: { status: 'closed', closedAt: new Date(), closedBy: actorId },
       });
 
-      // Create ReadinessSnapshot — placeholder until Analytics Engine (M-05c) is implemented
-      // TODO M-05c: заменить 0 на реальный calcReadiness() из AnalyticsService
       // TODO M-05c: добавить INSERT work_pace в эту же транзакцию (ADR-011)
       // TODO M-05b: после транзакции enqueue BullMQ job для REFRESH MATERIALIZED VIEW CONCURRENTLY
+      const readinessPct = await this.calcReadiness(periodId, tx);
       await tx.readinessSnapshot.create({
         data: {
           periodId,
           objectId: period.objectId,
-          objectReadinessPct: 0,
+          objectReadinessPct: readinessPct,
         },
       });
 
@@ -344,6 +507,37 @@ export class PeriodService {
     });
   }
 
+  // ─── calcReadiness ───────────────────────────────────────────────────────────
+
+  private async calcReadiness(
+    periodId: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<number> {
+    const facts = await tx.periodFact.findMany({
+      where: { periodId },
+      select: {
+        acceptedVolume: true,
+        scVolume: true,
+        boqItem: { select: { planVolume: true, weightCoef: true } },
+      },
+    });
+
+    let readiness = 0;
+    for (const f of facts) {
+      const planVol = Number(f.boqItem.planVolume);
+      if (planVol <= 0 || f.boqItem.weightCoef == null) continue;
+      const factVol =
+        f.acceptedVolume != null
+          ? Number(f.acceptedVolume)
+          : f.scVolume != null
+          ? Number(f.scVolume)
+          : 0;
+      const pct = Math.min((factVol / planVol) * 100, 100);
+      readiness += pct * Number(f.boqItem.weightCoef);
+    }
+    return Math.round(readiness * 100) / 100;
+  }
+
   // ─── findByObject ────────────────────────────────────────────────────────────
 
   async findByObject(objectId: number) {
@@ -351,5 +545,69 @@ export class PeriodService {
       where: { objectId },
       orderBy: { periodNumber: 'desc' },
     });
+  }
+
+  // ─── adminCorrectFact ────────────────────────────────────────────────────────
+
+  async adminCorrectFact(
+    factId: number,
+    scVolume: number,
+    accepted: number,
+    adminId: number,
+    reason: string,
+  ): Promise<void> {
+    const fact = await this.prisma.periodFact.findUniqueOrThrow({
+      where: { id: factId },
+      select: {
+        periodId: true,
+        period: { select: { objectId: true, periodNumber: true } },
+      },
+    });
+
+    // fn_admin_correct_fact is SECURITY DEFINER — the only legal UPDATE path (ADR-007 / P-25)
+    await this.prisma.$executeRaw`SELECT fn_admin_correct_fact(
+      ${factId}::integer,
+      ${scVolume}::numeric,
+      ${accepted}::numeric,
+      ${adminId}::integer,
+      ${reason}::text
+    )`;
+
+    // Fire-and-forget: cascade recalc does not block HTTP response
+    this.recalcSnapshotCascade(fact.periodId, fact.period.objectId, fact.period.periodNumber).catch(
+      (err) => console.error('[adminCorrectFact] recalcSnapshotCascade failed', err),
+    );
+  }
+
+  // ─── recalcSnapshotCascade ───────────────────────────────────────────────────
+
+  async recalcSnapshotCascade(
+    _fromPeriodId: number,
+    objectId: number,
+    fromPeriodNumber: number,
+  ): Promise<void> {
+    const periods = await this.prisma.period.findMany({
+      where: {
+        objectId,
+        periodNumber: { gte: fromPeriodNumber },
+        status: { in: ['closed', 'force_closed'] },
+      },
+      select: { id: true },
+      orderBy: { periodNumber: 'asc' },
+    });
+
+    for (const p of periods) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.readinessSnapshot.deleteMany({ where: { periodId: p.id } });
+        const readinessPct = await this.calcReadiness(p.id, tx);
+        await tx.readinessSnapshot.create({
+          data: { periodId: p.id, objectId, objectReadinessPct: readinessPct },
+        });
+      });
+    }
+
+    await this.prisma.$executeRawUnsafe(
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_object_current_status',
+    );
   }
 }

@@ -46,31 +46,43 @@ DEFAULT → direct agent of primary intent
 | SECURITY | ccip-security      | ccip-architect    |
 | DOC      | ccip-doc-writer    | general-purpose   |
 
-## Auxiliary Agents (auto-triggered, not via Intent table)
+## Auxiliary Agents (condition/request-triggered, not via Intent table)
+> Триггеры — оркестрационная конвенция, не машинный enforcement: «по запросу» = ручной вызов, остальные срабатывают по условию (risk/intents/фраза-триггер). Хук НЕ авто-спавнит этих агентов.
 | Agent                       | Trigger                                |
 |-----------------------------|----------------------------------------|
-| security-reviewer           | risk:HIGH или JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes |
+| security-reviewer           | JWT/RBAC/RLS/multi-tenancy/GpToken/AuditLog changes (любой risk) |
 | ccip-product-owner          | бизнес-приёмка features, acceptance criteria |
 | ccip-routing-planner        | intents ≥ 3 OR confidence LOW          |
 | ccip-claude-md-auditor      | по запросу (manual) или при review CLAUDE.md PR'а |
-| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md §3–§6 или docs/tasks/index.md |
+| ccip-navigator-optimizer    | по запросу после правок CLAUDE.md (Intent table, Agent Selection, Document Routing, Constraints) или docs/tasks/index.md |
 | ccip-session-optimizer      | "Завершаем сессию" trigger             |
-| token-efficiency-auditor    | T-01..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike и др.; см. ADR-016) |
+| token-efficiency-auditor    | T-01,T-02,T-06..T-10 (`/token-audit`, session-end после optimizer, context≥70%, token-spike; T-03/T-04/T-05 в quarantine — нет API для raw token attribution; см. ADR-016) |
 | consistency-checker         | по запросу при cross-doc анализе       |
+| red-team-auditor            | по запросу: pre-pilot аудит, обнаружение архитектурного дрейфа, деструктивная проверка согласованности |
+| ccip-agent-optimizer        | по запросу: 3+ повторных ошибки агента, новый агент, рефактор CLAUDE.md |
 | general-purpose             | fallback при DEGRADED specialist       |
+
+> **session-optimizer relay (жёсткое правило):** после прогона `ccip-session-optimizer` его `Next-Session Bootstrap` выводится пользователю ДОСЛОВНО (verbatim, в code-блоке) — не пересказывать.
+>
+> *Исключение:* факт, устаревший между прогоном и концом сессии (напр. сместившийся HEAD sha), помечается отдельной строкой без правки блока.
+
+> **ccip-agent-optimizer @@ (режим выбора):** при паттерне `ccip-agent-optimizer @@` — до спавна: `Glob(".claude/agents/*.md")`, исключить защищённых (`ccip-agent-optimizer`, `ccip-claude-md-auditor`, `ccip-session-optimizer`). Затем **двухступенчатый кликабельный выбор** через `AskUserQuestion` (лимит 4 опции/меню): шаг 1 — домен (Backend&Data / UI&Arch / Security&QA / Orchestration&Docs); шаг 2 — агент внутри домена (overflow >4 — через авто-`Other`). После выбора — спавн `ccip-agent-optimizer <name>`.
+>
+> *Домены:* Backend&Data = ccip-backend-core, ccip-backend-aux, ccip-dba, ccip-devops · UI&Arch = ccip-frontend, ccip-mobile, ccip-architect · Security&QA = ccip-security, security-reviewer, ccip-qa, consistency-checker · Orchestration&Docs = ccip-doc-writer, ccip-product-owner, ccip-routing-planner, ccip-navigator-optimizer, general-purpose, token-efficiency-auditor.
 
 ## Risk Rules
 ```
-HIGH          → add security-reviewer as co-agent
+HIGH          → planner + present output for review
 MEDIUM        → present output for review before applying
 LOW           → execute directly
 risk unclear  → default MEDIUM
+security-reviewer co-agent → REQUIRED when scope touches a security surface, ANY risk (see below)
 ```
 ```
 IF intent == ARCH → ccip-architect leads
 IF intent == SECURITY → ccip-security leads (full write, threat model, RBAC audit, pre-launch review)
-  security-reviewer is NOT a primary agent — it is a co-agent triggered automatically by risk:HIGH
-  security-reviewer triggers on: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog changes
+  security-reviewer is NOT a primary agent — it is a co-agent triggered by the security surface
+  security-reviewer REQUIRED on ANY change touching: JWT / RBAC guards / RLS / multi-tenancy / GpToken / AuditLog — independent of risk level (machine-enforced: pre-agent-gate.js INV-SECURITY-COAGENT)
 ```
 
 ## Agent Selection
@@ -135,6 +147,7 @@ INIT    set task,intents,risk,confidence,routing,started_at; status=planning
 INJECT  before each Agent call: read state -> inject into prompt
 UPDATE  after each Agent call: post-agent-hook.js parses "## State Update" block -> agent_outputs[name] + observation
 FLUSH   Stop hook: flush-state.js -> observations[] to docs/tasks/feedback-loop.md §4
+REACT   next UserPromptSubmit: governance-reactor.js surfaces unacknowledged governance_alerts[] into context, marks them surfaced (G-1 detect→react)
 ```
 
 **Agent contract** — each agent MUST end its output with:
@@ -150,7 +163,7 @@ FLUSH   Stop hook: flush-state.js -> observations[] to docs/tasks/feedback-loop.
 ```
 ````
 
-Missing block -> `post-agent-hook.js` sets a fallback summary (allowed, lowers routing quality).
+Missing block -> the observation writer (`post-agent-hook.js` in live sessions, `execute-dag.js` in autonomous DAG runs) flags it `missing_state_update:true` and sets a fallback summary (allowed, lowers routing quality); surfaced via stderr and a Stop-time rollup in feedback-loop.md §4. See ADR-017.
 
 **Inject-safety:** `handoff_notes` is injected into the next prompt between `<!-- handoff-data -->` / `<!-- /handoff-data -->`; agents must not copy handoff data into their own `handoff_notes` without intent. See `sanitizeHandoff()` in `.claude/runtime/execute-dag.js`.
 
@@ -181,3 +194,26 @@ Token-saving rules for file reads. Goal: cut per-session token cost 30-50% with 
 **Agent frontmatter contract:** `name`,`description`,`tools`,`model` required; `summary` (opt) = operational TL;DR <=200 chars — what the agent READS/WRITES, body size, key ADR anchors. A reader with `limit:10` routes WITHOUT reading body.
 
 **Anti-patterns (forbidden):** reading `.claude/agents/X.md` in full for a routing decision (`limit:10` suffices) · re-reading the same file without an offset change · reading architecture docs in full (`docs/architecture/*.md`) · Read to check file existence (use Glob or Bash `ls`).
+
+## §17 Test Discipline
+
+Тестируй наблюдаемое поведение / семантику, не детали реализации.
+**Base rule:** ассерт по ARIA-роли / `aria-current` / accessible-name, не по имени CSS-класса или структуре текстовых узлов.
+
+**Зелёный ≠ закрытый риск:** тест, проходящий только из-за неявного дефолта среды (напр. Vitest `css:false` → CSS-модули как identity-прокси) или DOM-детали (иконка как голый текстовый узел) — отложенная поломка. Закрывай риск семантикой, не обходом: при необходимости добавь ARIA-атрибут в компонент (улучшает и a11y, и тестируемость).
+
+**Anti-patterns (forbidden):** `toHaveClass('active')` для проверки активности (используй `aria-current`) · `getByText`, склеенный с иконкой/обёрткой (используй `getByRole` + accessible-name) · принятие зелёного теста, чья зелёность держится на дефолте тест-раннера.
+
+## §18 Ограничения машинного Enforcement
+
+Следующие правила — **декларативные конвенции**, не machine-enforced:
+
+| Правило | Почему нет enforcement | Ответственность |
+|---------|----------------------|-----------------|
+| `intents == 2 → co-agent` (§Planner) | Нет hook подсчитывающего intents из payload | LLM-оркестратор |
+| `agent fails >= 2 → switch to backup` (§Feedback) | DAG-режим: `selectEffectiveAgent` авто-подставляет backup из AGENT_BACKUP_MAP (machine). Inline: `agent_failure_counts` + `detectAgentFailures` → governance_alert (ADR-025) | DAG: machine / Inline: LLM-реакция |
+| `intents >= 3 → planner only` (§Planner) | Нет hook ограничивающего тип агента | LLM-оркестратор |
+| Optimizer-gate TTL 5 min | Настраивается через `OPT_LOCK_TTL_MS` — по умолчанию 5 min; при длительных сессиях увеличить до 15 min (`OPT_LOCK_TTL_MS=900000`) | Конфигурация |
+| Stop hook order | Assumed sequential (по порядку в settings.json Stop array). Если concurrent — failure-detectors safe благодаря re-read before write (HA-3) | Документальная + частичная code defence |
+
+Если правило не упомянуто в таблице выше — оно либо machine-enforced (hook), либо advisory (signal без deny).

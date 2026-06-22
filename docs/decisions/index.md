@@ -41,6 +41,18 @@
 
 ### Orchestration / Agent Runtime
 - [ADR-016-token-efficiency-auditor.md](ADR-016-token-efficiency-auditor.md) — token-efficiency auditor: read-only агент анализа bloat + self-learning rule lifecycle
+- [ADR-017-state-update-observability.md](ADR-017-state-update-observability.md) — видимость пропуска ## State Update: флаг missing_state_update + сводка на Stop
+- [ADR-018-machine-enforced-runtime-governance.md](ADR-018-machine-enforced-runtime-governance.md) — три-плоскостная machine-enforced governance: enforcement (deny), telemetry (events), semantic (manifest+RGS)
+- [ADR-019-cross-process-state-lock.md](ADR-019-cross-process-state-lock.md) — межпроцессный лок session-state (HA-2/E-2) + честная градация INV-STATE-CONTRACT (signal→enforced через exemption)
+- [ADR-020-main-agent-token-estimate.md](ADR-020-main-agent-token-estimate.md) — эвристическая оценка токенов tool-I/O (bytes/K с кириллической поправкой) поверх events.jsonl; частичное закрытие token-blindness ADR-016 [ЧАСТ.]
+- [ADR-021-deterministic-auto-remediation.md](ADR-021-deterministic-auto-remediation.md) — детерминированный `--fix` для path-canonical prefix-дрейфа (advisory, не blocking); первый класс авто-коррекции (#1)
+- [ADR-022-fail-closed-lock.md](ADR-022-fail-closed-lock.md) — fail-closed opt-in для state-lock (`CCIP_STATE_LOCK_FAILCLOSED=1`): пропуск fn + durable stderr на таймауте, дефолт fail-open неизменён (#4)
+- [ADR-023-persisted-dag-journal.md](ADR-023-persisted-dag-journal.md) — append-only NDJSON dag-journal.jsonl: cross-session resume done-шагов по dag_hash + TTL 7 дней (#3)
+- [ADR-024-signal-to-enforced-promotion.md](ADR-024-signal-to-enforced-promotion.md) — Wave 2 #2: INV-STATE-CONTRACT-DAG (execute-dag alert-push) + INV-TOOL-TELEMETRY (structural guarantee + blackout detection) → enforced; RGS 0.46→0.96
+- [ADR-025-per-agent-failure-counter.md](ADR-025-per-agent-failure-counter.md) — Wave 2 #6: per-agent failure counter (agent_failure_counts) + DAG auto-switch (selectEffectiveAgent + AGENT_BACKUP_MAP) + detectAgentFailures alert
+- [ADR-026-per-agent-isolation.md](ADR-026-per-agent-isolation.md) — Wave 3 #7: composite key agent:step в DAG agent_outputs (per-step write isolation) + CCIP_MAX_AGENTS 3→5 (per-step isolation eliminates state collision risk)
+- [ADR-027-self-governed-runtime.md](ADR-027-self-governed-runtime.md) — Wave 3 #9: AUTO_CORRECTIONS словарь в governance-reactor + CCIP_SELF_GOVERN=1 → repair-директива + auto_corrected:true в state (≥1 класс аномалии с end-to-end авто-коррекцией)
+- [ADR-028-formal-invariant-model.md](ADR-028-formal-invariant-model.md) — Wave 4: TLA+ formal model (CCIPInvariants.tla + TLC model checker) для 4 block-инвариантов (INV-AGENT-BUDGET, INV-STATE-CONTRACT, INV-SECURITY-COAGENT, cross-process lock); 3.88M states verified
 
 ---
 

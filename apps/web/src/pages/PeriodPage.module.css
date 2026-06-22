@@ -1,0 +1,51 @@
+.page { padding: 0 28px 28px; }
+.back { padding: 16px 0 0; display: block; }
+
+/* hero */
+.hero { padding: 14px 0 18px; border-bottom: 2px solid var(--dark); }
+.h1   { font-family: 'EB Garamond', serif; font-size: 32px; font-weight: 500; margin: 0; }
+.meta { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--brown2); margin-top: 6px; }
+
+/* close bar */
+.closeBar { display: flex; align-items: center; gap: 14px; padding: 14px 0 12px; border-bottom: 1px solid var(--rule); margin-bottom: 4px; }
+.closeBtn { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; background: var(--dark); color: var(--accent); border: none; padding: 11px 20px; cursor: pointer; }
+.closeBtn:disabled { background: var(--rule); color: var(--brown2); cursor: not-allowed; }
+.closeHint  { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .5px; color: var(--err); }
+.errorMsg   { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--err); margin-bottom: 8px; }
+
+/* table */
+.table { width: 100%; border-collapse: collapse; }
+.table thead th {
+  font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dark); text-align: left; padding: 11px 0 7px; border-bottom: 2px solid var(--dark); font-weight: 700; white-space: nowrap;
+}
+.table thead th.r { text-align: right; }
+.table thead th.c { text-align: center; }
+.table tbody td { padding: 12px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr.hasDisc td { background: rgba(200,74,42,.04); }
+.table td.r { text-align: right; }
+.table td.c { text-align: center; }
+
+.tdCode { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--brown2); letter-spacing: .5px; padding-right: 12px; white-space: nowrap; }
+.tdName { font-family: 'EB Garamond', serif; font-size: 17px; }
+.tdUnit { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--brown2); }
+.tdNum  { font-family: 'Space Mono', monospace; font-size: 12px; font-variant-numeric: tabular-nums; }
+.tdNum.empty { color: var(--rule); }
+
+/* SC input */
+.scInput { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.scField {
+  width: 70px; background: transparent; border: none; border-bottom: 2px solid var(--accent);
+  color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px;
+  text-align: right; padding: 2px 0; outline: none;
+}
+.scOk {
+  font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
+  background: var(--dark); color: var(--accent); border: none; padding: 5px 9px; cursor: pointer;
+}
+.scOk:disabled { opacity: .5; cursor: not-allowed; }
+
+/* states */
+.loadingBox { padding: 40px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--brown2); }
+.errorBox   { padding: 20px 0; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--err); }
