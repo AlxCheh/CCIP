@@ -151,14 +151,14 @@ describe('DisputeService', () => {
       mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
         id: 30, status: 'forced_sc_figure', gcResponseAt: new Date(), periodFact: { periodId: 1, boqItemId: 7 },
       });
-      await expect(service.rejectGpResponse(30, 1)).rejects.toThrow(ConflictException);
+      await expect(service.rejectGpResponse(30)).rejects.toThrow(ConflictException);
     });
 
     it('throws ConflictException when GP has not responded yet', async () => {
       mockPrisma.discrepancy.findUniqueOrThrow.mockResolvedValue({
         id: 30, status: 'open', gcResponseAt: null, periodFact: { periodId: 1, boqItemId: 7 },
       });
-      await expect(service.rejectGpResponse(30, 1)).rejects.toThrow(ConflictException);
+      await expect(service.rejectGpResponse(30)).rejects.toThrow(ConflictException);
     });
 
     it('schedules Scenario-B SLA events anchored on gcResponseAt', async () => {
@@ -167,7 +167,7 @@ describe('DisputeService', () => {
         id: 30, status: 'open', gcResponseAt, periodFact: { periodId: 1, boqItemId: 7 },
       });
 
-      await service.rejectGpResponse(30, 1);
+      await service.rejectGpResponse(30);
 
       expect(mockDisputeSlaService.scheduleEvents).toHaveBeenCalledWith({
         discrepancyId: 30, periodId: 1, boqItemId: 7, createdAt: gcResponseAt, scenario: 'B',
