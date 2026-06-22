@@ -373,6 +373,7 @@ model Discrepancy {
   directorDecision String?   @map("director_decision")
   resolvedAt       DateTime? @map("resolved_at") @db.Timestamptz()
   resolvedBy       Int?      @map("resolved_by")
+  gcResponseAt     DateTime? @map("gc_response_at") @db.Timestamptz()
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
   periodFact     PeriodFact @relation(fields: [periodFactId], references: [id])

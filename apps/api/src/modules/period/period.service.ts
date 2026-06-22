@@ -307,6 +307,17 @@ export class PeriodService {
         throw new ConflictException('PERIOD_WRONG_STATUS');
       }
 
+      // @algorithm: docs/algorithm_v1_3.md Блок C, C2 — шаблон LOCKed
+      // (LOCK template_structure): ГП не может модифицировать защищённые
+      // колонки (например, plan_volume) через импорт.
+      const allowedKeys = new Set(['boqItemId', 'gpVolume', 'gpNote']);
+      for (const item of items) {
+        const extraKeys = Object.keys(item).filter((k) => !allowedKeys.has(k));
+        if (extraKeys.length > 0) {
+          throw new ConflictException('PROTECTED_FIELD');
+        }
+      }
+
       // Upsert PeriodFact for each submitted item
       for (const item of items) {
         await tx.periodFact.upsert({
@@ -357,7 +368,10 @@ export class PeriodService {
     boqItemId: number,
     scVolume: unknown,
     actorId: number,
-    opts?: { spikeResponse?: 'planned_concentration' | 'data_entry_error' },
+    opts?: {
+      spikeResponse?: 'planned_concentration' | 'data_entry_error';
+      workAccessible?: boolean;
+    },
   ) {
     return this.prisma.$transaction(async (tx) => {
       const period = await tx.period.findUniqueOrThrow({
@@ -367,8 +381,25 @@ export class PeriodService {
 
       this.assertPeriodEditable(period); // ADR-007: closed/force_closed → 403
 
-      if (!SC_FACT_ALLOWED_STATUSES.includes(period.status)) {
+      // @algorithm: docs/algorithm_v1_3.md Блок C, C2 — "ГП не предоставил
+      // шаблон — ввод стройконтролем": дедлайн (gpTokenExpiresAt) истёк без
+      // submitGp → SC всё равно может ввести данные.
+      const noTemplateInput =
+        period.status === 'open' &&
+        period.gpTokenExpiresAt != null &&
+        period.gpTokenExpiresAt < new Date();
+
+      if (!noTemplateInput && !SC_FACT_ALLOWED_STATUSES.includes(period.status)) {
         throw new ConflictException('PERIOD_WRONG_STATUS');
+      }
+
+      // @algorithm: docs/algorithm_v1_3.md Блок C, C3 — work_accessible=FALSE
+      // (Тип 2) требует обязательного фото-подтверждения.
+      if (opts?.workAccessible === false) {
+        const photo = await tx.photo.findFirst({ where: { periodId, boqItemId } });
+        if (!photo) {
+          throw new ConflictException('TYPE2_PHOTO_REQUIRED');
+        }
       }
 
       // Find existing fact to retrieve gpVolume for delta computation
@@ -431,7 +462,9 @@ export class PeriodService {
       await this.auditLog.log({
         tableName: 'period_facts',
         recordId: BigInt(updatedFact.id),
-        action: 'period_fact_upserted',
+        action: noTemplateInput
+          ? 'period_fact_input_without_template'
+          : 'period_fact_upserted',
         newData: {
           periodId,
           boqItemId,

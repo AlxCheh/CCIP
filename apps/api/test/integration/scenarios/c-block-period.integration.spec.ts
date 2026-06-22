@@ -69,13 +69,11 @@ describe('C-block — PeriodEngine correctness (subset; C-05/06/08 → W2)', () 
       where: { id: period.id },
       data: { gpTokenExpiresAt: new Date(Date.now() - 86400_000) },
     });
-    await svc.upsertPeriodFact(period.id, boq.items[0].id, { scVolume: 100 }, sc.id);
+    await svc.upsertPeriodFact(period.id, boq.items[0].id, 100, sc.id);
     const log = await prisma.auditLog.findFirst({
       where: { tableName: 'period_facts', action: { contains: 'input_without_template' } },
     });
-    if (log === null) {
-      console.warn('[C-03] audit action "input_without_template" not yet emitted — Module D will add');
-    }
+    expect(log).not.toBeNull();
   });
 
   // @algorithm: C-04
@@ -94,7 +92,7 @@ describe('C-block — PeriodEngine correctness (subset; C-05/06/08 → W2)', () 
     const { sc, obj, boq } = await bootstrap();
     const period = await svc.openPeriod(obj.id, sc.id);
     await svc.submitGp(period.gpSubmissionToken!, 'GP Test', [{ boqItemId: boq.items[0].id, gpVolume: 100 }]);
-    await svc.upsertPeriodFact(period.id, boq.items[0].id, { scVolume: 80, workAccessible: true }, sc.id);
+    await svc.upsertPeriodFact(period.id, boq.items[0].id, 80, sc.id, { workAccessible: true });
     const fact = await prisma.periodFact.findFirstOrThrow({
       where: { periodId: period.id, boqItemId: boq.items[0].id },
     });
@@ -111,10 +109,10 @@ describe('C-block — PeriodEngine correctness (subset; C-05/06/08 → W2)', () 
     const period = await svc.openPeriod(obj.id, sc.id);
     await svc.submitGp(period.gpSubmissionToken!, 'GP Test', boq.items.map((i) => ({ boqItemId: i.id, gpVolume: 100 })));
     for (const it of boq.items) {
-      await svc.upsertPeriodFact(period.id, it.id, { scVolume: 100, workAccessible: true }, sc.id);
+      await svc.upsertPeriodFact(period.id, it.id, 100, sc.id, { workAccessible: true });
     }
     const closed = await svc.closePeriod(period.id, sc.id);
     expect(closed.status).toBe('closed');
-    await expect(svc.upsertPeriodFact(period.id, boq.items[0].id, { scVolume: 999 }, sc.id)).rejects.toThrow();
+    await expect(svc.upsertPeriodFact(period.id, boq.items[0].id, 999, sc.id)).rejects.toThrow();
   });
 });

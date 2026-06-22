@@ -19,7 +19,12 @@ services:
 
   # ── PostgreSQL 16 ────────────────────────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    # Custom image: postgres:16-bookworm + pg_partman 5.x + pg_cron 1.4+ (§10.5 T-22, ADR-010).
+    # MUST match the image that initialized postgres_data: stock postgres:16-alpine
+    # cannot start because the data dir carries shared_preload_libraries='pg_cron'.
+    build:
+      context: ./postgres
+    image: ccip-postgres:local
     container_name: ccip_postgres
     restart: unless-stopped
     environment:

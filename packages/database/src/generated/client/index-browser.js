@@ -311,6 +311,7 @@ exports.Prisma.DiscrepancyScalarFieldEnum = {
   directorDecision: 'directorDecision',
   resolvedAt: 'resolvedAt',
   resolvedBy: 'resolvedBy',
+  gcResponseAt: 'gcResponseAt',
   createdAt: 'createdAt'
 };
 

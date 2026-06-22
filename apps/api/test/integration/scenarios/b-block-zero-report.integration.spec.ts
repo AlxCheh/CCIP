@@ -39,13 +39,13 @@ describe('B-block — ZeroReport correctness', () => {
     await svc.upsertItem(sc.id, obj.id, {
       boqItemId: boq.items[0].id,
       factVolume: 800,
-      source: 'execution_doc',
+      source: 'exec_docs',
       notes: 'field measurement impossible',
     });
     const item = await prisma.zeroReportItem.findFirstOrThrow({
       where: { boqItem: { boqVersionId: boq.versionId }, boqItemId: boq.items[0].id },
     });
-    expect(item.source).toBe('execution_doc');
+    expect(item.source).toBe('exec_docs');
     expect(item.notes).toContain('impossible');
   });
 
@@ -60,14 +60,14 @@ describe('B-block — ZeroReport correctness', () => {
     await svc.upsertItem(sc.id, obj.id, {
       boqItemId: boq.items[0].id,
       factVolume: 950,
-      source: 'field_measure',
+      source: 'field_measurement',
       doc1Value: 1100,
       notes: 'docs and reality diverge',
     });
     const item = await prisma.zeroReportItem.findFirstOrThrow({
       where: { boqItemId: boq.items[0].id },
     });
-    expect(item.source).toBe('field_measure');
+    expect(item.source).toBe('field_measurement');
     expect(Number(item.doc1Value)).toBe(1100);
     expect(item.notes).toBeTruthy();
     // requiresVerification flag not in schema v1 — crossVerified is director-set after review
@@ -84,7 +84,7 @@ describe('B-block — ZeroReport correctness', () => {
     await svc.upsertItem(sc.id, obj.id, {
       boqItemId: boq.items[0].id,
       factVolume: 100,
-      source: 'field_measure',
+      source: 'field_measurement',
       doc1Value: 100,
       notes: 'partial docs',
     });
@@ -117,9 +117,9 @@ describe('B-block — ZeroReport correctness', () => {
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
     await svc.create(sc.id, obj.id, { boqVersionId: boq.versionId });
-    await svc.upsertItem(sc.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 840, source: 'field_measure' });
+    await svc.upsertItem(sc.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 840, source: 'field_measurement' });
     // admin re-upserts with slightly different value (case A: delta < 10%)
-    await svc.upsertItem(admin.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 870, source: 'field_measure' });
+    await svc.upsertItem(admin.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 870, source: 'field_measurement' });
     const log = await prisma.auditLog.findFirst({
       where: { tableName: 'zero_report_items' },
     });
@@ -134,11 +134,11 @@ describe('B-block — ZeroReport correctness', () => {
     const obj = await makeObject(prisma, org);
     const boq = await makeBoQ(prisma, obj, { count: 3 });
     await svc.create(sc.id, obj.id, { boqVersionId: boq.versionId });
-    await svc.upsertItem(sc.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 840, source: 'field_measure' });
+    await svc.upsertItem(sc.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 840, source: 'field_measurement' });
     // delta 840→1050 ≈ 25% — large correction; service may or may not throw (M-04 partial impl)
     let threw = false;
     try {
-      await svc.upsertItem(admin.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 1050, source: 'field_measure' });
+      await svc.upsertItem(admin.id, obj.id, { boqItemId: boq.items[0].id, factVolume: 1050, source: 'field_measurement' });
     } catch (e: unknown) {
       threw = true;
       expect((e as Error).message).toMatch(/DIRECTOR_DECISION_REQUIRED|LARGE_CORRECTION/);
