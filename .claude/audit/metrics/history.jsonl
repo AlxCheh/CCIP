@@ -1,1 +1,2 @@
 {"session_key":"2026-06-14T16:10:46Z-2aab","recorded_at":"2026-06-14T16:29:07.332Z","agents":1,"observations":2,"T_total":2239,"outcomes":{"success":2},"T_useful":1800,"IDC":0.196,"R_dup":0.5,"E_resp":null,"estimated_fields_present":true}
+{"session_key":"2026-06-17T21:30:00Z-contract-review","recorded_at":"2026-06-17T21:30:00Z","audit_type":"contract_review","agents":0,"observations":0,"contract_debt":3,"findings_count":4,"rules_active":12,"rules_quarantine":6,"new_rules_proposed":1,"status":"blocked_manual_intervention","T_total":null,"IDC":null,"R_dup":null,"E_resp":null}

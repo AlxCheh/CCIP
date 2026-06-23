@@ -8,27 +8,15 @@
   "dag": [],
   "current_step": 0,
   "agent_outputs": {
+    "token-efficiency-auditor": {
+      "summary": "token-efficiency-auditor completed (no structured block)",
+      "artifacts": [],
+      "handoff_notes": "—"
+    },
     "ccip-session-optimizer": {
       "summary": "ccip-session-optimizer completed (no structured block)",
       "artifacts": [],
       "handoff_notes": "—"
-    },
-    "token-efficiency-auditor": {
-      "summary": "T-02 audit Wave 2 (signal→enforced + per-agent failure counter): inline-session, 2239 tokens, 19.6% overhead (IDC). T-07 spike detected (46 tool-calls = first-run ingest bloat). R-018 proposed (rules caching) + R-016/R-017 escalation monitoring. 1 finding accepted (ingest optimization), 2 rejected (noise/not-triggered).",
-      "artifacts": [
-        ".claude/audit/reports/2026-05-22-1200.md",
-        ".claude/audit/evidence/2026-05-22-1200.json",
-        ".claude/audit/metrics/rules-delta.json"
-      ],
-      "handoff_notes": "Rules delta.json contains R-018 proposal (Phase B); apply manually via `/token-rules-apply` after 3+ sessions of testing. active.yaml and quarantine.yaml updated with escalation watch flags (R-016 2/3 threshold, R-017 precision 1.0 eligible for promote at hit_count ≥3). Next audit trigger: T-03 (context ≥70%) or T-09 (periodic checkpoint). Inline-session scope note: token attribution limited; next DAG-heavy session expected to yield richer findings."
-    },
-    "ccip-architect": {
-      "summary": "Task 9.1 complete: AUTO_CORRECTIONS map + selfGoverned flag added to buildReaction() in governance-reactor.js. 3 new TDD tests added and passing. Full suite 409/0, audit 22/22. Committed to feat/wave3-agent-isolation-self-govern.",
-      "artifacts": [
-        ".claude/runtime/governance-reactor.js",
-        "tools/audit/__tests__/governance-reactor.test.js"
-      ],
-      "handoff_notes": "Task 9.2 should extend session-state.schema.json with selfGoverned field and wire opts.selfGoverned into the main entrypoint (the if(require.main===module) block). AUTO_CORRECTIONS is now exported so the main block can pass selfGoverned=true when the session state indicates self-governance mode."
     }
   },
   "status": "executing",
@@ -37,53 +25,151 @@
   "inflight_spawns": [
     {
       "agent": "",
-      "at": "2026-06-15T03:51:54.736Z"
+      "at": "2026-06-16T19:22:23.614Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T04:04:07.836Z"
+      "at": "2026-06-16T19:29:30.131Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T04:10:00.544Z"
+      "at": "2026-06-16T19:33:25.344Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T18:13:21.511Z"
+      "at": "2026-06-17T03:07:07.089Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T18:17:42.663Z"
+      "at": "2026-06-17T03:20:17.715Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T18:23:30.067Z"
+      "at": "2026-06-17T03:22:04.601Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T18:29:34.988Z"
+      "at": "2026-06-17T03:22:26.682Z"
     },
     {
       "agent": "",
-      "at": "2026-06-15T18:42:36.477Z"
-    },
-    {
-      "agent": "",
-      "at": "2026-06-15T18:44:17.376Z"
+      "at": "2026-06-17T03:50:07.048Z"
     }
   ],
-  "contract_debt": 1,
+  "contract_debt": 3,
   "contract_debt_agents": [
-    "ccip-session-optimizer"
+    "ccip-session-optimizer",
+    "red-team-auditor",
+    "token-efficiency-auditor"
   ],
   "governance_alerts": [
     {
-      "kind": "silent_state_degradation",
-      "ssc": 0,
-      "threshold": 0.8,
-      "at": "2026-06-11T04:17:36.746Z",
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-17T18:08:49.186Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-17T18:14:22.977Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-17T18:24:48.917Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-18T04:38:54.628Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-22T04:45:20.708Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-22T04:48:32.320Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-22T04:54:42.577Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-22T04:56:03.789Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-22T05:07:39.236Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-22T05:10:45.348Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-23T03:39:57.053Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-23T03:42:10.438Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 3,
+      "threshold": 3,
+      "at": "2026-06-23T03:45:28.830Z",
       "session": "2026-05-22-1200",
       "surfaced": true
     }
-  ]
+  ],
+  "agent_failure_counts": {
+    "red-team-auditor": 1,
+    "token-efficiency-auditor": 1
+  }
 }

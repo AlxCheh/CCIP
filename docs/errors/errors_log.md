@@ -764,3 +764,50 @@ file: `docs/errors/sessions/2026-06-15T18-55-17-577Z-2811b1d.md`
 - L2_EVIDENCE_ROW_1: anchor_not_found [source=repo:docs/audits/2026-06-12-capability-assessment.md]
 - L2_EVIDENCE_ROW_2: anchor_not_found [source=repo:docs/audits/2026-06-12-capability-assessment.md]
 - L2_EVIDENCE_ROW_6: quote_not_in_anchor_window [source=repo:docs/decisions/ADR-028-formal-invariant-model.md]
+
+### 2026-06-15T19-11-10-138Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-15T19-11-10-138Z-d9ee245.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/plans/2026-06-15-formal-invariants-tla.md]
+- L2_EVIDENCE_ROW_3: quote_not_in_anchor_window [source=repo:docs/decisions/ADR-028-formal-invariant-model.md]
+
+### 2026-06-16T04-44-42-746Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-16T04-44-42-746Z-295f023.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/project-state.md]
+- L2_EVIDENCE_ROW_5: quote_not_in_anchor_window [source=repo:docs/project-state.md]
+
+### 2026-06-16T04-47-54-009Z — VIOLATIONS detected (1)
+
+file: `docs/errors/sessions/2026-06-16T04-47-54-009Z-295f023.md`
+
+- L2_EVIDENCE_ROW_6: quote_not_in_anchor_window [source=repo:docs/tasks/index.md]
+
+### 2026-06-16T05-20-16-726Z — VIOLATIONS detected (1)
+
+file: `docs/errors/sessions/2026-06-16T05-20-16-726Z-bc51f3d.md`
+
+- L2_EVIDENCE_ROW_1: quote_not_in_anchor_window [source=repo:docs/project-state.md]
+
+### 2026-06-18T03-59-03-935Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-18T03-59-03-935Z-cbd58c6.md`
+
+- L1_MANIFEST_MISSING: блок ```yaml manifest=invariants-v1 ... ``` не найден
+- FIREWALL_BOOTSTRAP_MISSING
+
+### 2026-06-18T03-59-21-163Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-18T03-59-21-163Z-cbd58c6.md`
+
+- L1_MANIFEST_MISSING: блок ```yaml manifest=invariants-v1 ... ``` не найден
+- FIREWALL_BOOTSTRAP_MISSING
+
+### 2026-06-18T04-00-19-683Z — VIOLATIONS detected (2)
+
+file: `docs/errors/sessions/2026-06-18T04-00-19-683Z-cbd58c6.md`
+
+- L1_MANIFEST_MISSING: блок ```yaml manifest=invariants-v1 ... ``` не найден
+- FIREWALL_BOOTSTRAP_MISSING

@@ -542,3 +542,176 @@ JSON-записи routing observations (автофлаш при Stop):
 
 <!-- metrics:2026-05-22-1200:25b97511 -->
 > 📊 2026-05-22: tool_calls=1676 full_reads=134 est_tokens=1009560 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:fab8aea1 -->
+> 📊 2026-05-22: tool_calls=1688 full_reads=135 est_tokens=1014500 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:64b76a5a -->
+> 📊 2026-05-22: tool_calls=1741 full_reads=146 est_tokens=1090169 agents=2 SSC=1 inline=true
+
+<!-- flush:2026-05-22-1200:4f97e528 | task: t -->
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-15T19:11:10.057Z","dag_step":null,"outcome":"success","context_tokens":1538,"reason":"","missing_state_update":false}
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-15T19:20:34.656Z","dag_step":null,"outcome":"success","context_tokens":1431,"reason":"","missing_state_update":false}
+
+<!-- flush:2026-05-22-1200:2c606b97 | task: t -->
+{"agent":"red-team-auditor","session":"2026-05-22-1200","written_at":"2026-06-16T03:41:07.759Z","dag_step":null,"outcome":"success","context_tokens":685,"reason":"","missing_state_update":true}
+> ⚠ 2026-05-22: 1/1 agents без ## State Update (red-team-auditor)
+
+<!-- metrics:2026-05-22-1200:96ab3c89 -->
+> 📊 2026-05-22: tool_calls=1802 full_reads=153 est_tokens=1152721 agents=1 SSC=0 inline=true
+
+<!-- metrics:2026-05-22-1200:d910e3c3 -->
+> 📊 2026-05-22: tool_calls=1802 full_reads=153 est_tokens=1152721 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:0d0291e6 -->
+> 📊 2026-05-22: tool_calls=1824 full_reads=155 est_tokens=1192205 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ece58b55 -->
+> 📊 2026-05-22: tool_calls=1830 full_reads=156 est_tokens=1193165 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:56f45b77 -->
+> 📊 2026-05-22: tool_calls=1834 full_reads=156 est_tokens=1193548 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:f386cbec -->
+> 📊 2026-05-22: tool_calls=1840 full_reads=157 est_tokens=1195074 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:c4cdf284 -->
+> 📊 2026-05-22: tool_calls=1882 full_reads=160 est_tokens=1217264 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:6cd71aa8 -->
+> 📊 2026-05-22: tool_calls=1914 full_reads=167 est_tokens=1239549 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:93a125b9 -->
+> 📊 2026-05-22: tool_calls=1919 full_reads=167 est_tokens=1244177 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:e6e6ba2d -->
+> 📊 2026-05-22: tool_calls=1921 full_reads=167 est_tokens=1244381 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:9e885120 -->
+> 📊 2026-05-22: tool_calls=1924 full_reads=167 est_tokens=1253822 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:f470eebb -->
+> 📊 2026-05-22: tool_calls=1951 full_reads=171 est_tokens=1268203 agents=3 SSC=1 inline=true
+
+<!-- flush:2026-05-22-1200:23cfd897 | task: t -->
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-16T04:44:42.616Z","dag_step":null,"outcome":"success","context_tokens":1109,"reason":"","missing_state_update":false}
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-16T04:47:53.896Z","dag_step":null,"outcome":"success","context_tokens":1707,"reason":"","missing_state_update":false}
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-16T04:51:16.399Z","dag_step":null,"outcome":"success","context_tokens":797,"reason":"","missing_state_update":false}
+
+<!-- metrics:2026-05-22-1200:3f7e8c6a -->
+> 📊 2026-05-22: tool_calls=1995 full_reads=174 est_tokens=1327034 agents=2 SSC=1 inline=true
+
+<!-- flush:2026-05-22-1200:0336d5af | task: t -->
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-16T05:20:16.634Z","dag_step":null,"outcome":"success","context_tokens":1256,"reason":"","missing_state_update":false}
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-16T05:21:44.247Z","dag_step":null,"outcome":"success","context_tokens":640,"reason":"","missing_state_update":false}
+
+<!-- metrics:2026-05-22-1200:da75b26a -->
+> 📊 2026-05-22: tool_calls=2017 full_reads=182 est_tokens=1410776 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b533b2d7 -->
+> 📊 2026-05-22: tool_calls=2098 full_reads=192 est_tokens=1463209 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7f8ff950 -->
+> 📊 2026-05-22: tool_calls=2202 full_reads=193 est_tokens=1528258 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:73925a5d -->
+> 📊 2026-05-22: tool_calls=2240 full_reads=193 est_tokens=1628364 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:8ec415af -->
+> 📊 2026-05-22: tool_calls=2245 full_reads=193 est_tokens=1629200 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ee070bcf -->
+> 📊 2026-05-22: tool_calls=2247 full_reads=193 est_tokens=1629354 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:2f511e8b -->
+> 📊 2026-05-22: tool_calls=2264 full_reads=194 est_tokens=1637527 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:38d55bf8 -->
+> 📊 2026-05-22: tool_calls=2298 full_reads=202 est_tokens=1654317 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:341d54b3 -->
+> 📊 2026-05-22: tool_calls=2370 full_reads=209 est_tokens=1703406 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b3a70e6b -->
+> 📊 2026-05-22: tool_calls=2406 full_reads=211 est_tokens=1736342 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:a9d0d9d0 -->
+> 📊 2026-05-22: tool_calls=2437 full_reads=219 est_tokens=1745389 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:466238e4 -->
+> 📊 2026-05-22: tool_calls=2448 full_reads=220 est_tokens=1749273 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1d968517 -->
+> 📊 2026-05-22: tool_calls=2450 full_reads=220 est_tokens=1751002 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:cf3dbb76 -->
+> 📊 2026-05-22: tool_calls=2494 full_reads=232 est_tokens=1789662 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ded0bc6c -->
+> 📊 2026-05-22: tool_calls=2505 full_reads=233 est_tokens=1792400 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:fc37cfc2 -->
+> 📊 2026-05-22: tool_calls=2509 full_reads=233 est_tokens=1795211 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:3eb61010 -->
+> 📊 2026-05-22: tool_calls=2511 full_reads=234 est_tokens=1796419 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:6cd710cf -->
+> 📊 2026-05-22: tool_calls=2583 full_reads=236 est_tokens=1865168 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b721a54d -->
+> 📊 2026-05-22: tool_calls=2585 full_reads=236 est_tokens=1865586 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:eb04504d -->
+> 📊 2026-05-22: tool_calls=2591 full_reads=237 est_tokens=1874988 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:995c5ba6 -->
+> 📊 2026-05-22: tool_calls=2650 full_reads=242 est_tokens=1922705 agents=1 SSC=0 inline=true
+
+<!-- flush:2026-05-22-1200:9b2b5f21 | task: t -->
+{"agent":"token-efficiency-auditor","session":"2026-05-22-1200","written_at":"2026-06-17T18:02:24.400Z","dag_step":null,"outcome":"success","context_tokens":371,"reason":"","missing_state_update":true}
+> ⚠ 2026-05-22: 1/1 agents без ## State Update (token-efficiency-auditor)
+
+<!-- metrics:2026-05-22-1200:06320f63 -->
+> 📊 2026-05-22: tool_calls=2668 full_reads=244 est_tokens=1936311 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7399cb50 -->
+> 📊 2026-05-22: tool_calls=2669 full_reads=245 est_tokens=1936821 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ca9860e5 -->
+> 📊 2026-05-22: tool_calls=2678 full_reads=250 est_tokens=1945624 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:488d378b -->
+> 📊 2026-05-22: tool_calls=2714 full_reads=252 est_tokens=1985535 agents=0 SSC=1 inline=true
+
+<!-- flush:2026-05-22-1200:51f1dda2 | task: t -->
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-18T03:59:03.888Z","dag_step":null,"outcome":"success","context_tokens":499,"reason":"","missing_state_update":false}
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-18T03:59:21.055Z","dag_step":null,"outcome":"success","context_tokens":554,"reason":"","missing_state_update":false}
+{"agent":"ccip-session-optimizer","session":"2026-05-22-1200","written_at":"2026-06-18T04:00:19.528Z","dag_step":null,"outcome":"success","context_tokens":869,"reason":"","missing_state_update":false}
+
+<!-- metrics:2026-05-22-1200:304e4ad0 -->
+> 📊 2026-05-22: tool_calls=2822 full_reads=261 est_tokens=2097890 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:852a2b3b -->
+> 📊 2026-05-22: tool_calls=2893 full_reads=261 est_tokens=2124991 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:f8550a1e -->
+> 📊 2026-05-22: tool_calls=2895 full_reads=261 est_tokens=2125568 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7ee83edc -->
+> 📊 2026-05-22: tool_calls=2903 full_reads=261 est_tokens=2127945 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:561cc5c5 -->
+> 📊 2026-05-22: tool_calls=2914 full_reads=262 est_tokens=2134139 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:dda0fa51 -->
+> 📊 2026-05-22: tool_calls=2922 full_reads=262 est_tokens=2137839 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b177a5ae -->
+> 📊 2026-05-22: tool_calls=2935 full_reads=265 est_tokens=2168279 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:64cb0758 -->
+> 📊 2026-05-22: tool_calls=2939 full_reads=265 est_tokens=2178812 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:da39c56d -->
+> 📊 2026-05-22: tool_calls=2945 full_reads=265 est_tokens=2181603 agents=0 SSC=1 inline=true
