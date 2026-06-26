@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  namespace: ccip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "ccip-pgbouncer"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/ccip/pgbouncer/database"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secret/data/ccip/pgbouncer/database" -}}
+          DATABASE_URL=postgres://{{ .Data.data.user }}:{{ .Data.data.password }}@postgres:5432/{{ .Data.data.dbname }}
+          {{- end }}
+    spec:
+      serviceAccountName: ccip-pgbouncer
+      containers:
+        - name: pgbouncer
+          image: edoburu/pgbouncer:1.23.1
+          ports:
+            - containerPort: 5432
+          command: ["/bin/sh", "-c"]
+          args:
+            - "set -a; . /vault/secrets/db; set +a; exec /entrypoint.sh"
+          env:
+            - name: POOL_MODE
+              value: session
+            - name: MAX_CLIENT_CONN
+              value: "200"
+            - name: DEFAULT_POOL_SIZE
+              value: "20"
+            - name: AUTH_TYPE
+              value: scram-sha-256
