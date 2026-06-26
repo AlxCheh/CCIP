@@ -178,7 +178,9 @@ export class HealthService {
       maxRetriesPerRequest: 1,
     });
     try {
-      await redis.connect();
+      // lazyConnect: true — ping() triggers the connection implicitly.
+      // (Do NOT call redis.connect() explicitly here: the test double only
+      // stubs ping()/disconnect(), matching ioredis's lazyConnect contract.)
       await redis.ping();
     } finally {
       redis.disconnect();

@@ -715,3 +715,40 @@ JSON-записи routing observations (автофлаш при Stop):
 
 <!-- metrics:2026-05-22-1200:da39c56d -->
 > 📊 2026-05-22: tool_calls=2945 full_reads=265 est_tokens=2181603 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:00fa55a1 -->
+> 📊 2026-05-22: tool_calls=2947 full_reads=265 est_tokens=2182513 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b8777b83 -->
+> 📊 2026-05-22: tool_calls=2948 full_reads=265 est_tokens=2182590 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:28056e75 -->
+> 📊 2026-05-22: tool_calls=2956 full_reads=265 est_tokens=2183967 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:0d9a2d65 -->
+> 📊 2026-05-22: tool_calls=2965 full_reads=265 est_tokens=2190360 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:fa4dbd35 -->
+> 📊 2026-05-22: tool_calls=2969 full_reads=265 est_tokens=2191598 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1651f81c -->
+> 📊 2026-05-22: tool_calls=2975 full_reads=265 est_tokens=2193517 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:239039dd -->
+> 📊 2026-05-22: tool_calls=2983 full_reads=265 est_tokens=2220887 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1e58bcbc -->
+> 📊 2026-05-22: tool_calls=2993 full_reads=265 est_tokens=2240999 agents=0 SSC=1 inline=true
+
+<!-- flush:2026-05-22-1200:470c4bb4 | task: t -->
+{"agent":"ccip-backend-core","session":"2026-05-22-1200","written_at":"2026-06-25T04:14:17.844Z","dag_step":null,"outcome":"success","context_tokens":1354,"reason":"","missing_state_update":true}
+> ⚠ 2026-05-22: 1/1 agents без ## State Update (ccip-backend-core)
+
+<!-- metrics:2026-05-22-1200:9e86c390 -->
+> 📊 2026-05-22: tool_calls=3011 full_reads=268 est_tokens=2251449 agents=1 SSC=0 inline=true
+
+<!-- metrics:2026-05-22-1200:0dbdd151 -->
+> 📊 2026-05-22: tool_calls=3022 full_reads=268 est_tokens=2256223 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1dea3c52 -->
+> 📊 2026-05-22: tool_calls=3024 full_reads=268 est_tokens=2256891 agents=0 SSC=1 inline=true
