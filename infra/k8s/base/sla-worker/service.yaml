@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ccip-sla-worker
+  namespace: ccip
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sla-worker
+  namespace: ccip
+spec:
+  selector:
+    app: sla-worker
+  ports:
+    - port: 3000
+      targetPort: 3000

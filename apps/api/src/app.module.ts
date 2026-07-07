@@ -18,6 +18,7 @@ import { SystemConfigModule } from './modules/system-config/system-config.module
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ZeroReportModule } from './modules/zero-report/zero-report.module';
 import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
         redis: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
+          password: config.get<string>('REDIS_PASSWORD'),
         },
       }),
       inject: [ConfigService],
@@ -45,6 +47,7 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
     DocumentsModule,
     ZeroReportModule,
     DisputeSlaModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -54,6 +57,9 @@ import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TenantMiddleware).forRoutes('*');
+    consumer
+      .apply(TenantMiddleware)
+      .exclude('health/*path')
+      .forRoutes('*');
   }
 }

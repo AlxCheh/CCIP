@@ -45,8 +45,6 @@ export class PrismaService
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return next(params);
     });
-
-    await this.$connect();
   }
 
   async onModuleDestroy() {

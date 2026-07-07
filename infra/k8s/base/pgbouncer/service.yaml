@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ccip-pgbouncer
+  namespace: ccip
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgbouncer
+  namespace: ccip
+spec:
+  selector:
+    app: pgbouncer
+  ports:
+    - port: 6432
+      targetPort: 5432

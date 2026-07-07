@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ccip
+  namespace: ccip
+  annotations:
+    cert-manager.io/cluster-issuer: ccip-selfsigned
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["ccip.local"]
+      secretName: ccip-tls
+  rules:
+    - host: ccip.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 8080

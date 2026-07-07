@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: ccip
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "ccip-api"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/ccip/api/database"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "secret/data/ccip/api/database" -}}
+          DATABASE_URL=postgres://{{ .Data.data.user }}:{{ .Data.data.password }}@pgbouncer:6432/{{ .Data.data.dbname }}
+          REDIS_PASSWORD={{ .Data.data.password }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-jwt: "secret/data/ccip/api/jwt"
+        vault.hashicorp.com/agent-inject-template-jwt: |
+          {{- with secret "secret/data/ccip/api/jwt" -}}
+          JWT_SECRET={{ .Data.data.secret }}
+          {{- end }}
+    spec:
+      serviceAccountName: ccip-api
+      containers:
+        - name: api
+          image: ccip-api:local
+          imagePullPolicy: IfNotPresent
+          command: ["/app/entrypoint.sh"]
+          args: ["node", "apps/api/dist/main.js"]
+          ports:
+            - containerPort: 3000
+          env:
+            - name: ROLE
+              value: api
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
