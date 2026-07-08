@@ -752,3 +752,72 @@ JSON-записи routing observations (автофлаш при Stop):
 
 <!-- metrics:2026-05-22-1200:1dea3c52 -->
 > 📊 2026-05-22: tool_calls=3024 full_reads=268 est_tokens=2256891 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:385a3421 -->
+> 📊 2026-05-22: tool_calls=3052 full_reads=270 est_tokens=2271066 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:243cdb02 -->
+> 📊 2026-05-22: tool_calls=3053 full_reads=270 est_tokens=2271089 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:68090a0a -->
+> 📊 2026-05-22: tool_calls=3068 full_reads=272 est_tokens=2273819 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:9c12e29a -->
+> 📊 2026-05-22: tool_calls=3076 full_reads=274 est_tokens=2274683 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:df1137e4 -->
+> 📊 2026-05-22: tool_calls=3080 full_reads=275 est_tokens=2275396 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:03109614 -->
+> 📊 2026-05-22: tool_calls=3085 full_reads=276 est_tokens=2276668 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b0aee9de -->
+> 📊 2026-05-22: tool_calls=3086 full_reads=276 est_tokens=2276697 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7fc6b328 -->
+> 📊 2026-05-22: tool_calls=3087 full_reads=277 est_tokens=2281424 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:9ad05575 -->
+> 📊 2026-05-22: tool_calls=3091 full_reads=277 est_tokens=2281667 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:51164764 -->
+> 📊 2026-05-22: tool_calls=3094 full_reads=277 est_tokens=2281929 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:4e871b01 -->
+> 📊 2026-05-22: tool_calls=3095 full_reads=277 est_tokens=2281958 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:af337a7d -->
+> 📊 2026-05-22: tool_calls=3111 full_reads=280 est_tokens=2293458 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ef8bd6d6 -->
+> 📊 2026-05-22: tool_calls=3116 full_reads=280 est_tokens=2297943 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7a43a4fc -->
+> 📊 2026-05-22: tool_calls=3127 full_reads=280 est_tokens=2299712 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ab8f5c73 -->
+> 📊 2026-05-22: tool_calls=3137 full_reads=280 est_tokens=2301894 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:d66ec7a0 -->
+> 📊 2026-05-22: tool_calls=3148 full_reads=280 est_tokens=2313010 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:6528ab10 -->
+> 📊 2026-05-22: tool_calls=3150 full_reads=280 est_tokens=2313732 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:2fab3195 -->
+> 📊 2026-05-22: tool_calls=3153 full_reads=280 est_tokens=2324995 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:eb8a3b72 -->
+> 📊 2026-05-22: tool_calls=3155 full_reads=280 est_tokens=2327237 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:2d3d8bc4 -->
+> 📊 2026-05-22: tool_calls=3160 full_reads=280 est_tokens=2330692 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7627b635 -->
+> 📊 2026-05-22: tool_calls=3164 full_reads=280 est_tokens=2332383 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1ce6c936 -->
+> 📊 2026-05-22: tool_calls=3170 full_reads=280 est_tokens=2333129 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b7ffba72 -->
+> 📊 2026-05-22: tool_calls=3171 full_reads=280 est_tokens=2333368 agents=0 SSC=1 inline=true
