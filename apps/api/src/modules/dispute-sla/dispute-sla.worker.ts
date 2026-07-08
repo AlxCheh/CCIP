@@ -19,7 +19,7 @@ export class DisputeSlaWorker implements OnModuleInit {
     }
   }
 
-  @Process()
+  @Process('sla.event')
   async process(job: Job<{ slaEventId: number }>): Promise<void> {
     const event = await this.prisma.slaEvent.findUnique({
       where: { id: job.data.slaEventId },
