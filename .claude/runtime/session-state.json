@@ -73,126 +73,6 @@
       "kind": "contract_collapse",
       "debt": 4,
       "threshold": 3,
-      "at": "2026-06-29T04:07:36.697Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-06-29T04:18:11.048Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-06-29T04:44:54.523Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-06-29T04:46:45.074Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-06-29T04:51:03.366Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-06-29T04:51:55.353Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-06-29T04:53:51.148Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-01T04:54:44.842Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-01T04:58:02.588Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-01T05:01:42.200Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-07T03:44:20.229Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-07T03:48:40.369Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-07T03:55:24.322Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-07T04:00:21.410Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
-      "at": "2026-07-07T04:10:07.616Z",
-      "session": "2026-05-22-1200",
-      "surfaced": true
-    },
-    {
-      "kind": "contract_collapse",
-      "debt": 4,
-      "threshold": 3,
       "at": "2026-07-07T04:11:13.564Z",
       "session": "2026-05-22-1200",
       "surfaced": true
@@ -250,6 +130,118 @@
       "debt": 4,
       "threshold": 3,
       "at": "2026-07-07T04:36:15.305Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-07T04:59:00.622Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-07T05:13:05.739Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T03:36:07.671Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T03:39:13.183Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:21:57.428Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:28:17.651Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:38:05.265Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:42:03.399Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:42:41.371Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:47:25.129Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:51:06.929Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T04:55:31.883Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T05:08:58.683Z",
+      "session": "2026-05-22-1200",
+      "surfaced": true
+    },
+    {
+      "kind": "contract_collapse",
+      "debt": 4,
+      "threshold": 3,
+      "at": "2026-07-08T05:09:26.272Z",
       "session": "2026-05-22-1200",
       "surfaced": true
     }

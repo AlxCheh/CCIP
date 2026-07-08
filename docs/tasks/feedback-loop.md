@@ -821,3 +821,45 @@ JSON-записи routing observations (автофлаш при Stop):
 
 <!-- metrics:2026-05-22-1200:b7ffba72 -->
 > 📊 2026-05-22: tool_calls=3171 full_reads=280 est_tokens=2333368 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:bfde0a9a -->
+> 📊 2026-05-22: tool_calls=3207 full_reads=282 est_tokens=2343447 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:43d804aa -->
+> 📊 2026-05-22: tool_calls=3222 full_reads=283 est_tokens=2350480 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:369bcbc4 -->
+> 📊 2026-05-22: tool_calls=3271 full_reads=294 est_tokens=2364386 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:135ab4c5 -->
+> 📊 2026-05-22: tool_calls=3277 full_reads=294 est_tokens=2366883 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:2732db0e -->
+> 📊 2026-05-22: tool_calls=3337 full_reads=297 est_tokens=2396613 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:d8f5009b -->
+> 📊 2026-05-22: tool_calls=3345 full_reads=297 est_tokens=2398154 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:c77fd665 -->
+> 📊 2026-05-22: tool_calls=3354 full_reads=297 est_tokens=2403329 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ccf6c39d -->
+> 📊 2026-05-22: tool_calls=3361 full_reads=297 est_tokens=2422574 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:ae835458 -->
+> 📊 2026-05-22: tool_calls=3362 full_reads=297 est_tokens=2422661 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1b0114cf -->
+> 📊 2026-05-22: tool_calls=3367 full_reads=297 est_tokens=2423716 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:4566cc9a -->
+> 📊 2026-05-22: tool_calls=3371 full_reads=298 est_tokens=2423844 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:811915af -->
+> 📊 2026-05-22: tool_calls=3375 full_reads=299 est_tokens=2424090 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7e66c7fe -->
+> 📊 2026-05-22: tool_calls=3385 full_reads=299 est_tokens=2425911 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:32c13492 -->
+> 📊 2026-05-22: tool_calls=3386 full_reads=299 est_tokens=2426047 agents=0 SSC=1 inline=true
