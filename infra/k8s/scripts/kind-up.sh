@@ -45,6 +45,8 @@ kubectl apply -f "$REPO_ROOT/infra/k8s/base/namespace.yaml"
 kubectl create secret generic ccip-bootstrap-secrets -n ccip \
   --from-literal=postgres-password="$PG_PASS" \
   --from-literal=redis-password="$PG_PASS" \
+  --from-literal=minio-user="ccip_minio" \
+  --from-literal=minio-password="$MINIO_PASS" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "=== 8. Apply full dev overlay ==="
@@ -54,8 +56,13 @@ echo "=== 9. Wait for rollout ==="
 kubectl rollout status statefulset/postgres -n ccip --timeout=120s
 kubectl rollout status statefulset/redis -n ccip --timeout=120s
 kubectl rollout status deployment/pgbouncer -n ccip --timeout=120s
+kubectl rollout status deployment/minio -n ccip --timeout=120s
 kubectl rollout status deployment/api -n ccip --timeout=180s
 kubectl rollout status deployment/sla-worker -n ccip --timeout=180s
 kubectl rollout status deployment/web -n ccip --timeout=120s
+
+echo "=== 10. Ensure MinIO bucket exists ==="
+kubectl run mc-mb --rm -i --restart=Never -n ccip --image=minio/mc:latest --command -- \
+  sh -c "mc alias set local http://minio:9000 ccip_minio '$MINIO_PASS' && mc mb -p local/ccip-documents"
 
 echo "=== Done. kubectl get pods -n ccip / -n vault to inspect. ==="

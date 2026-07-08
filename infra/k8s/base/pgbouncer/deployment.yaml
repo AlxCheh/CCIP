@@ -24,12 +24,12 @@ spec:
       serviceAccountName: ccip-pgbouncer
       containers:
         - name: pgbouncer
-          image: edoburu/pgbouncer:1.23.1
+          image: edoburu/pgbouncer:v1.23.1-p3
           ports:
             - containerPort: 5432
           command: ["/bin/sh", "-c"]
           args:
-            - "set -a; . /vault/secrets/db; set +a; exec /entrypoint.sh"
+            - "set -a; . /vault/secrets/db; set +a; exec /entrypoint.sh /usr/bin/pgbouncer /etc/pgbouncer/pgbouncer.ini"
           env:
             - name: POOL_MODE
               value: session

@@ -9,8 +9,7 @@ export VAULT_TOKEN=ccip-dev-root-token
 echo "Enabling kubernetes auth method..."
 $VEXEC vault auth enable kubernetes 2>&1 | grep -v "already enabled" || true
 
-$VEXEC vault write auth/kubernetes/config \
-  kubernetes_host="https://\$KUBERNETES_SERVICE_HOST:\$KUBERNETES_SERVICE_PORT"
+$VEXEC sh -c 'vault write auth/kubernetes/config kubernetes_host="https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"'
 
 echo "Writing policies..."
 $VEXEC sh -c 'cat <<'"'"'EOF'"'"' | vault policy write ccip-api -
