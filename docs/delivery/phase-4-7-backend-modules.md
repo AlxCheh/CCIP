@@ -118,9 +118,9 @@
   - `POST /baseline-update-requests/:id/approve` — `@Roles('admin')`, только если `period.status != 'open'`
   - При approve: UPDATE `plan_volume` → RECALC `weight_coef` → CREATE new `boq_version`
   - Новая версия: `work_lineage_id` наследуется от predecessor (⚠️ ADR-006)
-  - Артефакт (planned):
+  - Артефакт:
     ```
-    apps/api/src/modules/baseline-update/baseline-update.module.ts
+    apps/api/src/modules/baseline/baseline.module.ts
     ```
 
 ### 6.2 Смена ГП (Блок H)
@@ -129,7 +129,7 @@
   - Только при `period.status != 'open'` И `COUNT(discrepancies WHERE status='open') == 0`
   - SCD Type 2: старый `is_current=false, valid_to=NOW()`; новый `is_current=true`
   - Уведомление нового ГП об открытых спорах — явная процедура (§10.3 пробел)
-  - Артефакт: метод в `ObjectParticipantsService`
+  - Артефакт: `apps/api/src/modules/objects/object-participants.service.ts`
 
 ### 6.3 Admin-корректировка закрытых периодов (⚠️ ADR-007)
 
