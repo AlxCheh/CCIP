@@ -125,4 +125,167 @@ describe('BaselineService', () => {
       expect(result.oldPlanVolume).toBe(500);
     });
   });
+
+  // ─── approveRequest ───────────────────────────────────────────────────────────
+
+  describe('approveRequest', () => {
+    const pendingRequest = {
+      id: 7,
+      objectId: OBJECT_ID,
+      boqItemId: 1,
+      oldPlanVolume: 500,
+      newPlanVolume: 600,
+      reason: 'Уточнение объёма по факту обмера',
+      supportingDocument: null,
+      status: 'pending',
+    };
+
+    const activeVersion = {
+      id: 1,
+      versionNumber: '1.0',
+      boqItems: [
+        {
+          id: 1,
+          workLineageId: 'lineage-1',
+          workCode: 'W-01',
+          name: 'Земляные работы',
+          unit: null,
+          planVolume: 500,
+          contractValue: 600_000,
+          isCritical: false,
+          status: 'active',
+        },
+        {
+          id: 2,
+          workLineageId: 'lineage-2',
+          workCode: 'W-02',
+          name: 'Бетон фундамент',
+          unit: null,
+          planVolume: 200,
+          contractValue: 400_000,
+          isCritical: false,
+          status: 'active',
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      (prisma.baselineUpdateRequest.findUnique as jest.Mock).mockResolvedValue(
+        pendingRequest,
+      );
+      (prisma.boqVersion.findFirstOrThrow as jest.Mock).mockResolvedValue(
+        activeVersion,
+      );
+      (prisma.boqVersion.create as jest.Mock).mockResolvedValue({
+        id: 2,
+        versionNumber: '1.1',
+      });
+      (prisma.baselineUpdateRequest.update as jest.Mock).mockResolvedValue({
+        id: 7,
+        status: 'approved',
+      });
+    });
+
+    it('throws NotFoundException when the request does not exist', async () => {
+      (prisma.baselineUpdateRequest.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        service.approveRequest(USER_ID, 999, {}),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when the request was already reviewed', async () => {
+      (prisma.baselineUpdateRequest.findUnique as jest.Mock).mockResolvedValue({
+        ...pendingRequest,
+        status: 'approved',
+      });
+
+      await expect(
+        service.approveRequest(USER_ID, 7, {}),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws ConflictException when the object has an open period', async () => {
+      (prisma.period.findFirst as jest.Mock).mockResolvedValue({ id: 5 });
+
+      await expect(
+        service.approveRequest(USER_ID, 7, {}),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('creates a new BoqVersion with plan_volume overridden only for the target item, lineage inherited', async () => {
+      await service.approveRequest(USER_ID, 7, {});
+
+      expect(prisma.boqVersion.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            objectId: OBJECT_ID,
+            versionNumber: '1.1',
+            changeType: 'baseline_update',
+            isActive: true,
+          }),
+        }),
+      );
+      expect(prisma.boqItem.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              workLineageId: 'lineage-1',
+              planVolume: 600,
+              predecessorItemId: 1,
+            }),
+            expect.objectContaining({
+              workLineageId: 'lineage-2',
+              planVolume: 200,
+              predecessorItemId: 2,
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it('deactivates the old version and marks the request approved', async () => {
+      await service.approveRequest(USER_ID, 7, { reviewNotes: 'ок' });
+
+      expect(prisma.boqVersion.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { isActive: false },
+      });
+      expect(prisma.baselineUpdateRequest.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 7 },
+          data: expect.objectContaining({
+            status: 'approved',
+            reviewedBy: USER_ID,
+            reviewNotes: 'ок',
+          }),
+        }),
+      );
+    });
+
+    it('throws UnprocessableEntityException when SUM(weight_coef) != 1.0 after re-insert', async () => {
+      (prisma.boqItem.aggregate as jest.Mock).mockResolvedValue({
+        _sum: { weightCoef: 0.5 },
+      });
+
+      await expect(
+        service.approveRequest(USER_ID, 7, {}),
+      ).rejects.toThrow(UnprocessableEntityException);
+    });
+
+    it('writes an audit log entry for the approval', async () => {
+      await service.approveRequest(USER_ID, 7, {});
+
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tableName: 'boq_versions',
+          action: 'baseline_updated',
+          performedBy: USER_ID,
+          organizationId: ORG_ID,
+        }),
+      );
+    });
+  });
 });
