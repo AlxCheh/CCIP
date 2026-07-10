@@ -863,3 +863,39 @@ JSON-записи routing observations (автофлаш при Stop):
 
 <!-- metrics:2026-05-22-1200:32c13492 -->
 > 📊 2026-05-22: tool_calls=3386 full_reads=299 est_tokens=2426047 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:b0fe3d42 -->
+> 📊 2026-05-22: tool_calls=3388 full_reads=299 est_tokens=2426557 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7a3ef1bb -->
+> 📊 2026-05-22: tool_calls=3389 full_reads=299 est_tokens=2429597 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:1e59e2d7 -->
+> 📊 2026-05-22: tool_calls=3400 full_reads=302 est_tokens=2440109 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:42588fae -->
+> 📊 2026-05-22: tool_calls=3449 full_reads=312 est_tokens=2486105 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:748dfa70 -->
+> 📊 2026-05-22: tool_calls=3469 full_reads=315 est_tokens=2506070 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:e69e18b0 -->
+> 📊 2026-05-22: tool_calls=3480 full_reads=317 est_tokens=2516789 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:64d97627 -->
+> 📊 2026-05-22: tool_calls=3493 full_reads=319 est_tokens=2541996 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:e027e5b1 -->
+> 📊 2026-05-22: tool_calls=3511 full_reads=322 est_tokens=2550270 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:8098e45d -->
+> 📊 2026-05-22: tool_calls=3512 full_reads=322 est_tokens=2551316 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:9c7c994c -->
+> 📊 2026-05-22: tool_calls=3530 full_reads=325 est_tokens=2555323 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:7b566d3e -->
+> 📊 2026-05-22: tool_calls=3539 full_reads=325 est_tokens=2556030 agents=0 SSC=1 inline=true
+
+<!-- metrics:2026-05-22-1200:2c23345e -->
+> 📊 2026-05-22: tool_calls=3545 full_reads=325 est_tokens=2564118 agents=0 SSC=1 inline=true
