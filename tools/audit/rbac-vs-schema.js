@@ -35,9 +35,12 @@ for (const file of files) {
   const rel = path.relative(root, file).replace(/\\/g, '/');
   const raw = fs.readFileSync(file, 'utf-8');
   // Strip YAML frontmatter from markdown to avoid matching agent-name slugs
-  const c = file.endsWith('.md')
+  let c = file.endsWith('.md')
     ? raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '')
     : raw;
+  // "general[-_]contractor" is an ObjectParticipant.participantRole / route slug,
+  // not a user role — exclude the compound before scanning for phantom roles.
+  c = c.replace(/general[-_]contractor/g, '');
   for (const sus of SUSPECTS) {
     if (validRoles.has(sus)) continue;
     const re = new RegExp(`\\b${sus}\\b`, 'g');
