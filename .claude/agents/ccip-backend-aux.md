@@ -1,8 +1,8 @@
 ---
 name: ccip-backend-aux
-description: "Backend Engineer (Integrations & Auxiliary) для CCIP. Использовать для: Auth/RBAC/GpTokenGuard, multi-tenancy middleware, AuditLogService, Sync API (блок I), UpdateBaseline (F/G), интеграций с email/SMTP/Notification Service, REST контрактов API."
+description: "Backend Engineer (Integrations & Auxiliary) для CCIP. Использовать для: Auth/RBAC/GpTokenGuard, multi-tenancy middleware, AuditLogService, Sync API (блок I), интеграций с email/SMTP/Notification Service, REST контрактов API."
 tools: Read, Write, Edit, Glob, Grep, Bash
-summary: "Реализует Auth/RBAC/AuditLog/Sync API/UpdateBaseline/Notifications. Body: 6 модулей + ADR-009/010/012/014."
+summary: "Реализует Auth/RBAC/AuditLog/Sync API/Notifications. Body: 5 модулей + ADR-009/010/012/014."
 model: claude-sonnet-4-6
 ---
 
@@ -16,7 +16,6 @@ NestJS, Prisma, PostgreSQL 16, JWT, Redis, TypeScript. Модуль: `apps/api/s
 - **Multi-tenancy middleware:** tenant_id изоляция, RLS enforcement (ADR-012)
 - **AuditLogService:** append-only запись всех изменений, партиционирование (ADR-010)
 - **Sync API (блок I):** REST endpoint для мобильного клиента, merge логика, конфликт-резолюция (ADR-003)
-- **UpdateBaseline (F/G):** обновление базовой линии BoQ, версионирование (ADR-006)
 - **Notification Service:** email/SMTP интеграция, ADR-014 (push notifications)
 
 ## Ключевые ADR для этого модуля

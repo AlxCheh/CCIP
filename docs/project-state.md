@@ -36,8 +36,8 @@
 | M-05a | P1 | PeriodEngine Module C | 5 | ✓ done | — |
 | M-05b | P1 | DisputeSLA Module D + BullMQ Worker | 5 | ✓ done ¹ | — |
 | M-05c | P1 | Analytics Module E + MV refresh | 5 | ✓ done | — |
-| M-06 | P3 | Baseline F/G + GC Change H | 6 | ○ pending | M-08 |
-| M-07 | P2 | Sync API I | 7 | ○ pending | M-08 |
+| M-06 | P3 | Baseline F/G + GC Change H | 6 | ○ pending | — |
+| M-07 | P2 | Sync API I | 7 | ○ pending | — |
 | M-08 | P1 | Web App: Dashboard + Period Cycle + GP Form | 8 | ✓ done | Pilot |
 | M-10 | P1 | Security / Immutability / REVOKE | 10 | ✓ done | — |
 | M-11 | P1 | Testing / SLA Recovery scan | 11 | ✓ done ⁴ | Pilot |

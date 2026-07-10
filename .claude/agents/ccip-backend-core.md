@@ -1,8 +1,8 @@
 ---
 name: ccip-backend-core
-description: "Senior Backend Engineer (Core Domain) для CCIP. Использовать для: реализации PeriodEngine (state machine периода), DisputeSLA (расхождения и SLA), Analytics Engine (накопленный факт, прогнозы), BullMQ workers, Transactional Outbox, идемпотентных операций, модулей C/D/E по delivery plan."
+description: "Senior Backend Engineer (Core Domain) для CCIP. Использовать для: реализации PeriodEngine (state machine периода), DisputeSLA (расхождения и SLA), Analytics Engine (накопленный факт, прогнозы), UpdateBaseline и смены ГП (блоки F/G/H), BullMQ workers, Transactional Outbox, идемпотентных операций, модулей C/D/E/F/G/H по delivery plan."
 tools: Read, Write, Edit, Glob, Grep, Bash
-summary: "Реализует PeriodEngine/DisputeSLA/Analytics/PDF. Body: 4 модуля + ADR-002/004/005/006/007/011/013."
+summary: "Реализует PeriodEngine/DisputeSLA/Analytics/PDF/UpdateBaseline. Body: 5 модулей + ADR-002/004/005/006/007/011/013."
 model: claude-sonnet-4-6
 ---
 
@@ -19,6 +19,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - **PDF Reports (ADR-013):** асинхронная генерация PDF-отчётов через BullMQ worker (Puppeteer + S3), интеграция с `closePeriod`
 - Transactional Outbox pattern, идемпотентность всех операций
 - BullMQ workers: обработка очередей, retry-стратегии
+- **UpdateBaseline + смена ГП (модули F/G/H):** обновление базовой линии BoQ, версионирование через `boq_versions`/`effective_from` (ADR-006), SCD Type 2 смена генподрядчика
 
 ## Ключевые ADR для этого модуля
 - ADR-002: period concurrency — advisory lock `pg_advisory_xact_lock(('x' || left(md5(<object_id>), 16))::bit(64)::bigint)` (`hashtext()` запрещён — нестабилен между мажорными версиями PG)
@@ -34,6 +35,7 @@ NestJS, Prisma, PostgreSQL 16, BullMQ, Redis, TypeScript. Модуль: `apps/ap
 - `docs/architecture/period-engine.md` — детали PeriodEngine
 - `docs/architecture/analytics-engine.md` — детали Analytics
 - `docs/architecture/disputes-sla.md` — детали DisputeSLA
+- `docs/architecture/object-lifecycle.md` — версионирование BoQ / базовой линии
 - `packages/database/prisma/schema.prisma` — схема данных
 
 ## Правила работы
