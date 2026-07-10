@@ -18,6 +18,7 @@ import { SystemConfigModule } from './modules/system-config/system-config.module
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ZeroReportModule } from './modules/zero-report/zero-report.module';
 import { DisputeSlaModule } from './modules/dispute-sla/dispute-sla.module';
+import { BaselineModule } from './modules/baseline/baseline.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
@@ -47,6 +48,7 @@ import { HealthModule } from './modules/health/health.module';
     DocumentsModule,
     ZeroReportModule,
     DisputeSlaModule,
+    BaselineModule,
     HealthModule,
   ],
   providers: [
