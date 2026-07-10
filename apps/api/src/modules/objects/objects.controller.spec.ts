@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ObjectsController } from './objects.controller';
 import { ObjectsService } from './objects.service';
+import { ObjectParticipantsService } from './object-participants.service';
 import { CreateObjectDto } from './dto/create-object.dto';
 import { CreateParticipantDto } from './dto/create-participant.dto';
 
@@ -14,6 +15,7 @@ const mockReq = {
 describe('ObjectsController', () => {
   let controller: ObjectsController;
   let objectsService: jest.Mocked<ObjectsService>;
+  let objectParticipantsService: jest.Mocked<ObjectParticipantsService>;
 
   beforeEach(async () => {
     objectsService = {
@@ -23,9 +25,19 @@ describe('ObjectsController', () => {
       addParticipant: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ObjectsService>;
 
+    objectParticipantsService = {
+      changeGeneralContractor: jest.fn().mockResolvedValue({}),
+    } as unknown as jest.Mocked<ObjectParticipantsService>;
+
     const module = await Test.createTestingModule({
       controllers: [ObjectsController],
-      providers: [{ provide: ObjectsService, useValue: objectsService }],
+      providers: [
+        { provide: ObjectsService, useValue: objectsService },
+        {
+          provide: ObjectParticipantsService,
+          useValue: objectParticipantsService,
+        },
+      ],
     }).compile();
 
     controller = module.get(ObjectsController);
@@ -138,6 +150,24 @@ describe('ObjectsController', () => {
       const result = await controller.addParticipant(OBJECT_ID, dto, mockReq);
 
       expect(result).toEqual(expected);
+    });
+  });
+
+  // ─── changeGeneralContractor ──────────────────────────────────────────────────
+
+  describe('changeGeneralContractor', () => {
+    it('delegates to objectParticipantsService.changeGeneralContractor with numeric userId, objectId and dto', async () => {
+      const dto = {
+        orgName: 'ООО СтройГенПодряд',
+        validFrom: '2026-07-15',
+        reason: 'Расторжение договора с прежним ГП',
+      };
+
+      await controller.changeGeneralContractor(OBJECT_ID, dto, mockReq);
+
+      expect(
+        objectParticipantsService.changeGeneralContractor,
+      ).toHaveBeenCalledWith(USER_ID, OBJECT_ID, dto);
     });
   });
 });
