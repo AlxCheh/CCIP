@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@ccip/database';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { PeriodService } from '../period/period.service';
@@ -346,7 +347,10 @@ export class SyncService {
 
     await this.prisma.syncQueue.update({
       where: { id: rowId },
-      data: { status: 'escalated', conflictData },
+      data: {
+        status: 'escalated',
+        conflictData: conflictData as unknown as Prisma.InputJsonValue,
+      },
     });
 
     const admins = await this.prisma.user.findMany({
