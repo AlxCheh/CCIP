@@ -271,4 +271,107 @@ describe('SyncService', () => {
       );
     });
   });
+
+  describe('resolveConflict', () => {
+    const resolveDto = { syncQueueId: 11, chosenValue: 80, note: 'обмер подтверждён' };
+
+    beforeEach(() => {
+      (prisma.syncQueue.findUnique as jest.Mock).mockResolvedValue(
+        makeQueueRow({
+          status: 'conflict',
+          conflictData: {
+            server: { scVolume: 75, version: 3 },
+            device: { scVolume: 80, lastKnownVersion: 1 },
+          },
+        }),
+      );
+    });
+
+    it('throws NotFoundException when the queue row does not exist', async () => {
+      (prisma.syncQueue.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        service.resolveConflict(USER_ID, resolveDto),
+      ).rejects.toThrow('SYNC_OPERATION_NOT_FOUND');
+    });
+
+    it('throws ConflictException when the row is not in conflict status', async () => {
+      (prisma.syncQueue.findUnique as jest.Mock).mockResolvedValue(
+        makeQueueRow({ status: 'applied' }),
+      );
+
+      await expect(
+        service.resolveConflict(USER_ID, resolveDto),
+      ).rejects.toThrow('SYNC_NOT_IN_CONFLICT');
+    });
+
+    it('re-reads the fresh server value from DB, applies the chosen value and marks resolved', async () => {
+      await service.resolveConflict(USER_ID, resolveDto);
+
+      // ADR-003: перечитывание из БД, не из conflict_data
+      expect(prisma.periodFact.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { periodId: PERIOD_ID, boqItemId: BOQ_ITEM_ID },
+        }),
+      );
+      expect(periodService.upsertPeriodFact).toHaveBeenCalledWith(
+        PERIOD_ID,
+        BOQ_ITEM_ID,
+        80,
+        USER_ID,
+      );
+      expect(prisma.syncQueue.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'applied',
+            resolvedBy: USER_ID,
+          }),
+        }),
+      );
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'sync_conflict_resolved',
+          reason: 'обмер подтверждён',
+        }),
+      );
+    });
+
+    it('escalates and throws PERIOD_ALREADY_CLOSED_ESCALATE when the period is closed', async () => {
+      (prisma.period.findUnique as jest.Mock).mockResolvedValue({
+        id: PERIOD_ID,
+        status: 'closed',
+        object: { organizationId: ORG_ID },
+        boqVersion: { versionNumber: '1.0' },
+      });
+
+      await expect(
+        service.resolveConflict(USER_ID, resolveDto),
+      ).rejects.toThrow('PERIOD_ALREADY_CLOSED_ESCALATE');
+
+      expect(prisma.discrepancy.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ type: 3 }),
+        }),
+      );
+      expect(prisma.syncQueue.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'escalated' }),
+        }),
+      );
+      expect(periodService.upsertPeriodFact).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when the period belongs to another org', async () => {
+      (prisma.period.findUnique as jest.Mock).mockResolvedValue({
+        id: PERIOD_ID,
+        status: 'verification',
+        object: { organizationId: 'other-org' },
+        boqVersion: { versionNumber: '1.0' },
+      });
+
+      await expect(
+        service.resolveConflict(USER_ID, resolveDto),
+      ).rejects.toThrow('PERIOD_NOT_FOUND');
+    });
+  });
 });

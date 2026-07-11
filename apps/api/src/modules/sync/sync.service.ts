@@ -395,8 +395,89 @@ export class SyncService {
     };
   }
 
-  async resolveConflict(_userId: number, _dto: SyncResolveDto): Promise<never> {
-    throw new Error('not implemented — see Task 4');
+  async resolveConflict(userId: number, dto: SyncResolveDto) {
+    const row = await this.prisma.syncQueue.findUnique({
+      where: { id: BigInt(dto.syncQueueId) },
+    });
+    if (!row) {
+      throw new NotFoundException('SYNC_OPERATION_NOT_FOUND');
+    }
+    if (row.status !== 'conflict') {
+      throw new ConflictException('SYNC_NOT_IN_CONFLICT');
+    }
+
+    const payload = row.payload as unknown as SyncFactPayload;
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+    const period = await this.prisma.period.findUnique({
+      where: { id: payload.periodId },
+      include: { object: { select: { organizationId: true } } },
+    });
+    if (!period || period.object.organizationId !== user.organizationId) {
+      throw new NotFoundException('PERIOD_NOT_FOUND');
+    }
+
+    if (period.status === 'closed' || period.status === 'force_closed') {
+      await this.escalateClosedPeriod(
+        row.id,
+        payload.periodId,
+        payload.boqItemId,
+        { chosenValue: dto.chosenValue, note: dto.note },
+        user.organizationId,
+        userId,
+      );
+      throw new ConflictException('PERIOD_ALREADY_CLOSED_ESCALATE');
+    }
+
+    // ADR-003: серверное значение перечитывается из БД, не из conflict_data
+    const serverFact = await this.prisma.periodFact.findFirst({
+      where: { periodId: payload.periodId, boqItemId: payload.boqItemId },
+      select: { scVolume: true, version: true },
+    });
+
+    await this.periodService.upsertPeriodFact(
+      payload.periodId,
+      payload.boqItemId,
+      dto.chosenValue,
+      userId,
+    );
+
+    await this.prisma.syncQueue.update({
+      where: { id: row.id },
+      data: { status: 'applied', resolvedAt: new Date(), resolvedBy: userId },
+    });
+
+    // Инвариант ADR-003: полный snapshot обеих версий + имя SC (performedBy)
+    await this.auditLog.log({
+      tableName: 'sync_queue',
+      recordId: row.id,
+      action: 'sync_conflict_resolved',
+      oldData: {
+        server: serverFact
+          ? {
+              scVolume:
+                serverFact.scVolume != null
+                  ? Number(serverFact.scVolume)
+                  : null,
+              version: serverFact.version,
+            }
+          : null,
+        device:
+          (row.conflictData as { device?: unknown } | null)?.device ?? null,
+      },
+      newData: { chosenValue: dto.chosenValue, note: dto.note },
+      reason: dto.note,
+      performedBy: userId,
+      organizationId: user.organizationId,
+    });
+
+    return {
+      syncQueueId: Number(row.id),
+      status: 'applied' as const,
+      appliedValue: dto.chosenValue,
+    };
   }
 
   async uploadPhoto(
