@@ -112,7 +112,7 @@ export class SyncService {
           clientOpId: op.clientOpId,
           userId,
           operation: 'submit_fact',
-          payload: op.payload as unknown as object,
+          payload: op.payload,
           clientTimestamp: new Date(op.clientTimestamp),
           serverReceivedAt: new Date(),
           lastKnownVersion: op.lastKnownVersion,
@@ -330,7 +330,7 @@ export class SyncService {
           status: 'open',
           scPosition: `Офлайн-конфликт в закрытом периоде: device sc_volume=${String(
             device.scVolume,
-          )}, server sc_volume=${fact.scVolume ?? '—'} (v${fact.version})`,
+          )}, server sc_volume=${fact.scVolume != null ? String(fact.scVolume) : '—'} (v${fact.version})`,
         },
       });
     }

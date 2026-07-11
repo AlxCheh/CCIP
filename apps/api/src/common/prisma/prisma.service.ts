@@ -21,7 +21,7 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  async onModuleInit() {
+  onModuleInit() {
     this.$use(async (params, next) => {
       const ctx = tenantStorage.getStore();
       if (!ctx?.organizationId || !TENANT_MODELS.has(params.model ?? '')) {
