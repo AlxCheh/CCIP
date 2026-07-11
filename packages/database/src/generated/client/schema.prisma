@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/client"
+  provider      = "prisma-client-js"
+  output        = "../src/generated/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -577,10 +578,12 @@ model SyncQueue {
   lastKnownVersion Int?      @map("last_known_version")
   boqVersionNumber String?   @map("boq_version_number") @db.VarChar(20)
   isSyncing        Boolean   @default(false) @map("is_syncing")
+  clientOpId       String?   @map("client_op_id") @db.VarChar(64)
 
   user           User? @relation("SyncQueueUser", fields: [userId], references: [id])
   resolvedByUser User? @relation("SyncQueueResolvedBy", fields: [resolvedBy], references: [id])
 
+  @@unique([deviceId, clientOpId], map: "uq_sync_queue_device_op")
   @@index([deviceId, status], map: "idx_sync_queue_pending")
   @@map("sync_queue")
 }

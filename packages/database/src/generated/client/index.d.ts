@@ -29455,6 +29455,7 @@ export namespace Prisma {
     lastKnownVersion: number | null
     boqVersionNumber: string | null
     isSyncing: boolean | null
+    clientOpId: string | null
   }
 
   export type SyncQueueMaxAggregateOutputType = {
@@ -29470,6 +29471,7 @@ export namespace Prisma {
     lastKnownVersion: number | null
     boqVersionNumber: string | null
     isSyncing: boolean | null
+    clientOpId: string | null
   }
 
   export type SyncQueueCountAggregateOutputType = {
@@ -29487,6 +29489,7 @@ export namespace Prisma {
     lastKnownVersion: number
     boqVersionNumber: number
     isSyncing: number
+    clientOpId: number
     _all: number
   }
 
@@ -29518,6 +29521,7 @@ export namespace Prisma {
     lastKnownVersion?: true
     boqVersionNumber?: true
     isSyncing?: true
+    clientOpId?: true
   }
 
   export type SyncQueueMaxAggregateInputType = {
@@ -29533,6 +29537,7 @@ export namespace Prisma {
     lastKnownVersion?: true
     boqVersionNumber?: true
     isSyncing?: true
+    clientOpId?: true
   }
 
   export type SyncQueueCountAggregateInputType = {
@@ -29550,6 +29555,7 @@ export namespace Prisma {
     lastKnownVersion?: true
     boqVersionNumber?: true
     isSyncing?: true
+    clientOpId?: true
     _all?: true
   }
 
@@ -29654,6 +29660,7 @@ export namespace Prisma {
     lastKnownVersion: number | null
     boqVersionNumber: string | null
     isSyncing: boolean
+    clientOpId: string | null
     _count: SyncQueueCountAggregateOutputType | null
     _avg: SyncQueueAvgAggregateOutputType | null
     _sum: SyncQueueSumAggregateOutputType | null
@@ -29690,6 +29697,7 @@ export namespace Prisma {
     lastKnownVersion?: boolean
     boqVersionNumber?: boolean
     isSyncing?: boolean
+    clientOpId?: boolean
     user?: boolean | SyncQueue$userArgs<ExtArgs>
     resolvedByUser?: boolean | SyncQueue$resolvedByUserArgs<ExtArgs>
   }, ExtArgs["result"]["syncQueue"]>
@@ -29709,6 +29717,7 @@ export namespace Prisma {
     lastKnownVersion?: boolean
     boqVersionNumber?: boolean
     isSyncing?: boolean
+    clientOpId?: boolean
     user?: boolean | SyncQueue$userArgs<ExtArgs>
     resolvedByUser?: boolean | SyncQueue$resolvedByUserArgs<ExtArgs>
   }, ExtArgs["result"]["syncQueue"]>
@@ -29728,6 +29737,7 @@ export namespace Prisma {
     lastKnownVersion?: boolean
     boqVersionNumber?: boolean
     isSyncing?: boolean
+    clientOpId?: boolean
   }
 
   export type SyncQueueInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -29760,6 +29770,7 @@ export namespace Prisma {
       lastKnownVersion: number | null
       boqVersionNumber: string | null
       isSyncing: boolean
+      clientOpId: string | null
     }, ExtArgs["result"]["syncQueue"]>
     composites: {}
   }
@@ -30169,6 +30180,7 @@ export namespace Prisma {
     readonly lastKnownVersion: FieldRef<"SyncQueue", 'Int'>
     readonly boqVersionNumber: FieldRef<"SyncQueue", 'String'>
     readonly isSyncing: FieldRef<"SyncQueue", 'Boolean'>
+    readonly clientOpId: FieldRef<"SyncQueue", 'String'>
   }
     
 
@@ -33888,7 +33900,8 @@ export namespace Prisma {
     resolvedBy: 'resolvedBy',
     lastKnownVersion: 'lastKnownVersion',
     boqVersionNumber: 'boqVersionNumber',
-    isSyncing: 'isSyncing'
+    isSyncing: 'isSyncing',
+    clientOpId: 'clientOpId'
   };
 
   export type SyncQueueScalarFieldEnum = (typeof SyncQueueScalarFieldEnum)[keyof typeof SyncQueueScalarFieldEnum]
@@ -36248,6 +36261,7 @@ export namespace Prisma {
     lastKnownVersion?: IntNullableFilter<"SyncQueue"> | number | null
     boqVersionNumber?: StringNullableFilter<"SyncQueue"> | string | null
     isSyncing?: BoolFilter<"SyncQueue"> | boolean
+    clientOpId?: StringNullableFilter<"SyncQueue"> | string | null
     user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     resolvedByUser?: XOR<UserNullableRelationFilter, UserWhereInput> | null
   }
@@ -36267,12 +36281,14 @@ export namespace Prisma {
     lastKnownVersion?: SortOrderInput | SortOrder
     boqVersionNumber?: SortOrderInput | SortOrder
     isSyncing?: SortOrder
+    clientOpId?: SortOrderInput | SortOrder
     user?: UserOrderByWithRelationInput
     resolvedByUser?: UserOrderByWithRelationInput
   }
 
   export type SyncQueueWhereUniqueInput = Prisma.AtLeast<{
     id?: bigint | number
+    deviceId_clientOpId?: SyncQueueDeviceIdClientOpIdCompoundUniqueInput
     AND?: SyncQueueWhereInput | SyncQueueWhereInput[]
     OR?: SyncQueueWhereInput[]
     NOT?: SyncQueueWhereInput | SyncQueueWhereInput[]
@@ -36289,9 +36305,10 @@ export namespace Prisma {
     lastKnownVersion?: IntNullableFilter<"SyncQueue"> | number | null
     boqVersionNumber?: StringNullableFilter<"SyncQueue"> | string | null
     isSyncing?: BoolFilter<"SyncQueue"> | boolean
+    clientOpId?: StringNullableFilter<"SyncQueue"> | string | null
     user?: XOR<UserNullableRelationFilter, UserWhereInput> | null
     resolvedByUser?: XOR<UserNullableRelationFilter, UserWhereInput> | null
-  }, "id">
+  }, "id" | "deviceId_clientOpId">
 
   export type SyncQueueOrderByWithAggregationInput = {
     id?: SortOrder
@@ -36308,6 +36325,7 @@ export namespace Prisma {
     lastKnownVersion?: SortOrderInput | SortOrder
     boqVersionNumber?: SortOrderInput | SortOrder
     isSyncing?: SortOrder
+    clientOpId?: SortOrderInput | SortOrder
     _count?: SyncQueueCountOrderByAggregateInput
     _avg?: SyncQueueAvgOrderByAggregateInput
     _max?: SyncQueueMaxOrderByAggregateInput
@@ -36333,6 +36351,7 @@ export namespace Prisma {
     lastKnownVersion?: IntNullableWithAggregatesFilter<"SyncQueue"> | number | null
     boqVersionNumber?: StringNullableWithAggregatesFilter<"SyncQueue"> | string | null
     isSyncing?: BoolWithAggregatesFilter<"SyncQueue"> | boolean
+    clientOpId?: StringNullableWithAggregatesFilter<"SyncQueue"> | string | null
   }
 
   export type MvRefreshLogWhereInput = {
@@ -38733,6 +38752,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
     user?: UserCreateNestedOneWithoutSyncQueuesInput
     resolvedByUser?: UserCreateNestedOneWithoutResolvedSyncsInput
   }
@@ -38752,6 +38772,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
   }
 
   export type SyncQueueUpdateInput = {
@@ -38767,6 +38788,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneWithoutSyncQueuesNestedInput
     resolvedByUser?: UserUpdateOneWithoutResolvedSyncsNestedInput
   }
@@ -38786,6 +38808,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SyncQueueCreateManyInput = {
@@ -38803,6 +38826,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
   }
 
   export type SyncQueueUpdateManyMutationInput = {
@@ -38818,6 +38842,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SyncQueueUncheckedUpdateManyInput = {
@@ -38835,6 +38860,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type MvRefreshLogCreateInput = {
@@ -41058,6 +41084,11 @@ export namespace Prisma {
     _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
+  export type SyncQueueDeviceIdClientOpIdCompoundUniqueInput = {
+    deviceId: string
+    clientOpId: string
+  }
+
   export type SyncQueueCountOrderByAggregateInput = {
     id?: SortOrder
     deviceId?: SortOrder
@@ -41073,6 +41104,7 @@ export namespace Prisma {
     lastKnownVersion?: SortOrder
     boqVersionNumber?: SortOrder
     isSyncing?: SortOrder
+    clientOpId?: SortOrder
   }
 
   export type SyncQueueAvgOrderByAggregateInput = {
@@ -41095,6 +41127,7 @@ export namespace Prisma {
     lastKnownVersion?: SortOrder
     boqVersionNumber?: SortOrder
     isSyncing?: SortOrder
+    clientOpId?: SortOrder
   }
 
   export type SyncQueueMinOrderByAggregateInput = {
@@ -41110,6 +41143,7 @@ export namespace Prisma {
     lastKnownVersion?: SortOrder
     boqVersionNumber?: SortOrder
     isSyncing?: SortOrder
+    clientOpId?: SortOrder
   }
 
   export type SyncQueueSumOrderByAggregateInput = {
@@ -45968,6 +46002,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
     resolvedByUser?: UserCreateNestedOneWithoutResolvedSyncsInput
   }
 
@@ -45985,6 +46020,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
   }
 
   export type SyncQueueCreateOrConnectWithoutUserInput = {
@@ -46010,6 +46046,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
     user?: UserCreateNestedOneWithoutSyncQueuesInput
   }
 
@@ -46027,6 +46064,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
   }
 
   export type SyncQueueCreateOrConnectWithoutResolvedByUserInput = {
@@ -46658,6 +46696,7 @@ export namespace Prisma {
     lastKnownVersion?: IntNullableFilter<"SyncQueue"> | number | null
     boqVersionNumber?: StringNullableFilter<"SyncQueue"> | string | null
     isSyncing?: BoolFilter<"SyncQueue"> | boolean
+    clientOpId?: StringNullableFilter<"SyncQueue"> | string | null
   }
 
   export type SyncQueueUpsertWithWhereUniqueWithoutResolvedByUserInput = {
@@ -55724,6 +55763,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
   }
 
   export type SyncQueueCreateManyResolvedByUserInput = {
@@ -55740,6 +55780,7 @@ export namespace Prisma {
     lastKnownVersion?: number | null
     boqVersionNumber?: string | null
     isSyncing?: boolean
+    clientOpId?: string | null
   }
 
   export type AuditLogCreateManyPerformedByUserInput = {
@@ -56586,6 +56627,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
     resolvedByUser?: UserUpdateOneWithoutResolvedSyncsNestedInput
   }
 
@@ -56603,6 +56645,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SyncQueueUncheckedUpdateManyWithoutUserInput = {
@@ -56619,6 +56662,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SyncQueueUpdateWithoutResolvedByUserInput = {
@@ -56634,6 +56678,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
     user?: UserUpdateOneWithoutSyncQueuesNestedInput
   }
 
@@ -56651,6 +56696,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SyncQueueUncheckedUpdateManyWithoutResolvedByUserInput = {
@@ -56667,6 +56713,7 @@ export namespace Prisma {
     lastKnownVersion?: NullableIntFieldUpdateOperationsInput | number | null
     boqVersionNumber?: NullableStringFieldUpdateOperationsInput | string | null
     isSyncing?: BoolFieldUpdateOperationsInput | boolean
+    clientOpId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type AuditLogUpdateWithoutPerformedByUserInput = {

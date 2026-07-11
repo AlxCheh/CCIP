@@ -432,7 +432,8 @@ exports.Prisma.SyncQueueScalarFieldEnum = {
   resolvedBy: 'resolvedBy',
   lastKnownVersion: 'lastKnownVersion',
   boqVersionNumber: 'boqVersionNumber',
-  isSyncing: 'isSyncing'
+  isSyncing: 'isSyncing',
+  clientOpId: 'clientOpId'
 };
 
 exports.Prisma.MvRefreshLogScalarFieldEnum = {
