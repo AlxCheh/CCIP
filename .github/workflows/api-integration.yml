@@ -18,7 +18,12 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL_TEST: postgresql://ccip_owner:ccip_dev_pass@localhost:5432/ccip_test
+      # connection_limit=20 required — ADR-002 invariant runs up to 10 parallel
+      # openPeriod transactions; without it Prisma falls back to a
+      # num_cpus*2+1 pool (~9 on ubuntu-latest), which is too small and
+      # produces a raw pool-timeout error instead of PERIOD_LOCK_TIMEOUT.
+      # See apps/api/test/integration/setup/env.ts.
+      DATABASE_URL_TEST: postgresql://ccip_owner:ccip_dev_pass@localhost:5432/ccip_test?connection_limit=20
       JWT_SECRET_TEST: ci-jwt-secret-not-for-prod
       FC_RUNS: 25
 
