@@ -10,12 +10,12 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-07-11 |
+| **Last Updated** | 2026-07-11 (B-CI-01 resolved) |
 | **Current Phase** | 12 — Prod Infra / K8s Worker |
 | **Phase Status** | ◑ scaffold validated end-to-end on real kind cluster (Tasks 1-18 all done); staging/prod cloud provisioning still TBD (separate follow-up) |
 | **Active P1 Task** | M-12 cloud provisioning (follow-up plan, provider TBD) — local/kind scope of M-12 is closed |
 | **Next Milestone** | M-12 cloud provisioning → M-13 Pilot |
-| **Active Blockers** | 1 — B-CI-01 (GitHub Actions quota) |
+| **Active Blockers** | 0 — B-CI-01 resolved 2026-07-11 |
 | **Open Feedbacks** | 0 |
 | **Last Audit** | Red Team 2026-05-07 — closed (`docs/audits/2026-05-07-red-team.md`) |
 
@@ -64,7 +64,13 @@
 
 | ID | Блокер | Заблокированный модуль | Разблокируется когда |
 |----|--------|------------------------|----------------------|
-| B-CI-01 | GitHub Actions перестал создавать новые workflow runs после 2026-06-21 (вероятно — исчерпан лимит расходов из-за ранее найденного 6-часового hang на 3 OS-раннерах, особенно дорогой macOS×10). Подтверждено: push в ветку не создаёт run ни в `queued`, ни в `waiting` — billing API недоступен с текущим токеном (нужен scope `user`). Девять PR этой сессии (#29–#37) смерджены через `gh pr merge --admin` без живого CI-подтверждения, опираясь на локальную верификацию (чистая БД с нуля, 0 провалов). | Любой новый PR — не получит реального CI-сигнала | Владелец репо проверит GitHub → Settings → Billing → Plans and usage → Actions и поднимет лимит/подождёт сброса |
+| — | Нет активных блокеров | — | — |
+
+**B-CI-01 (resolved 2026-07-11):** проверено — `push` снова создаёт `main CI` workflow runs (billing-лимит снят/сброшен сам по себе; `repos/.../actions/permissions` подтверждает `enabled:true`; billing API по-прежнему 404 без scope `user`, но факт исполнения ранов важнее). За время простоя CI (с 2026-06-21) накопился скрытый бэклог: M-06 и первые коммиты M-07 мерджились без живого CI-сигнала и содержали 3 реальные, ранее незамеченные ошибки — `PrismaService.onModuleInit` async без await (`@typescript-eslint/require-await`, введено в M-12 K8s-фиксе 2026-06-26), и 2 Prisma `InputJsonValue`-несовместимости в новом `sync.service.ts` (`conflictData`/`payload` типизированы шире, чем допускает Prisma JSON-контракт — `tsc`/`eslint` ловят, Jest с `ts-jest` не ловит). Все три исправлены и запушены (`23f975b`, `29aee12`, `c8cdf7c`); `main CI` (push-триггер) зелёный: TLA+, Zero-Drift Audit ×3 ОС, Lint/Typecheck/Prisma/Test, DB integration.
+
+**Новые находки (не блокируют pilot, требуют отдельного разбора):**
+- `Portable Clone Test` (scheduled) падает на шаге `Setup pnpm` — похоже на дрейф версии/конфигурации workflow, не кода.
+- `api-integration` (scheduled) — `adr-002-period-concurrency.integration.spec.ts` (property-based, fast-check) свалился с `lock timeout`/`permission denied for table period_facts` под конкурентной нагрузкой в CI-контейнере; нужно определить flaky это или реальная регрессия конкурентности ADR-002.
 
 ---
 
