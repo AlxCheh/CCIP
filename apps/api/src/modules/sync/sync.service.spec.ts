@@ -374,4 +374,86 @@ describe('SyncService', () => {
       ).rejects.toThrow('PERIOD_NOT_FOUND');
     });
   });
+
+  describe('uploadPhoto', () => {
+    const photoDto = {
+      deviceId: DEVICE_ID,
+      clientOpId: 'photo-op-1',
+      periodId: PERIOD_ID,
+      boqItemId: BOQ_ITEM_ID,
+      takenAt: '2026-07-10T07:30:00Z',
+    };
+    const file = {
+      buffer: Buffer.from('jpeg-bytes'),
+      mimetype: 'image/jpeg',
+      originalname: 'photo.jpg',
+    } as Express.Multer.File;
+
+    it('is idempotent: a duplicate clientOpId returns the stored photoId without re-uploading', async () => {
+      (prisma.syncQueue.findUnique as jest.Mock).mockResolvedValue(
+        makeQueueRow({ status: 'applied', conflictData: { photoId: 77 } }),
+      );
+
+      const result = await service.uploadPhoto(USER_ID, photoDto, file);
+
+      expect(storage.upload).not.toHaveBeenCalled();
+      expect(prisma.photo.create).not.toHaveBeenCalled();
+      expect(result).toEqual(
+        expect.objectContaining({ photoId: 77, duplicate: true }),
+      );
+    });
+
+    it('throws NotFoundException when the period belongs to another org', async () => {
+      (prisma.period.findUnique as jest.Mock).mockResolvedValue({
+        id: PERIOD_ID,
+        status: 'open',
+        object: { organizationId: 'other-org' },
+      });
+
+      await expect(
+        service.uploadPhoto(USER_ID, photoDto, file),
+      ).rejects.toThrow('PERIOD_NOT_FOUND');
+    });
+
+    it('throws ForbiddenException when the period is closed', async () => {
+      (prisma.period.findUnique as jest.Mock).mockResolvedValue({
+        id: PERIOD_ID,
+        status: 'closed',
+        object: { organizationId: ORG_ID },
+      });
+
+      await expect(
+        service.uploadPhoto(USER_ID, photoDto, file),
+      ).rejects.toThrow('PERIOD_ALREADY_CLOSED');
+    });
+
+    it('uploads to storage, creates the Photo row and an applied queue row', async () => {
+      const result = await service.uploadPhoto(USER_ID, photoDto, file);
+
+      expect(storage.upload).toHaveBeenCalledWith(
+        expect.stringContaining('sync-photos/'),
+        file.buffer,
+        'image/jpeg',
+      );
+      expect(prisma.photo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            periodId: PERIOD_ID,
+            boqItemId: BOQ_ITEM_ID,
+            uploadedBy: USER_ID,
+          }),
+        }),
+      );
+      expect(prisma.syncQueue.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            operation: 'upload_photo',
+            status: 'applied',
+            conflictData: { photoId: 77 },
+          }),
+        }),
+      );
+      expect(result).toEqual(expect.objectContaining({ photoId: 77 }));
+    });
+  });
 });

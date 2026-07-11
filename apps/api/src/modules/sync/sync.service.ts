@@ -481,10 +481,71 @@ export class SyncService {
   }
 
   async uploadPhoto(
-    _userId: number,
-    _dto: SyncPhotoDto,
-    _file: Express.Multer.File,
-  ): Promise<never> {
-    throw new Error('not implemented — see Task 5');
+    userId: number,
+    dto: SyncPhotoDto,
+    file: Express.Multer.File,
+  ) {
+    // Идемпотентный ретрай («resumable»): повтор возвращает созданное фото
+    const existing = await this.prisma.syncQueue.findUnique({
+      where: {
+        deviceId_clientOpId: {
+          deviceId: dto.deviceId,
+          clientOpId: dto.clientOpId,
+        },
+      },
+    });
+    if (existing) {
+      const data = existing.conflictData as { photoId?: number } | null;
+      return {
+        photoId: data?.photoId ?? null,
+        syncQueueId: Number(existing.id),
+        duplicate: true,
+      };
+    }
+
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+    const period = await this.prisma.period.findUnique({
+      where: { id: dto.periodId },
+      include: { object: { select: { organizationId: true } } },
+    });
+    if (!period || period.object.organizationId !== user.organizationId) {
+      throw new NotFoundException('PERIOD_NOT_FOUND');
+    }
+    // Фото допустимы в любом статусе, кроме закрытых (Design deltas п.6)
+    if (period.status === 'closed' || period.status === 'force_closed') {
+      throw new ForbiddenException('PERIOD_ALREADY_CLOSED');
+    }
+
+    const key = `sync-photos/${dto.periodId}/${dto.boqItemId ?? 'general'}/${dto.clientOpId}`;
+    await this.storage.upload(key, file.buffer, file.mimetype);
+
+    const photo = await this.prisma.photo.create({
+      data: {
+        periodId: dto.periodId,
+        boqItemId: dto.boqItemId ?? null,
+        filePath: key,
+        takenAt: dto.takenAt ? new Date(dto.takenAt) : null,
+        uploadedBy: userId,
+      },
+    });
+
+    const row = await this.prisma.syncQueue.create({
+      data: {
+        deviceId: dto.deviceId,
+        clientOpId: dto.clientOpId,
+        userId,
+        operation: 'upload_photo',
+        payload: { periodId: dto.periodId, boqItemId: dto.boqItemId ?? null },
+        clientTimestamp: dto.takenAt ? new Date(dto.takenAt) : new Date(),
+        serverReceivedAt: new Date(),
+        status: 'applied',
+        conflictData: { photoId: photo.id },
+      },
+    });
+
+    return { photoId: photo.id, syncQueueId: Number(row.id) };
   }
 }
