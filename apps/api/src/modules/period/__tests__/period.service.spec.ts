@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PeriodService } from '../period.service';
+import { VersionConflictException } from '../version-conflict.exception';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { AuditLogService } from '../../../common/audit/audit-log.service';
 import { WorkPaceService } from '../../analytics/work-pace.service';
@@ -735,6 +736,61 @@ describe('PeriodService', () => {
           performedBy: ACTOR_ID,
         }),
       );
+    });
+
+    // ─── ADR-003: expectedVersion CAS (M-07 Sync) ────────────────────────────
+
+    it('applies when expectedVersion matches the current fact version', async () => {
+      // beforeEach mock: findFirst → makePeriodFact() with version: 1
+      await service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID, {
+        expectedVersion: 1,
+      });
+
+      expect(prisma.periodFact.upsert).toHaveBeenCalled();
+    });
+
+    it('throws VersionConflictException and never writes when expectedVersion mismatches', async () => {
+      (prisma.periodFact.findFirst as jest.Mock).mockResolvedValue(
+        makePeriodFact({ version: 3, scVolume: 75 }),
+      );
+
+      await expect(
+        service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID, {
+          expectedVersion: 1,
+        }),
+      ).rejects.toThrow(VersionConflictException);
+
+      expect(prisma.periodFact.upsert).not.toHaveBeenCalled();
+    });
+
+    it('exposes the fresh server snapshot on the conflict exception', async () => {
+      (prisma.periodFact.findFirst as jest.Mock).mockResolvedValue(
+        makePeriodFact({ version: 3, scVolume: 75 }),
+      );
+
+      const err = await service
+        .upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID, {
+          expectedVersion: 1,
+        })
+        .catch((e: VersionConflictException) => e);
+
+      expect(err).toBeInstanceOf(VersionConflictException);
+      expect((err as VersionConflictException).serverFact).toEqual({
+        factId: PERIOD_FACT_ID,
+        scVolume: 75,
+        version: 3,
+      });
+    });
+
+    it('treats a missing fact as version 0', async () => {
+      (prisma.periodFact.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.periodFact.upsert as jest.Mock).mockResolvedValue(makePeriodFact());
+
+      await service.upsertPeriodFact(PERIOD_ID, BOQ_ITEM_ID, SC_VOLUME, ACTOR_ID, {
+        expectedVersion: 0,
+      });
+
+      expect(prisma.periodFact.upsert).toHaveBeenCalled();
     });
   });
 

@@ -9,6 +9,7 @@ import { Prisma } from '@ccip/database';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditLogService } from '../../common/audit/audit-log.service';
 import { WorkPaceService } from '../analytics/work-pace.service';
+import { VersionConflictException } from './version-conflict.exception';
 
 // Days until GP submission token expires (default: 14 days from SystemConfig or constant)
 const GP_TOKEN_EXPIRES_DAYS = 14;
@@ -371,6 +372,7 @@ export class PeriodService {
     opts?: {
       spikeResponse?: 'planned_concentration' | 'data_entry_error';
       workAccessible?: boolean;
+      expectedVersion?: number; // ADR-003 CAS: M-07 Sync передаёт last_known_version
     },
   ) {
     return this.prisma.$transaction(async (tx) => {
@@ -403,10 +405,26 @@ export class PeriodService {
       }
 
       // Find existing fact to retrieve gpVolume for delta computation
+      // (+ id/scVolume/version for the ADR-003 expectedVersion check below)
       const existingFact = await tx.periodFact.findFirst({
         where: { periodId, boqItemId },
-        select: { gpVolume: true },
+        select: { id: true, gpVolume: true, scVolume: true, version: true },
       });
+
+      // ADR-003: optimistic CAS внутри транзакции — TOCTOU-окна нет.
+      if (opts?.expectedVersion !== undefined) {
+        const serverVersion = existingFact?.version ?? 0;
+        if (serverVersion !== opts.expectedVersion) {
+          throw new VersionConflictException({
+            factId: existingFact?.id ?? null,
+            scVolume:
+              existingFact?.scVolume != null
+                ? Number(existingFact.scVolume)
+                : null,
+            version: serverVersion,
+          });
+        }
+      }
 
       // Compute discrepancy based on gpVolume
       const gpVol =
