@@ -112,7 +112,7 @@ export class SyncService {
           clientOpId: op.clientOpId,
           userId,
           operation: 'submit_fact',
-          payload: op.payload,
+          payload: op.payload as unknown as Prisma.InputJsonValue,
           clientTimestamp: new Date(op.clientTimestamp),
           serverReceivedAt: new Date(),
           lastKnownVersion: op.lastKnownVersion,
