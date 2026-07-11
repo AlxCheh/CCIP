@@ -22,7 +22,15 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          package_json_file: ${{ steps.dir.outputs.path }}/package.json
+          # No actions/checkout in this job (by design — we clone into a
+          # random /tmp path to test portability), so GITHUB_WORKSPACE has
+          # no package.json for the action's default file-based detection
+          # to read (package_json_file must be relative to GITHUB_WORKSPACE
+          # per pnpm/action-setup's own contract — an absolute path here
+          # silently resolves to nothing → "No pnpm version is specified").
+          # Pin the major version instead, matching root package.json's
+          # engines.pnpm: ">=9".
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
