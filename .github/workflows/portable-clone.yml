@@ -36,8 +36,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: ${{ steps.dir.outputs.path }}/pnpm-lock.yaml
+          # No cache: 'pnpm'/cache-dependency-path — actions/setup-node's
+          # cache-dependency-path glob is documented only for paths relative
+          # to GITHUB_WORKSPACE (always paired with actions/checkout in its
+          # own docs); this job has neither by design. A rare nightly
+          # portability smoke test doesn't need install caching.
 
       - name: Install
         working-directory: ${{ steps.dir.outputs.path }}
