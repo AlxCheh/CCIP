@@ -170,8 +170,8 @@
   - `POST /sync/resolve` — SC выбирает версию вручную (обязателен `note`)
     - `resolveConflict()` перечитывает актуальное серверное значение из БД (не из `conflict_data.server`)
   - `POST /sync/photos` — multipart, по одному файлу, resumable
-  - Архивация: cron job — DELETE `sync_queue WHERE status IN ('applied','rejected','escalated') AND created_at < NOW()-30d`
-  - Артефакт (planned):
+  - Архивация: cron job — DELETE `sync_queue WHERE status IN ('applied','rejected','escalated') AND server_received_at < NOW()-30d`
+  - Артефакт:
     ```
     apps/api/src/modules/sync/sync.module.ts
     ```

@@ -102,3 +102,12 @@ Repeatable BullMQ-джоб (cron, ночной, раз в сутки), патт�
 ## 10. Закрытие модуля
 
 По завершении: `docs/project-state.md` (M-07 → done), `docs/delivery/phase-4-7-backend-modules.md` (реальный путь артефакта вместо planned), `ADR-003` impl_anchors уже указывает на `apps/api/src/modules/sync/`.
+
+## 11. Addendum: plan-time deltas (2026-07-10)
+
+Реализация следует секции «Design deltas» плана `docs/plans/2026-07-10-m07-sync-api.md`:
+операция называется `submit_fact` (CHECK в 0001_initial); `sync_queue.status` расширен
+значением `escalated`, `discrepancies.type` — значением `3` (offline_conflict_in_closed_period);
+эскалация дополнена in-app уведомлением админам (модель Notification уже используется
+SLA-воркером — решение пересмотрено с пользователем); базис архивации — `server_received_at`;
+фото допускаются в любом статусе периода, кроме закрытых.

@@ -10,7 +10,7 @@
 
 | Поле | Значение |
 |------|----------|
-| **Last Updated** | 2026-07-10 |
+| **Last Updated** | 2026-07-11 |
 | **Current Phase** | 12 — Prod Infra / K8s Worker |
 | **Phase Status** | ◑ scaffold validated end-to-end on real kind cluster (Tasks 1-18 all done); staging/prod cloud provisioning still TBD (separate follow-up) |
 | **Active P1 Task** | M-12 cloud provisioning (follow-up plan, provider TBD) — local/kind scope of M-12 is closed |
@@ -37,7 +37,7 @@
 | M-05b | P1 | DisputeSLA Module D + BullMQ Worker | 5 | ✓ done ¹ | — |
 | M-05c | P1 | Analytics Module E + MV refresh | 5 | ✓ done | — |
 | M-06 | P3 | Baseline F/G + GC Change H | 6 | ✓ done | — |
-| M-07 | P2 | Sync API I | 7 | ○ pending | — |
+| M-07 | P2 | Sync API I | 7 | ✓ done | — |
 | M-08 | P1 | Web App: Dashboard + Period Cycle + GP Form | 8 | ✓ done | Pilot |
 | M-10 | P1 | Security / Immutability / REVOKE | 10 | ✓ done | — |
 | M-11 | P1 | Testing / SLA Recovery scan | 11 | ✓ done ⁴ | Pilot |
@@ -93,6 +93,7 @@
 | M-05c | Analytics Module E + MV refresh: AnalyticsComputeService, MvRefreshWorker, forecast_reason, B-02 closed | 2026-05-31 | apps/api/src/modules/analytics/ |
 | M-08 | Web App: Dashboard директора + Period Cycle стройконтроля + GP Form (GpToken) | 2026-06-02 | apps/web/ (PR #10 Dashboard, PR #11 GP Form) |
 | M-06 | Baseline F/G (BaselineService: createRequest/approveRequest, новая boq_version c lineage) + GC Change H (ObjectParticipantsService.changeGeneralContractor, SCD2) | 2026-07-10 | apps/api/src/modules/baseline/ + objects/object-participants.service.ts |
+| M-07 | Offline Sync API I (SyncService: batch/resolve/photos, ADR-003 CAS через expectedVersion, архивация 30d) | 2026-07-11 | apps/api/src/modules/sync/ + period/version-conflict.exception.ts |
 
 ---
 
